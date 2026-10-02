@@ -1,0 +1,13 @@
+package io.github.chandu4221.m3stage.model
+
+data class Screen(
+    val id: ScreenId,
+    val name: String,
+    val route: String,
+    val root: DesignNode
+) {
+    init {
+        require(name.isNotBlank()) { "Screen name cannot be blank" }
+        require(route.isNotBlank()) { "Screen route cannot be blank" }
+    }
+}

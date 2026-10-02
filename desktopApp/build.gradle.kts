@@ -6,9 +6,13 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+
+group = "io.github.chandu4221"
+version = "1.0.0"
+
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation(libs.kotlinx.coroutinesSwing)
+    implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.compose.uiToolingPreview)
 }
 
@@ -18,7 +22,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.github.chandu4221.m3stage"
+            packageName = "m3stage"
             packageVersion = "1.0.0"
         }
     }

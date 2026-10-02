@@ -32,3 +32,7 @@ plugins {
 }
 
 include(":desktopApp")
+include("domain")
+include("adapter:json-persistence")
+include("adapter:compose-codegen")
+include("adapter:compose-renderer")
