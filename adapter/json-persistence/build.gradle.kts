@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 group = "io.github.chandu4221"
@@ -11,11 +12,14 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
+    implementation(project(":domain"))
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.kotlin.testJunit)
 }
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 tasks.test {

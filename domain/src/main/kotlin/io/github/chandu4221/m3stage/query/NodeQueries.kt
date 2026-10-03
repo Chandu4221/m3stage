@@ -28,7 +28,18 @@ fun DesignNode.containsNode(id: NodeId): Boolean {
 
 // Path and ancestry
 fun DesignNode.pathIdsTo(id: NodeId): List<NodeId>? {
-    val pathIds: List<NodeId>? = null
+    if (this.id == id) {
+        return listOf(this.id)
+    }
+
+    for (child in children) {
+        val childPath = child.pathIdsTo(id)
+        if (childPath != null) {
+            return listOf(this.id) + childPath
+        }
+    }
+
+    return null
 }
 
 //fun DesignNode.pathNodesTo(id: NodeId): List<DesignNode>? {}
@@ -40,9 +51,38 @@ fun DesignNode.pathIdsTo(id: NodeId): List<NodeId>? {
 //fun DesignNode.isRoot(id: NodeId): Boolean {}
 
 // Position queries
-fun DesignNode.findIndexInParent(id: NodeId): Int? {}
+fun DesignNode.findIndexInParent(id: NodeId): Int? {
+    // Root has no parent, so no index
+    if (this.id == id) {
+        return null
+    }
 
-fun DesignNode.isDescendantOf(nodeId: NodeId, ancestorId: NodeId): Boolean {}
+    // Check if target is a direct child
+    val index = children.indexOfFirst { it.id == id }
+    if (index != -1) {
+        return index
+    }
+
+    // Recurse into children
+    for (child in children) {
+        val result = child.findIndexInParent(id)
+        if (result != null) {
+            return result
+        }
+    }
+    return null
+}
+
+fun DesignNode.isDescendantOf(nodeId: NodeId, ancestorId: NodeId): Boolean {
+    if (nodeId == ancestorId) {
+        return false
+    }
+    // Find the ancestor node
+    val ancestor = findNode(ancestorId) ?: return false
+
+    // Check if nodeId exists within the ancestor's subtree
+    return ancestor.containsNode(nodeId)
+}
 
 // Tree traversal
 //fun DesignNode.flatten(): List<DesignNode> {}

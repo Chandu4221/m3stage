@@ -14,6 +14,12 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.compose.uiToolingPreview)
+
+    // Add your modules
+    implementation(project(":domain"))
+    implementation(project(":adapter:json-persistence"))
+    implementation(project(":adapter:compose-codegen"))
+    implementation(project(":adapter:compose-renderer"))
 }
 
 compose.desktop {

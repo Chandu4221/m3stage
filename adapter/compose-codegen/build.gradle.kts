@@ -11,11 +11,13 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
+    implementation(project(":domain"))
+    implementation(libs.kotlinpoet)
+    testImplementation(libs.kotlin.testJunit)
 }
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 tasks.test {
