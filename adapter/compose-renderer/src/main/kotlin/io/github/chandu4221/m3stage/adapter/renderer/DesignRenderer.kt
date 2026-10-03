@@ -3,12 +3,8 @@ package io.github.chandu4221.m3stage.adapter.renderer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.NodeId
 
-
-/**
- * Main entry point for rendering a design tree.
- * Manages the registry of component renderers and provides the recursive walk function.
- */
 object DesignRenderer {
 
     private val registry: Map<String, NodeRenderer> = mapOf(
@@ -20,27 +16,26 @@ object DesignRenderer {
         "Card" to CardRenderer()
     )
 
-    /**
-     * Render a design node tree as a Composable.
-     *
-     * @param node The root node to render
-     */
     @Composable
-    fun Render(node: DesignNode) {
-        // Recursive render function
+    fun Render(
+        node: DesignNode,
+        selectedNodeId: NodeId?,
+        onNodeClick: (NodeId) -> Unit
+    ) {
         @Composable
-        fun renderNode(node: DesignNode) {
-            val renderer = registry[node.type.value]
+        fun renderNode(currentNode: DesignNode) {
+            val isSelected = currentNode.id.value == selectedNodeId?.value
 
-            if (renderer != null) {
-                renderer.Render(node) { child ->
-                    renderNode(child)
+            SelectionOverlay(
+                isSelected = isSelected,
+                onClick = { onNodeClick(currentNode.id) }
+            ) {
+                val renderer = registry[currentNode.type.value]
+                if (renderer != null) {
+                    renderer.Render(currentNode) { child -> renderNode(child) }
+                } else {
+                    Text(text = "Unknown: ${currentNode.type.value}")
                 }
-            } else {
-                // Fallback for unknown component types
-                Text(
-                    text = "Unknown: ${node.type.value}"
-                )
             }
         }
 

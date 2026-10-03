@@ -4,65 +4,77 @@ import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.ScreenId
-import io.github.chandu4221.m3stage.port.IdGenerator
+import io.github.chandu4221.m3stage.mutation.*
+import io.github.chandu4221.m3stage.query.findNode
+import io.github.chandu4221.m3stage.query.findParent
+import io.github.chandu4221.m3stage.query.findScreen
 
 /**
  * Command pattern for editor actions.
- * Each command knows how to execute and undo itself.
+ * Each command knows how to execute and undo itself on a Project.
+ * No IdGenerator needed here because nodes are fully formed before execution.
  */
 sealed interface EditorCommand {
-    fun execute(project: Project, idGenerator: IdGenerator): Project
+    fun execute(project: Project): Project
     fun undo(project: Project): Project
 }
 
 /**
- * Adds a node to a screen. Undo removes it.
+ * Adds a fully-formed node to a screen. Undo removes it.
  */
 data class AddNodeCommand(
     val screenId: ScreenId,
     val parentId: NodeId,
     val newNode: DesignNode
 ) : EditorCommand {
-
-    override fun execute(project: Project, idGenerator: IdGenerator): Project {
-        return project.updateScreen(screenId) { screen ->
-            screen.copy(root = screen.root.addNode(parentId, newNode))
-        }
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.addNode(parentId, newNode)
+        return project.updateScreenRoot(screenId, newRoot)
     }
 
     override fun undo(project: Project): Project {
-        return project.updateScreen(screenId) { screen ->
-            screen.copy(root = screen.root.removeNode(newNode.id))
-        }
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.removeNode(newNode.id)
+        return project.updateScreenRoot(screenId, newRoot)
     }
 }
 
 /**
- * Removes a node. Undo re-inserts it at its original position.
+ * Removes a node. Undo re-inserts it.
+ * (Captures parent info at execution time for accurate undo).
  */
 data class RemoveNodeCommand(
     val screenId: ScreenId,
-    val nodeId: NodeId,
-    val removedNode: DesignNode,
-    val parentId: NodeId,
-    val indexInParent: Int
+    val nodeId: NodeId
 ) : EditorCommand {
+    var removedNode: DesignNode? = null
+    var parentId: NodeId? = null
 
-    override fun execute(project: Project, idGenerator: IdGenerator): Project {
-        return project.updateScreen(screenId) { screen ->
-            screen.copy(root = screen.root.removeNode(nodeId))
-        }
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val nodeToRemove = screen.root.findNode(nodeId) ?: return project
+
+        // Capture state for undo
+        this.removedNode = nodeToRemove
+        this.parentId = screen.root.findParent(nodeId)?.id ?: screen.root.id
+
+        val newRoot = screen.root.removeNode(nodeId)
+        return project.updateScreenRoot(screenId, newRoot)
     }
 
     override fun undo(project: Project): Project {
-        return project.updateScreen(screenId) { screen ->
-            screen.copy(root = screen.root.addNode(parentId, removedNode))
-        }
+        val node = removedNode ?: return project
+        val parent = parentId ?: return project
+
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.addNode(parent, node)
+        return project.updateScreenRoot(screenId, newRoot)
     }
 }
 
 /**
- * Updates a property. Undo restores the old value.
+ * Updates a property. Undo restores the old value or removes the key.
  */
 data class UpdatePropCommand(
     val screenId: ScreenId,
@@ -71,21 +83,19 @@ data class UpdatePropCommand(
     val oldValue: String?,
     val newValue: String
 ) : EditorCommand {
-
-    override fun execute(project: Project, idGenerator: IdGenerator): Project {
-        return project.updateScreen(screenId) { screen ->
-            screen.copy(root = screen.root.updateProp(nodeId, key, newValue))
-        }
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.updateProp(nodeId, key, newValue)
+        return project.updateScreenRoot(screenId, newRoot)
     }
 
     override fun undo(project: Project): Project {
-        return project.updateScreen(screenId) { screen ->
-            val updatedRoot = if (oldValue == null) {
-                screen.root.removeProp(nodeId, key)
-            } else {
-                screen.root.updateProp(nodeId, key, oldValue)
-            }
-            screen.copy(root = updatedRoot)
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = if (oldValue == null) {
+            screen.root.removeProp(nodeId, key)
+        } else {
+            screen.root.updateProp(nodeId, key, oldValue)
         }
+        return project.updateScreenRoot(screenId, newRoot)
     }
 }

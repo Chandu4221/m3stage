@@ -15,6 +15,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.compose.uiToolingPreview)
 
+    // Explicitly add Material 3 for the desktop app UI
+    implementation(libs.compose.material3)
+    implementation(libs.compose.foundation)
+
     // Add your modules
     implementation(project(":domain"))
     implementation(project(":adapter:json-persistence"))

@@ -1,51 +1,32 @@
 package io.github.chandu4221.m3stage.state
 
-
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import io.github.chandu4221.m3stage.model.NodeId
-import io.github.chandu4221.m3stage.model.Project
-import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
-import io.github.chandu4221.m3stage.state.commands.AddNodeCommand
+import io.github.chandu4221.m3stage.query.findScreenContaining
+import io.github.chandu4221.m3stage.validation.ProjectValidation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-/**
- * Central state holder for the editor.
- *
- * Uses Compose State for UI-reactive fields (selection, hover)
- * and StateFlow for cross-module observable state (project, history).
- * SharedFlow for one-shot events (toasts, errors).
- */
 class EditorStore(
     private val idGenerator: IdGenerator,
-    private val repository: ProjectRepository,
-    private val createNodeUseCase: CreateNodeUseCase
+    private val repository: ProjectRepository
 ) {
-    // Scope for async operations (save/load)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // --- Compose State (UI-reactive, triggers recomposition) ---
+    // --- Compose State (UI-reactive) ---
     private val _selectedNodeId = mutableStateOf<NodeId?>(null)
     val selectedNodeId: State<NodeId?> = _selectedNodeId
 
     private val _activeScreenId = mutableStateOf<ScreenId?>(null)
     val activeScreenId: State<ScreenId?> = _activeScreenId
 
-    private val _hoveredNodeId = mutableStateOf<NodeId?>(null)
-    val hoveredNodeId: State<NodeId?> = _hoveredNodeId
-
-    // --- StateFlow (observable across modules, always has a value) ---
+    // --- StateFlow (Observable state) ---
     private val _project = MutableStateFlow<Project?>(null)
     val project: StateFlow<Project?> = _project.asStateFlow()
 
@@ -55,35 +36,42 @@ class EditorStore(
     private val _redoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
     val redoStack: StateFlow<List<EditorCommand>> = _redoStack.asStateFlow()
 
-    // --- SharedFlow (one-shot events, no replay) ---
+    // --- SharedFlow (One-shot events) ---
     private val _events = MutableSharedFlow<EditorEvent>()
     val events: SharedFlow<EditorEvent> = _events.asSharedFlow()
 
-    // --- Commands ---
+    // --- Actions ---
 
     fun selectNode(nodeId: NodeId?) {
         _selectedNodeId.value = nodeId
-    }
 
-    fun hoverNode(nodeId: NodeId?) {
-        _hoveredNodeId.value = nodeId
+        val currentProject = _project.value
+        if (nodeId != null && currentProject != null) {
+            val screen = currentProject.findScreenContaining(nodeId)
+            if (screen != null && _activeScreenId.value != screen.id) {
+                _activeScreenId.value = screen.id
+            }
+        }
     }
 
     fun setActiveScreen(screenId: ScreenId) {
         _activeScreenId.value = screenId
+        _selectedNodeId.value = null
     }
 
-    /**
-     * Execute a command, apply it, and push to undo stack.
-     * Clears the redo stack (standard undo/redo behavior).
-     */
     fun execute(command: EditorCommand) {
         val currentProject = _project.value ?: return
-        val newProject = command.execute(currentProject, idGenerator)
+        val newProject = command.execute(currentProject)
+
+        val errors = ProjectValidation.validate(newProject)
+        if (errors.isNotEmpty()) {
+            scope.launch { _events.emit(EditorEvent.ShowError("Invalid state: ${errors.first()}")) }
+            return
+        }
 
         _project.value = newProject
         _undoStack.value = _undoStack.value + command
-        _redoStack.value = emptyList() // Clear redo on new action
+        _redoStack.value = emptyList()
     }
 
     fun undo() {
@@ -100,23 +88,26 @@ class EditorStore(
         val command = _redoStack.value.lastOrNull() ?: return
         val currentProject = _project.value ?: return
 
-        val reappliedProject = command.execute(currentProject, idGenerator)
+        val reappliedProject = command.execute(currentProject)
         _project.value = reappliedProject
         _redoStack.value = _redoStack.value.dropLast(1)
         _undoStack.value = _undoStack.value + command
     }
 
-    // --- Async operations ---
-
     fun loadProject() {
         scope.launch {
             try {
                 val loaded = repository.load()
-                _project.value = loaded
-                loaded?.screens?.firstOrNull()?.let { firstScreen ->
-                    _activeScreenId.value = firstScreen.id
+                if (loaded != null) {
+                    val errors = ProjectValidation.validate(loaded)
+                    if (errors.isNotEmpty()) {
+                        _events.emit(EditorEvent.ShowError("Corrupt project: ${errors.first()}"))
+                        return@launch
+                    }
+                    _project.value = loaded
+                    _activeScreenId.value = loaded.screens.firstOrNull()?.id
+                    _events.emit(EditorEvent.LoadSuccess)
                 }
-                _events.emit(EditorEvent.ShowToast("Project loaded"))
             } catch (e: Exception) {
                 _events.emit(EditorEvent.ShowError("Failed to load: ${e.message}"))
             }
@@ -130,16 +121,31 @@ class EditorStore(
                 repository.save(currentProject)
                 _events.emit(EditorEvent.SaveSuccess)
             } catch (e: Exception) {
-                _events.emit(EditorEvent.SaveFailed)
+                _events.emit(EditorEvent.ShowError("Failed to save: ${e.message}"))
             }
         }
     }
 
-    // --- Convenience: add node from palette ---
-
-    fun addNodeToActiveScreen(parentId: NodeId, componentType: io.github.chandu4221.domain.model.ComponentType) {
+    /**
+     * Builds a fully-formed node tree with new IDs and default props,
+     * then executes the AddNodeCommand.
+     */
+    fun addNodeToActiveScreen(parentId: NodeId, componentType: ComponentType) {
         val screenId = _activeScreenId.value ?: return
-        val newNode = createNodeUseCase.execute(componentType)
+        val definition = ComponentCatalog.getByType(componentType) ?: return
+
+        // Recursive builder to create the node and all its default children with fresh IDs
+        fun buildNode(type: ComponentType): DesignNode {
+            val def = ComponentCatalog.getByType(type) ?: throw IllegalArgumentException("Unknown type: $type")
+            return DesignNode(
+                id = idGenerator.nextNodeId(),
+                type = def.type,
+                props = def.defaultProps,
+                children = def.defaultChildTypes.map { buildNode(it) }
+            )
+        }
+
+        val newNode = buildNode(componentType)
         execute(AddNodeCommand(screenId, parentId, newNode))
     }
 }

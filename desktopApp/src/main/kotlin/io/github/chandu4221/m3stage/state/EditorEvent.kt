@@ -10,4 +10,7 @@ sealed interface EditorEvent {
     data class ShowError(val message: String) : EditorEvent
     data object SaveSuccess : EditorEvent
     data object SaveFailed : EditorEvent
+
+    data object LoadSuccess : EditorEvent
+    data object LoadFailed : EditorEvent
 }
