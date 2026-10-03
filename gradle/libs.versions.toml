@@ -4,9 +4,10 @@ junit = "4.13.2"
 kotlin = "2.4.20"
 kotlinx = "1.11.0"
 kotlinx-collections-immutable = "0.5.2"
-#material3 = "1.12.0-alpha03"
+material3 = "1.13.0-alpha01"
 kotlinxCoroutines = "1.9.0"
 kotlinpoet = "2.0.0"
+kotlin-formatter = "0.64"
 
 
 [libraries]
@@ -16,7 +17,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 # --- COMPOSE ---
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "composeMultiplatform" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
@@ -31,6 +32,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinx-collections-immutable" }
 # --- CODEGEN ---
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+# --- CODE FORMATTER ---
+kotlin-formatter = { module = "com.facebook:ktfmt", version.ref = "kotlin-formatter" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

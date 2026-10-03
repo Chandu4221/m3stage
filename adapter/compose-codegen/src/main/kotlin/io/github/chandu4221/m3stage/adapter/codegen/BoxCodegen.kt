@@ -5,19 +5,22 @@ import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.model.ComponentTypes
 import io.github.chandu4221.m3stage.model.DesignNode
 
-class ButtonCodegen : ComponentCodegen {
+
+class BoxCodegen : ComponentCodegen {
     override val className = ClassName(
-        PackageNameResolver.resolve(ComponentTypes.Button),
-        "Button"
+        PackageNameResolver.resolve(ComponentTypes.Box),
+        "Box"
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val builder = CodeBlock.builder()
-        builder.beginControlFlow("%T(onClick = { /* TODO: Hook action */ })", className)
+
+        builder.beginControlFlow("%T", className)
         node.children.forEach { child ->
             builder.add(walk(child))
         }
         builder.endControlFlow()
+
         return builder.build()
     }
 }

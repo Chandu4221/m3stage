@@ -13,7 +13,9 @@ repositories {
 dependencies {
     implementation(project(":domain"))
     implementation(libs.kotlinpoet)
+    implementation(libs.kotlin.formatter)
     testImplementation(libs.kotlin.testJunit)
+
 }
 
 kotlin {

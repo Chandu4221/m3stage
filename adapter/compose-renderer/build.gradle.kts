@@ -8,11 +8,11 @@ version = "1.0.0"
 
 dependencies {
     implementation(project(":domain"))
-
     implementation(libs.compose.runtime)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
     implementation(libs.compose.ui)
+    implementation(libs.compose.components.resources)
 
     testImplementation(libs.kotlin.testJunit)
 }
@@ -23,6 +23,7 @@ kotlin {
 
 repositories {
     mavenCentral()
+    google()
 }
 
 tasks.test {
