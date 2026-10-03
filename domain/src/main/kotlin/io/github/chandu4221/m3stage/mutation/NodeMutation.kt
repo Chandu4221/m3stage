@@ -41,6 +41,17 @@ fun DesignNode.updateProp(nodeId: NodeId, key: String, value: String): DesignNod
 }
 
 /**
+ * Removes a specific property key from a node.
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.removeProp(nodeId: NodeId, key: String): DesignNode {
+    if (this.id == nodeId) {
+        return copy(props = props - key)
+    }
+    return copy(children = children.map { it.removeProp(nodeId, key) })
+}
+
+/**
  * Helper: Inserts a node at a specific index within a parent.
  */
 private fun DesignNode.insertNode(parentId: NodeId, child: DesignNode, index: Int): DesignNode {
