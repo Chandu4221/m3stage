@@ -99,3 +99,25 @@ data class UpdatePropCommand(
         return project.updateScreenRoot(screenId, newRoot)
     }
 }
+
+/**
+ * Toggles the visibility of a node. Undo restores the previous visibility state.
+ */
+data class UpdateVisibilityCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val oldVisibility: Boolean,
+    val newVisibility: Boolean
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.updateVisibility(nodeId, newVisibility)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.updateVisibility(nodeId, oldVisibility)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}

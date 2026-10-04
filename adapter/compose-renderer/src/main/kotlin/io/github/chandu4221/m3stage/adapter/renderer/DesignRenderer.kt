@@ -20,14 +20,19 @@ object DesignRenderer {
     fun Render(
         node: DesignNode,
         selectedNodeId: NodeId?,
-        onNodeClick: (NodeId) -> Unit
+        onNodeClick: (NodeId) -> Unit,
+        lockedNodeIds: Set<NodeId> = emptySet() // <-- Added
     ) {
         @Composable
         fun renderNode(currentNode: DesignNode) {
+            if (!currentNode.isVisible) return
+
             val isSelected = currentNode.id.value == selectedNodeId?.value
+            val isLocked = currentNode.id in lockedNodeIds // <-- Check set
 
             SelectionOverlay(
                 isSelected = isSelected,
+                isLocked = isLocked,
                 onClick = { onNodeClick(currentNode.id) }
             ) {
                 val renderer = registry[currentNode.type.value]

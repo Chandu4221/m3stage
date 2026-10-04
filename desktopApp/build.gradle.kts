@@ -18,7 +18,7 @@ dependencies {
     // Explicitly add Material 3 for the desktop app UI
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
-
+    implementation(libs.compose.material.icons.extended)
     // Add your modules
     implementation(project(":domain"))
     implementation(project(":adapter:json-persistence"))

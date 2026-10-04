@@ -4,5 +4,6 @@ data class DesignNode(
     val id: NodeId,
     val type: ComponentType,
     val props: Map<String, String> = emptyMap(),
-    val children: List<DesignNode> = emptyList()
+    val children: List<DesignNode> = emptyList(),
+    val isVisible: Boolean = true
 )

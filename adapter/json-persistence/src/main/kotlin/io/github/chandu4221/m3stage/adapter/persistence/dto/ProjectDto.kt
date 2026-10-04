@@ -29,7 +29,8 @@ data class DesignNodeDto(
     val id: String,
     val type: String,
     val props: Map<String, String> = emptyMap(),
-    val children: List<DesignNodeDto> = emptyList()
+    val children: List<DesignNodeDto> = emptyList(),
+    val isVisible: Boolean = true
 )
 
 // --- Mappers: Convert between Domain and DTO ---
@@ -66,12 +67,14 @@ fun DesignNode.toDto(): DesignNodeDto = DesignNodeDto(
     id = this.id.value,
     type = this.type.value,
     props = this.props,
-    children = this.children.map { it.toDto() }
+    children = this.children.map { it.toDto() },
+    isVisible = this.isVisible
 )
 
 fun DesignNodeDto.toDomain(): DesignNode = DesignNode(
     id = NodeId(this.id),
     type = ComponentType(this.type),
     props = this.props,
-    children = this.children.map { it.toDomain() }
+    children = this.children.map { it.toDomain() },
+    isVisible = this.isVisible
 )

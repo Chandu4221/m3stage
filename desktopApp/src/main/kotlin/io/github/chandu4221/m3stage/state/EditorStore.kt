@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
+import io.github.chandu4221.m3stage.query.findNode
+import io.github.chandu4221.m3stage.query.findScreen
 import io.github.chandu4221.m3stage.query.findScreenContaining
 import io.github.chandu4221.m3stage.validation.ProjectValidation
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +41,40 @@ class EditorStore(
     // --- SharedFlow (One-shot events) ---
     private val _events = MutableSharedFlow<EditorEvent>()
     val events: SharedFlow<EditorEvent> = _events.asSharedFlow()
+
+
+    // --- Layer Lock State (UI-only, doesn't need undo/redo for MVP) ---
+    private val _lockedNodeIds = mutableStateOf<Set<NodeId>>(emptySet())
+    val lockedNodeIds: State<Set<NodeId>> = _lockedNodeIds
+
+    fun toggleLock(nodeId: NodeId) {
+        _lockedNodeIds.value = if (nodeId in _lockedNodeIds.value) {
+            _lockedNodeIds.value - nodeId
+        } else {
+            _lockedNodeIds.value + nodeId
+        }
+    }
+
+    fun isNodeLocked(nodeId: NodeId): Boolean {
+        return nodeId in _lockedNodeIds.value
+    }
+
+    // --- Visibility Action ---
+    fun toggleVisibility(nodeId: NodeId) {
+        val screenId = _activeScreenId.value ?: return
+        val currentProject = _project.value ?: return
+        val screen = currentProject.findScreen(screenId) ?: return
+        val node = screen.root.findNode(nodeId) ?: return
+
+        execute(
+            UpdateVisibilityCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                oldVisibility = node.isVisible,
+                newVisibility = !node.isVisible
+            )
+        )
+    }
 
     // --- Actions ---
 
@@ -147,5 +183,33 @@ class EditorStore(
 
         val newNode = buildNode(componentType)
         execute(AddNodeCommand(screenId, parentId, newNode))
+    }
+
+    // Add this to EditorStore.kt
+
+    fun createNewProject() {
+        val newProject = Project(
+            id = idGenerator.nextProjectId(),
+            name = "Untitled Project",
+            basePackage = "com.example.app",
+            screens = listOf(
+                Screen(
+                    id = idGenerator.nextScreenId(),
+                    name = "Home",
+                    route = "/",
+                    root = DesignNode(
+                        id = idGenerator.nextNodeId(),
+                        type = ComponentTypes.Column,
+                        props = emptyMap(),
+                        children = emptyList()
+                    )
+                )
+            )
+        )
+
+        _project.value = newProject
+        _activeScreenId.value = newProject.screens.first().id
+        _undoStack.value = emptyList()
+        _redoStack.value = emptyList()
     }
 }

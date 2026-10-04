@@ -6,9 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.github.chandu4221.m3stage.adapter.renderer.DesignRenderer
 import io.github.chandu4221.m3stage.model.ComponentTypes
 import io.github.chandu4221.m3stage.state.EditorStore
 
@@ -16,65 +16,41 @@ import io.github.chandu4221.m3stage.state.EditorStore
 fun EditorScreen(store: EditorStore) {
     val project by store.project.collectAsState()
     val activeScreenId by store.activeScreenId
-    val selectedNodeId by store.selectedNodeId // <-- Track actual selection
+    val selectedNodeId by store.selectedNodeId
+    val lockedNodeIds by store.lockedNodeIds
 
     Row(modifier = Modifier.fillMaxSize()) {
-        // Left: Palette
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(200.dp)
-        ) {
-            Text("Palette", modifier = Modifier.width(200.dp))
 
-            Button(
-                onClick = {
-                    project?.screens?.firstOrNull { it.id == activeScreenId }?.let { screen ->
-                        store.addNodeToActiveScreen(screen.root.id, ComponentTypes.Text)
-                    }
-                },
-                modifier = Modifier.width(180.dp)
-            ) {
-                Text("Add Text")
-            }
-
-            Button(
-                onClick = {
-                    project?.screens?.firstOrNull { it.id == activeScreenId }?.let { screen ->
-                        store.addNodeToActiveScreen(screen.root.id, ComponentTypes.Button)
-                    }
-                },
-                modifier = Modifier.width(180.dp)
-            ) {
-                Text("Add Button")
-            }
-
-            Button(
-                onClick = { store.saveProject() },
-                modifier = Modifier.width(180.dp)
-            ) {
-                Text("Save")
-            }
-
-            Button(
-                onClick = { store.undo() },
-                modifier = Modifier.width(180.dp)
-            ) {
-                Text("Undo")
-            }
-        }
+        // === COMPONENTS PALETTE ===
+        ComponentsPalettePanel(store = store)
 
         // Center: Canvas
         Column(modifier = Modifier.fillMaxSize().weight(1f)) {
             Text("Canvas")
 
             project?.screens?.firstOrNull { it.id == activeScreenId }?.let { screen ->
-                DesignRenderer.Render(
-                    node = screen.root,
-                    selectedNodeId = selectedNodeId, // <-- Use actual state
-                    onNodeClick = { nodeId -> store.selectNode(nodeId) } // <-- Wire up click
+                CanvasPanel(
+                    screen = screen,
+                    selectedNodeId = selectedNodeId,
+                    onNodeClick = { nodeId -> store.selectNode(nodeId) },
+                    lockedNodeIds = lockedNodeIds
                 )
-            } ?: Text("No active screen")
+            } ?: Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No active screen. Create a new project.")
+            }
         }
+
+        // ==== INSPECTOR COLUMN
+        // Inside the Row in EditorScreen.kt, add this as the 3rd child:
+        InspectorPanel(
+            project = project,
+            activeScreenId = activeScreenId?.value,
+            selectedNodeId = selectedNodeId,
+            isLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
+            store = store
+        )
     }
 }

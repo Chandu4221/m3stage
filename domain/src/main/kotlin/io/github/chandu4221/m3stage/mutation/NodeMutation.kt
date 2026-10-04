@@ -93,3 +93,15 @@ fun DesignNode.moveNode(nodeId: NodeId, newParentId: NodeId, index: Int): Design
     val treeAfterRemoval = this.removeNode(nodeId)
     return treeAfterRemoval.insertNode(newParentId, nodeToMove, index)
 }
+
+
+/**
+ * Updates the visibility of a specific node.
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.updateVisibility(nodeId: NodeId, isVisible: Boolean): DesignNode {
+    if (this.id == nodeId) {
+        return copy(isVisible = isVisible)
+    }
+    return copy(children = children.map { it.updateVisibility(nodeId, isVisible) })
+}
