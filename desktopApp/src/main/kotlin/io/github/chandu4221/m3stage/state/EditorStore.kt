@@ -64,6 +64,7 @@ class EditorStore(
     override fun exportCode() = sessionDelegate.exportCode()
 
     // --- Bridge: Add Node ---
+    // --- Bridge: Add Node ---
     fun addNodeToActiveScreen(parentId: NodeId, componentType: ComponentType) {
         val screenId = activeScreenId.value ?: return
 
@@ -72,8 +73,10 @@ class EditorStore(
             return DesignNode(
                 id = context.idGenerator.nextNodeId(),
                 type = def.type,
-                props = def.defaultProps,
-                children = def.defaultChildTypes.map { buildNode(it) }
+                props = def.createDefaultProps(),
+                modifiers = emptyList(),
+                children = def.defaultChildTypes.map { buildNode(it) },
+                isVisible = true
             )
         }
 

@@ -2,19 +2,23 @@ package io.github.chandu4221.m3stage.adapter.codegen
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
+import io.github.chandu4221.m3stage.model.ComponentCatalog
 import io.github.chandu4221.m3stage.model.ComponentTypes
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.PropVal
 
 class TextCodegen : ComponentCodegen {
-    override val className = ClassName(
+    override val className: ClassName = ClassName(
         PackageNameResolver.resolve(ComponentTypes.Text),
         "Text"
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
-        val textValue = node.props["text"] ?: ""
+        val textVal = node[ComponentCatalog.TextProps.TextContent]
+        val textStr = (textVal as? PropVal.Str)?.value ?: "Sample Text"
+
         return CodeBlock.builder()
-            .addStatement("%T(text = %S)", className, textValue)
+            .add("%T(text = %S)\n", className, textStr)
             .build()
     }
 }

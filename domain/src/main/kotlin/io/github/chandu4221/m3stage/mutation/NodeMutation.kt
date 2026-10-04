@@ -1,8 +1,10 @@
 package io.github.chandu4221.m3stage.mutation
 
-
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
+import io.github.chandu4221.m3stage.model.PropId
+import io.github.chandu4221.m3stage.model.PropKey
+import io.github.chandu4221.m3stage.model.PropVal
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.isDescendantOf
 
@@ -30,25 +32,36 @@ fun DesignNode.removeNode(nodeId: NodeId): DesignNode {
 }
 
 /**
- * Updates a specific property key-value pair on the target node.
+ * Updates a specific property on a node using a type-safe PropKey.
  * Returns a new immutable tree root.
  */
-fun DesignNode.updateProp(nodeId: NodeId, key: String, value: String): DesignNode {
+fun <V : PropVal> DesignNode.updateProp(nodeId: NodeId, key: PropKey<V>, value: V): DesignNode {
     if (this.id == nodeId) {
-        return copy(props = props + (key to value))
+        return copy(props = props + (key.id to value))
     }
     return copy(children = children.map { it.updateProp(nodeId, key, value) })
+}
+
+/**
+ * Updates a property by its raw PropId.
+ * Used by Commands to avoid generic type erasure in the undo/redo stack.
+ */
+fun DesignNode.updatePropById(nodeId: NodeId, propId: PropId, value: PropVal): DesignNode {
+    if (this.id == nodeId) {
+        return copy(props = props + (propId to value))
+    }
+    return copy(children = children.map { it.updatePropById(nodeId, propId, value) })
 }
 
 /**
  * Removes a specific property key from a node.
  * Returns a new immutable tree root.
  */
-fun DesignNode.removeProp(nodeId: NodeId, key: String): DesignNode {
+fun DesignNode.removeProp(nodeId: NodeId, propId: PropId): DesignNode {
     if (this.id == nodeId) {
-        return copy(props = props - key)
+        return copy(props = props - propId)
     }
-    return copy(children = children.map { it.removeProp(nodeId, key) })
+    return copy(children = children.map { it.removeProp(nodeId, propId) })
 }
 
 /**
@@ -59,7 +72,7 @@ private fun DesignNode.insertNode(parentId: NodeId, child: DesignNode, index: In
         val mutableChildren = children.toMutableList()
         val safeIndex = index.coerceIn(0, mutableChildren.size)
         mutableChildren.add(safeIndex, child)
-        return copy(children = mutableChildren)
+        return copy(children = mutableChildren.toList())
     }
     return copy(children = children.map { it.insertNode(parentId, child, index) })
 }
@@ -76,7 +89,6 @@ fun DesignNode.moveNode(nodeId: NodeId, newParentId: NodeId, index: Int): Design
     }
 
     // 2. Prevent circular references (Domain Invariant)
-    // Checks if the new parent is a descendant of the node being moved.
     if (this.isDescendantOf(nodeId = newParentId, ancestorId = nodeId)) {
         throw IllegalArgumentException("Cannot drop a node into its own descendant.")
     }
@@ -93,7 +105,6 @@ fun DesignNode.moveNode(nodeId: NodeId, newParentId: NodeId, index: Int): Design
     val treeAfterRemoval = this.removeNode(nodeId)
     return treeAfterRemoval.insertNode(newParentId, nodeToMove, index)
 }
-
 
 /**
  * Updates the visibility of a specific node.

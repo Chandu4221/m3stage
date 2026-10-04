@@ -1,9 +1,6 @@
 package io.github.chandu4221.m3stage.state
 
-import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.NodeId
-import io.github.chandu4221.m3stage.model.Project
-import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.mutation.*
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findParent
@@ -75,26 +72,27 @@ data class RemoveNodeCommand(
 
 /**
  * Updates a property. Undo restores the old value or removes the key.
+ * Uses PropId and PropVal to avoid generic type erasure in the undo stack.
  */
 data class UpdatePropCommand(
     val screenId: ScreenId,
     val nodeId: NodeId,
-    val key: String,
-    val oldValue: String?,
-    val newValue: String
+    val propId: PropId,
+    val oldValue: PropVal?,
+    val newValue: PropVal
 ) : EditorCommand {
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
-        val newRoot = screen.root.updateProp(nodeId, key, newValue)
+        val newRoot = screen.root.updatePropById(nodeId, propId, newValue)
         return project.updateScreenRoot(screenId, newRoot)
     }
 
     override fun undo(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
         val newRoot = if (oldValue == null) {
-            screen.root.removeProp(nodeId, key)
+            screen.root.removeProp(nodeId, propId)
         } else {
-            screen.root.updateProp(nodeId, key, oldValue)
+            screen.root.updatePropById(nodeId, propId, oldValue)
         }
         return project.updateScreenRoot(screenId, newRoot)
     }
