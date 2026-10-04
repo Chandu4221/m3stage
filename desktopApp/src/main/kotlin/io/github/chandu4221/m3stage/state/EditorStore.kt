@@ -1,68 +1,86 @@
 package io.github.chandu4221.m3stage.state
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
-import io.github.chandu4221.m3stage.query.findScreenContaining
-import io.github.chandu4221.m3stage.validation.ProjectValidation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class EditorStore(
-    private val idGenerator: IdGenerator,
-    private val repository: ProjectRepository
-) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    idGenerator: IdGenerator,
+    repository: ProjectRepository
+) : SelectionState, HistoryState, ProjectSession {
 
-    // --- Compose State (UI-reactive) ---
-    private val _selectedNodeId = mutableStateOf<NodeId?>(null)
-    val selectedNodeId: State<NodeId?> = _selectedNodeId
+    private val context = EditorContext(idGenerator, repository)
+    private val selectionDelegate = SelectionDelegate()
+    private val historyDelegate = HistoryDelegate(context)
+    private val sessionDelegate = ProjectSessionDelegate(context)
 
-    private val _activeScreenId = mutableStateOf<ScreenId?>(null)
-    val activeScreenId: State<ScreenId?> = _activeScreenId
+    // Scope for observing state changes
+    private val storeScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // --- StateFlow (Observable state) ---
-    private val _project = MutableStateFlow<Project?>(null)
-    val project: StateFlow<Project?> = _project.asStateFlow()
-
-    private val _undoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
-    val undoStack: StateFlow<List<EditorCommand>> = _undoStack.asStateFlow()
-
-    private val _redoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
-    val redoStack: StateFlow<List<EditorCommand>> = _redoStack.asStateFlow()
-
-    // --- SharedFlow (One-shot events) ---
-    private val _events = MutableSharedFlow<EditorEvent>()
-    val events: SharedFlow<EditorEvent> = _events.asSharedFlow()
-
-
-    // --- Layer Lock State (UI-only, doesn't need undo/redo for MVP) ---
-    private val _lockedNodeIds = mutableStateOf<Set<NodeId>>(emptySet())
-    val lockedNodeIds: State<Set<NodeId>> = _lockedNodeIds
-
-    fun toggleLock(nodeId: NodeId) {
-        _lockedNodeIds.value = if (nodeId in _lockedNodeIds.value) {
-            _lockedNodeIds.value - nodeId
-        } else {
-            _lockedNodeIds.value + nodeId
+    init {
+        // Auto-select the first screen whenever a project is loaded or created
+        storeScope.launch {
+            project.collect { currentProject ->
+                if (currentProject != null && activeScreenId.value == null) {
+                    currentProject.screens.firstOrNull()?.let { firstScreen ->
+                        setActiveScreen(firstScreen.id)
+                    }
+                }
+            }
         }
     }
 
-    fun isNodeLocked(nodeId: NodeId): Boolean {
-        return nodeId in _lockedNodeIds.value
+    // --- SelectionState ---
+    override val selectedNodeId = selectionDelegate.selectedNodeId
+    override val activeScreenId = selectionDelegate.activeScreenId
+    override val lockedNodeIds = selectionDelegate.lockedNodeIds
+    override fun selectNode(id: NodeId?) = selectionDelegate.selectNode(id)
+    override fun setActiveScreen(id: ScreenId) = selectionDelegate.setActiveScreen(id)
+    override fun toggleLock(id: NodeId) = selectionDelegate.toggleLock(id)
+    override fun isNodeLocked(id: NodeId) = selectionDelegate.isNodeLocked(id)
+
+    // --- HistoryState ---
+    override val undoStack = historyDelegate.undoStack
+    override val redoStack = historyDelegate.redoStack
+    override fun execute(command: EditorCommand) = historyDelegate.execute(command)
+    override fun undo() = historyDelegate.undo()
+    override fun redo() = historyDelegate.redo()
+
+    // --- ProjectSession ---
+    override val project = sessionDelegate.project
+    override val events = sessionDelegate.events
+    override fun loadProject() = sessionDelegate.loadProject()
+    override fun saveProject() = sessionDelegate.saveProject()
+    override fun createNewProject() = sessionDelegate.createNewProject()
+
+    // --- Bridge: Add Node ---
+    fun addNodeToActiveScreen(parentId: NodeId, componentType: ComponentType) {
+        val screenId = activeScreenId.value ?: return
+
+        fun buildNode(type: ComponentType): DesignNode {
+            val def = ComponentCatalog.getByType(type) ?: throw IllegalArgumentException("Unknown type: $type")
+            return DesignNode(
+                id = context.idGenerator.nextNodeId(),
+                type = def.type,
+                props = def.defaultProps,
+                children = def.defaultChildTypes.map { buildNode(it) }
+            )
+        }
+
+        val newNode = buildNode(componentType)
+        execute(AddNodeCommand(screenId, parentId, newNode))
     }
 
-    // --- Visibility Action ---
+    // --- Bridge: Toggle Visibility ---
     fun toggleVisibility(nodeId: NodeId) {
-        val screenId = _activeScreenId.value ?: return
-        val currentProject = _project.value ?: return
+        val screenId = activeScreenId.value ?: return
+        val currentProject = project.value ?: return
         val screen = currentProject.findScreen(screenId) ?: return
         val node = screen.root.findNode(nodeId) ?: return
 
@@ -74,142 +92,5 @@ class EditorStore(
                 newVisibility = !node.isVisible
             )
         )
-    }
-
-    // --- Actions ---
-
-    fun selectNode(nodeId: NodeId?) {
-        _selectedNodeId.value = nodeId
-
-        val currentProject = _project.value
-        if (nodeId != null && currentProject != null) {
-            val screen = currentProject.findScreenContaining(nodeId)
-            if (screen != null && _activeScreenId.value != screen.id) {
-                _activeScreenId.value = screen.id
-            }
-        }
-    }
-
-    fun setActiveScreen(screenId: ScreenId) {
-        _activeScreenId.value = screenId
-        _selectedNodeId.value = null
-    }
-
-    fun execute(command: EditorCommand) {
-        val currentProject = _project.value ?: return
-        val newProject = command.execute(currentProject)
-
-        val errors = ProjectValidation.validate(newProject)
-        if (errors.isNotEmpty()) {
-            scope.launch { _events.emit(EditorEvent.ShowError("Invalid state: ${errors.first()}")) }
-            return
-        }
-
-        _project.value = newProject
-        _undoStack.value = _undoStack.value + command
-        _redoStack.value = emptyList()
-    }
-
-    fun undo() {
-        val command = _undoStack.value.lastOrNull() ?: return
-        val currentProject = _project.value ?: return
-
-        val revertedProject = command.undo(currentProject)
-        _project.value = revertedProject
-        _undoStack.value = _undoStack.value.dropLast(1)
-        _redoStack.value = _redoStack.value + command
-    }
-
-    fun redo() {
-        val command = _redoStack.value.lastOrNull() ?: return
-        val currentProject = _project.value ?: return
-
-        val reappliedProject = command.execute(currentProject)
-        _project.value = reappliedProject
-        _redoStack.value = _redoStack.value.dropLast(1)
-        _undoStack.value = _undoStack.value + command
-    }
-
-    fun loadProject() {
-        scope.launch {
-            try {
-                val loaded = repository.load()
-                if (loaded != null) {
-                    val errors = ProjectValidation.validate(loaded)
-                    if (errors.isNotEmpty()) {
-                        _events.emit(EditorEvent.ShowError("Corrupt project: ${errors.first()}"))
-                        return@launch
-                    }
-                    _project.value = loaded
-                    _activeScreenId.value = loaded.screens.firstOrNull()?.id
-                    _events.emit(EditorEvent.LoadSuccess)
-                }
-            } catch (e: Exception) {
-                _events.emit(EditorEvent.ShowError("Failed to load: ${e.message}"))
-            }
-        }
-    }
-
-    fun saveProject() {
-        val currentProject = _project.value ?: return
-        scope.launch {
-            try {
-                repository.save(currentProject)
-                _events.emit(EditorEvent.SaveSuccess)
-            } catch (e: Exception) {
-                _events.emit(EditorEvent.ShowError("Failed to save: ${e.message}"))
-            }
-        }
-    }
-
-    /**
-     * Builds a fully-formed node tree with new IDs and default props,
-     * then executes the AddNodeCommand.
-     */
-    fun addNodeToActiveScreen(parentId: NodeId, componentType: ComponentType) {
-        val screenId = _activeScreenId.value ?: return
-        val definition = ComponentCatalog.getByType(componentType) ?: return
-
-        // Recursive builder to create the node and all its default children with fresh IDs
-        fun buildNode(type: ComponentType): DesignNode {
-            val def = ComponentCatalog.getByType(type) ?: throw IllegalArgumentException("Unknown type: $type")
-            return DesignNode(
-                id = idGenerator.nextNodeId(),
-                type = def.type,
-                props = def.defaultProps,
-                children = def.defaultChildTypes.map { buildNode(it) }
-            )
-        }
-
-        val newNode = buildNode(componentType)
-        execute(AddNodeCommand(screenId, parentId, newNode))
-    }
-
-    // Add this to EditorStore.kt
-
-    fun createNewProject() {
-        val newProject = Project(
-            id = idGenerator.nextProjectId(),
-            name = "Untitled Project",
-            basePackage = "com.example.app",
-            screens = listOf(
-                Screen(
-                    id = idGenerator.nextScreenId(),
-                    name = "Home",
-                    route = "/",
-                    root = DesignNode(
-                        id = idGenerator.nextNodeId(),
-                        type = ComponentTypes.Column,
-                        props = emptyMap(),
-                        children = emptyList()
-                    )
-                )
-            )
-        )
-
-        _project.value = newProject
-        _activeScreenId.value = newProject.screens.first().id
-        _undoStack.value = emptyList()
-        _redoStack.value = emptyList()
     }
 }
