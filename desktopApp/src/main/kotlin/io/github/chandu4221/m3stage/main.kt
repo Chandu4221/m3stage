@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import io.github.chandu4221.m3stage.adapter.UuidIdGenerator
+import io.github.chandu4221.m3stage.adapter.codegen.ComposeCodeGenerator
 import io.github.chandu4221.m3stage.adapter.persistence.JsonProjectRepository
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.EditorScreen
@@ -37,9 +38,11 @@ private fun createEditorStore(): EditorStore {
     val idGenerator = UuidIdGenerator()
     val projectFile = File(System.getProperty("user.home"), "m3stage-project.json")
     val repository = JsonProjectRepository(projectFile)
+    val codeGenerator = ComposeCodeGenerator()
 
     return EditorStore(
         idGenerator = idGenerator,
-        repository = repository
+        repository = repository,
+        codeGenerator = codeGenerator
     )
 }

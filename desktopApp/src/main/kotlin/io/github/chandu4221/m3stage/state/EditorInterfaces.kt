@@ -34,4 +34,5 @@ interface ProjectSession {
     fun loadProject()
     fun saveProject()
     fun createNewProject()
+    fun exportCode()
 }

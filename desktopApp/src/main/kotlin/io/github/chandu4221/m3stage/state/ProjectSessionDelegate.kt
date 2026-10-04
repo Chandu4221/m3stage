@@ -70,4 +70,27 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
         )
         context.projectFlow.value = newProject
     }
+
+    override fun exportCode() {
+        val current = context.projectFlow.value ?: return
+        scope.launch {
+            try {
+                // 1. Generate the code using the domain port
+                val generatedProject = context.codeGenerator.generate(current)
+
+                // 2. Define output directory (MVP: User home directory)
+                val outputDir = java.io.File(System.getProperty("user.home"), "m3stage-export")
+                if (!outputDir.exists()) outputDir.mkdirs()
+
+                // 3. Write files to disk
+                generatedProject.files.forEach { file ->
+                    java.io.File(outputDir, file.fileName).writeText(file.content)
+                }
+
+                context.eventFlow.emit(EditorEvent.ExportSuccess(outputDir.absolutePath))
+            } catch (e: Exception) {
+                context.eventFlow.emit(EditorEvent.ExportFailed(e.message ?: "Unknown error"))
+            }
+        }
+    }
 }

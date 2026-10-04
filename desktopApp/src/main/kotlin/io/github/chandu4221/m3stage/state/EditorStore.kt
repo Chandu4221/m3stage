@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.state
 
 import io.github.chandu4221.m3stage.model.*
+import io.github.chandu4221.m3stage.port.CodeGenerator
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import io.github.chandu4221.m3stage.query.findNode
@@ -12,10 +13,11 @@ import kotlinx.coroutines.launch
 
 class EditorStore(
     idGenerator: IdGenerator,
-    repository: ProjectRepository
+    repository: ProjectRepository,
+    codeGenerator: CodeGenerator,
 ) : SelectionState, HistoryState, ProjectSession {
 
-    private val context = EditorContext(idGenerator, repository)
+    private val context = EditorContext(idGenerator, repository, codeGenerator)
     private val selectionDelegate = SelectionDelegate()
     private val historyDelegate = HistoryDelegate(context)
     private val sessionDelegate = ProjectSessionDelegate(context)
@@ -58,6 +60,8 @@ class EditorStore(
     override fun loadProject() = sessionDelegate.loadProject()
     override fun saveProject() = sessionDelegate.saveProject()
     override fun createNewProject() = sessionDelegate.createNewProject()
+
+    override fun exportCode() = sessionDelegate.exportCode()
 
     // --- Bridge: Add Node ---
     fun addNodeToActiveScreen(parentId: NodeId, componentType: ComponentType) {

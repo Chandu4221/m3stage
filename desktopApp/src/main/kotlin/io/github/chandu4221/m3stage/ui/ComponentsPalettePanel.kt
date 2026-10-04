@@ -50,6 +50,13 @@ fun ComponentsPalettePanel(store: EditorStore) {
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
+
+        Button(
+            onClick = { store.exportCode() },
+            modifier = Modifier.width(180.dp)
+        ) {
+            Text("Export Code")
+        }
     }
 }
 

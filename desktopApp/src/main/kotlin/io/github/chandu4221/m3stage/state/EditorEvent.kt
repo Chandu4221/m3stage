@@ -13,4 +13,8 @@ sealed interface EditorEvent {
 
     data object LoadSuccess : EditorEvent
     data object LoadFailed : EditorEvent
+
+    // Add these to the sealed interface:
+    data class ExportSuccess(val path: String) : EditorEvent
+    data class ExportFailed(val message: String) : EditorEvent
 }
