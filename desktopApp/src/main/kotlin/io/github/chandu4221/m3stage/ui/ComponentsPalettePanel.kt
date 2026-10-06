@@ -15,6 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.component.ComponentCategory
+import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.state.EditorStore
 
 @Composable
@@ -86,7 +89,7 @@ private fun CategorySection(
                 )
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = "Toggle $category",
+                    contentDescription = "Toggle ${category.displayName}",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -106,7 +109,7 @@ private fun CategorySection(
                                     ?: store.project.value?.screens?.firstOrNull { it.id == store.activeScreenId.value }?.root?.id
                                     ?: return@Button
 
-                                store.addNodeToActiveScreen(targetParentId, definition.type)
+                                store.addNodeToActiveScreen(targetParentId, definition.kind)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

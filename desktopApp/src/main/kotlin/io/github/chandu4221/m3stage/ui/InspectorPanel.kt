@@ -55,7 +55,7 @@ fun InspectorPanel(
 private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: EditorStore) {
     Card(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Type: ${node.type.value}", style = MaterialTheme.typography.titleSmall)
+            Text("Type: ${node.kind.displayName}", style = MaterialTheme.typography.titleSmall)
             Text(
                 "ID: ${node.id.value}",
                 style = MaterialTheme.typography.labelSmall,

@@ -1,5 +1,7 @@
 package io.github.chandu4221.m3stage.state
 
+import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.port.CodeGenerator
 import io.github.chandu4221.m3stage.port.IdGenerator
@@ -64,23 +66,28 @@ class EditorStore(
     override fun exportCode() = sessionDelegate.exportCode()
 
     // --- Bridge: Add Node ---
-    // --- Bridge: Add Node ---
-    fun addNodeToActiveScreen(parentId: NodeId, componentType: ComponentType) {
+    fun addNodeToActiveScreen(parentId: NodeId, kind: ComponentKind) {
         val screenId = activeScreenId.value ?: return
 
-        fun buildNode(type: ComponentType): DesignNode {
-            val def = ComponentCatalog.getByType(type) ?: throw IllegalArgumentException("Unknown type: $type")
+        fun buildNode(targetKind: ComponentKind): DesignNode {
+            val def = ComponentCatalog[targetKind]
+            // Atomic Design default anatomy: When dropping a Button, pre-populate with a Text atom!
+            val defaultChildren = when (targetKind) {
+                ComponentKind.Button -> listOf(buildNode(ComponentKind.Text))
+                else -> emptyList()
+            }
+
             return DesignNode(
                 id = context.idGenerator.nextNodeId(),
-                type = def.type,
+                kind = def.kind,
                 props = def.createDefaultProps(),
                 modifiers = emptyList(),
-                children = def.defaultChildTypes.map { buildNode(it) },
+                children = defaultChildren,
                 isVisible = true
             )
         }
 
-        val newNode = buildNode(componentType)
+        val newNode = buildNode(kind)
         execute(AddNodeCommand(screenId, parentId, newNode))
     }
 

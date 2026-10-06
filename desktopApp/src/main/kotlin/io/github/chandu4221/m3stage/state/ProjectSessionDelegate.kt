@@ -1,5 +1,7 @@
 package io.github.chandu4221.m3stage.state
 
+import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
@@ -49,6 +51,9 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
 
     override fun createNewProject() {
         val idGen = context.idGenerator
+        val rootKind = ComponentKind.Column
+        val rootDef = ComponentCatalog[rootKind]
+
         val newProject = Project(
             id = idGen.nextProjectId(),
             name = "Untitled",
@@ -60,8 +65,8 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                     route = "/",
                     root = DesignNode(
                         id = idGen.nextNodeId(),
-                        type = ComponentTypes.Column,
-                        props = emptyMap(),
+                        kind = rootKind,
+                        props = rootDef.createDefaultProps(),
                         children = emptyList()
                     )
                 )

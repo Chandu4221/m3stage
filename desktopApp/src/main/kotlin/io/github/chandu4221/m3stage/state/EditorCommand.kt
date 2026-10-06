@@ -1,7 +1,12 @@
 package io.github.chandu4221.m3stage.state
 
-import io.github.chandu4221.m3stage.model.*
+import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.NodeId
+import io.github.chandu4221.m3stage.model.Project
+import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.mutation.*
+import io.github.chandu4221.m3stage.property.PropertyId
+import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findParent
 import io.github.chandu4221.m3stage.query.findScreen
@@ -72,14 +77,14 @@ data class RemoveNodeCommand(
 
 /**
  * Updates a property. Undo restores the old value or removes the key.
- * Uses PropId and PropVal to avoid generic type erasure in the undo stack.
+ * Uses PropertyId and PropertyValue to avoid generic type erasure in the undo stack.
  */
 data class UpdatePropCommand(
     val screenId: ScreenId,
     val nodeId: NodeId,
-    val propId: PropId,
-    val oldValue: PropVal?,
-    val newValue: PropVal
+    val propId: PropertyId,
+    val oldValue: PropertyValue?,
+    val newValue: PropertyValue
 ) : EditorCommand {
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
