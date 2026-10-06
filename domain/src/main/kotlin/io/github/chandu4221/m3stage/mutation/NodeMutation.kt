@@ -2,9 +2,9 @@ package io.github.chandu4221.m3stage.mutation
 
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
-import io.github.chandu4221.m3stage.model.PropId
-import io.github.chandu4221.m3stage.model.PropKey
-import io.github.chandu4221.m3stage.model.PropVal
+import io.github.chandu4221.m3stage.property.PropertyId
+import io.github.chandu4221.m3stage.property.PropertyKey
+import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.isDescendantOf
 
@@ -35,7 +35,7 @@ fun DesignNode.removeNode(nodeId: NodeId): DesignNode {
  * Updates a specific property on a node using a type-safe PropKey.
  * Returns a new immutable tree root.
  */
-fun <V : PropVal> DesignNode.updateProp(nodeId: NodeId, key: PropKey<V>, value: V): DesignNode {
+fun <V : PropertyValue> DesignNode.updateProp(nodeId: NodeId, key: PropertyKey<V>, value: V): DesignNode {
     if (this.id == nodeId) {
         return copy(props = props + (key.id to value))
     }
@@ -46,7 +46,7 @@ fun <V : PropVal> DesignNode.updateProp(nodeId: NodeId, key: PropKey<V>, value: 
  * Updates a property by its raw PropId.
  * Used by Commands to avoid generic type erasure in the undo/redo stack.
  */
-fun DesignNode.updatePropById(nodeId: NodeId, propId: PropId, value: PropVal): DesignNode {
+fun DesignNode.updatePropById(nodeId: NodeId, propId: PropertyId, value: PropertyValue): DesignNode {
     if (this.id == nodeId) {
         return copy(props = props + (propId to value))
     }
@@ -57,7 +57,7 @@ fun DesignNode.updatePropById(nodeId: NodeId, propId: PropId, value: PropVal): D
  * Removes a specific property key from a node.
  * Returns a new immutable tree root.
  */
-fun DesignNode.removeProp(nodeId: NodeId, propId: PropId): DesignNode {
+fun DesignNode.removeProp(nodeId: NodeId, propId: PropertyId): DesignNode {
     if (this.id == nodeId) {
         return copy(props = props - propId)
     }

@@ -3,7 +3,6 @@ package io.github.chandu4221.m3stage.adapter.renderer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import io.github.chandu4221.m3stage.model.ComponentCatalog
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.PropVal
 

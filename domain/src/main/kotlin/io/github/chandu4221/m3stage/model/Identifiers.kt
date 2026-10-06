@@ -21,17 +21,3 @@ value class NodeId(val value: String) {
         require(value.isNotBlank()) { "NodeId cannot be blank" }
     }
 }
-
-@JvmInline
-value class SlotId(val value: String) {
-    init {
-        require(value.isNotBlank()) { "SlotId cannot be blank" }
-    }
-}
-
-@JvmInline
-value class ComponentType(val value: String) {
-    init {
-        require(value.isNotBlank()) { "ComponentType cannot be blank" }
-    }
-}

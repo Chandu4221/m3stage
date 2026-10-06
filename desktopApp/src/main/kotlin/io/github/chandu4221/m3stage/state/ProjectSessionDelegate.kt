@@ -1,6 +1,5 @@
 package io.github.chandu4221.m3stage.state
 
-import io.github.chandu4221.m3stage.model.ComponentTypes
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen

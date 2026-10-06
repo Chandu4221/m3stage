@@ -15,9 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.github.chandu4221.m3stage.model.ComponentCatalog
-import io.github.chandu4221.m3stage.model.ComponentCategory
-import io.github.chandu4221.m3stage.model.ComponentDefinition
 import io.github.chandu4221.m3stage.state.EditorStore
 
 @Composable

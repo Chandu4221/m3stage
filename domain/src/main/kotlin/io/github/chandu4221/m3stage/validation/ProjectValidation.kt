@@ -24,7 +24,7 @@ object ProjectValidation {
             }
 
             node.children.forEach { child ->
-                checkDuplicates(child, "$path -> ${child.type.value}")
+                checkDuplicates(child, "$path -> ${child.kind.id}")
             }
         }
 

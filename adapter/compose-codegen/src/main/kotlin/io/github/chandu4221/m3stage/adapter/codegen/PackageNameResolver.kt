@@ -1,7 +1,5 @@
 package io.github.chandu4221.m3stage.adapter.codegen
 
-import io.github.chandu4221.m3stage.model.ComponentCatalog
-import io.github.chandu4221.m3stage.model.ComponentCategory
 import io.github.chandu4221.m3stage.model.ComponentType
 
 
