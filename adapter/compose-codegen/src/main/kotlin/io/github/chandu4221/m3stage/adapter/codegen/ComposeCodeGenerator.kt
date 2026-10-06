@@ -5,6 +5,13 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import io.github.chandu4221.m3stage.adapter.codegen.component.BoxCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.ButtonCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.CardCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.ColumnCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.RowCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.TextCodegen
+import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
@@ -20,13 +27,13 @@ class ComposeCodeGenerator : CodeGenerator {
 
     // Registry mapping component types to their codegen implementations.
     // Each codegen internally uses PackageNameResolver for its ClassName.
-    private val registry: Map<String, ComponentCodegen> = mapOf(
-        "Text" to TextCodegen(),
-        "Button" to ButtonCodegen(),
-        "Column" to ColumnCodegen(),
-        "Row" to RowCodegen(),
-        "Box" to BoxCodegen(),
-        "Card" to CardCodegen()
+    private val registry: Map<ComponentKind, ComponentCodegen> = mapOf(
+        ComponentKind.Text to TextCodegen(),
+        ComponentKind.Button to ButtonCodegen(),
+        ComponentKind.Column to ColumnCodegen(),
+        ComponentKind.Row to RowCodegen(),
+        ComponentKind.Box to BoxCodegen(),
+        ComponentKind.Card to CardCodegen()
     )
 
     override fun generate(project: Project): GeneratedProject {
@@ -42,21 +49,15 @@ class ComposeCodeGenerator : CodeGenerator {
     }
 
     private fun exportScreen(screen: Screen, packageName: String): String {
-        // 1. Collect all unique ClassNames used in this screen
         val usedClassNames = collectUsedClassNames(screen.root)
-
-        // 2. Recursive walker
         fun walk(node: DesignNode): CodeBlock {
             if (!node.isVisible) return CodeBlock.builder().build()
-
-            val codegen = registry[node.type.value]
-                ?: error("Unregistered component type: ${node.type.value}")
+            val codegen = registry[node.kind]
+                ?: error("Unregistered component kind: ${node.kind}")
             return codegen.generate(node, ::walk)
         }
 
         val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
-
-        // 3. Build the FileSpec
         val fileSpecBuilder = FileSpec.builder(packageName, screen.name)
             .addFunction(
                 FunSpec.builder("${screen.name}Screen")
@@ -64,16 +65,11 @@ class ComposeCodeGenerator : CodeGenerator {
                     .addCode(walk(screen.root))
                     .build()
             )
-
-        // 4. Add imports directly from the collected ClassNames
         usedClassNames.forEach { className ->
             fileSpecBuilder.addImport(className.packageName, className.simpleName)
         }
-
         val fileSpec = fileSpecBuilder.build()
         val rawCode = fileSpec.toString()
-
-        // 5. Format with ktfmt
         return try {
             Formatter.format(Formatter.GOOGLE_FORMAT, rawCode)
         } catch (_: Exception) {
@@ -89,8 +85,7 @@ class ComposeCodeGenerator : CodeGenerator {
 
     private fun collectUsedClassNamesRecursive(node: DesignNode, result: MutableSet<ClassName>) {
         if (!node.isVisible) return
-
-        val codegen = registry[node.type.value]
+        val codegen = registry[node.kind]
         if (codegen != null) {
             result.add(codegen.className)
         }

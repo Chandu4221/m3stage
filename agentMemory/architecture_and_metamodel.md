@@ -70,8 +70,23 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `ProjectValidation.kt`: Migrated to `child.kind.id`.
 - Legacy files in `model/` safely deleted.
 
+### [x] Level 6: `:adapter:compose-codegen` (Completed)
+- Package reorganization into `adapter.codegen.component` (`BoxCodegen`, `ButtonCodegen`, `CardCodegen`, `ColumnCodegen`, `RowCodegen`, `TextCodegen`).
+- Centralized `ComposeSymbols.kt` with KotlinPoet `%M` MemberNames (e.g., `androidx.compose.ui.unit.dp`) and `%T` ClassNames.
+- `PackageNameResolver.kt` delegates directly to `kind.module.packageName`.
+- `ComponentCodegen` and `ComposeCodeGenerator` updated to consume typed `ComponentKind`, `PropertyKey`, `PropertyValue`, and `slots`.
+
+### [x] Level 7: `:adapter:json-persistence` (Completed)
+- Clean split between DTO definitions in `dto/ProjectDto.kt` and domain conversion functions in `dto/Mappers.kt`.
+- `ProjectDto.kt`: Pure `@Serializable` DTOs (`ProjectDto`, `ScreenDto`, `DesignNodeDto`, `PropValDto`, `ModifierNodeDto`) supporting named `slots`.
+- `Mappers.kt`: Exhaustive, type-safe bidirectional mapping between domain entities (`DesignNode`, `PropertyValue`, `ModifierNode`, `M3ColorToken`) and DTOs.
+- Resilient mapping of legacy or stored string IDs to `ComponentKind` via `ComponentKind.entries.firstOrNull { it.id == this.type } ?: ComponentKind.Box`.
+
 ---
 
-## 4. Current State: Complete Domain Architecture Verification
-- All 8 domain packages (`model`, `component`, `property`, `theme`, `mutation`, `query`, `validation`, `port`) are 100% compile-safe, fully typed, and verified.
-- Metamodel achieves full compile-time safety, zero heuristic string lookups, and total $O(1)$ non-nullable catalog resolution.
+## 4. Current State: Domain & Adapters Status
+- `:domain`: 100% verified, fully typed, compile-safe.
+- `:adapter:compose-codegen`: 100% verified, subpackaged, compiles cleanly.
+- `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
+- Next: `:adapter:compose-renderer`.
+
