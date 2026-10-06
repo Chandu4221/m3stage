@@ -82,11 +82,20 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `Mappers.kt`: Exhaustive, type-safe bidirectional mapping between domain entities (`DesignNode`, `PropertyValue`, `ModifierNode`, `M3ColorToken`) and DTOs.
 - Resilient mapping of legacy or stored string IDs to `ComponentKind` via `ComponentKind.entries.firstOrNull { it.id == this.type } ?: ComponentKind.Box`.
 
+### [x] Level 8: `:adapter:compose-renderer` (Completed)
+- Subpackage reorganization into `adapter.renderer.component` (`BoxRenderer`, `ButtonRenderer`, `CardRenderer`, `ColumnRenderer`, `RowRenderer`, `TextRenderer`).
+- New `ThemeResolver.kt` cleanly resolves domain tokens (`M3ColorToken`, `M3TypographyToken`, `M3ShapeToken`) into runtime Compose `MaterialTheme` color schemes, text styles, and shapes.
+- `DesignRenderer.kt` refactored to use `Map<ComponentKind, NodeRenderer>` and route via `currentNode.kind`.
+- `ButtonRenderer.kt` updated to follow Atomic Design (molecule rendering child atoms with container/content colors and enabled state).
+- All 10 files compile and verify cleanly.
+
 ---
 
 ## 4. Current State: Domain & Adapters Status
 - `:domain`: 100% verified, fully typed, compile-safe.
 - `:adapter:compose-codegen`: 100% verified, subpackaged, compiles cleanly.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
-- Next: `:adapter:compose-renderer`.
+- `:adapter:compose-renderer`: 100% verified, subpackaged with `ThemeResolver`, compiles cleanly.
+- Next & Final: `:desktopApp` UI integration (`EditorStore`, `ProjectSessionDelegate`, `ComponentsPalettePanel`, `InspectorPanel`).
+
 

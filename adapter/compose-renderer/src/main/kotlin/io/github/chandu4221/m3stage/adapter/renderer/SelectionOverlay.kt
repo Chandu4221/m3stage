@@ -7,8 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-// In SelectionOverlay.kt, add an isLocked parameter:
-
 @Composable
 fun SelectionOverlay(
     isSelected: Boolean,
