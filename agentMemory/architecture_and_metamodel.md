@@ -16,7 +16,7 @@
 - **M3 Component Anatomy & Named Slots:** Support designated slots (e.g., `TopAppBar` title/actions, `Scaffold` topBar/content) using strongly-typed slot tokens with strict child constraints.
 - **Zero-Size Empty Drop Prevention:**
   - **Tier 1 (Drop Time):** Components instantiate with canonical default template anatomy (e.g. Button drops pre-populated with a Text atom; Card drops with Column and Text children).
-  - **Tier 2 (Canvas / Empty State):** Canvas renderer shows interactive dashed drop-zone placeholders when containers have 0 children, keeping them visible and selectable without polluting generated code.
+  - **Tier 2 (Canvas / Empty State - [x] Completed):** `EmptyContainerPlaceholder.kt` renders interactive dashed-border drop zones with full width and min-height for empty containers (`Column`, `Row`, `Box`, `Card`), keeping layout wireframes visible and selectable without polluting generated code.
 
 ---
 

@@ -2,9 +2,12 @@ package io.github.chandu4221.m3stage.adapter.renderer.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.chandu4221.m3stage.adapter.renderer.EmptyContainerPlaceholder
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -33,11 +36,16 @@ class RowRenderer : NodeRenderer {
         }
 
         Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = hArrangement,
             verticalAlignment = vAlign
         ) {
-            node.children.forEach { child ->
-                renderChild(child)
+            if (node.children.isEmpty()) {
+                EmptyContainerPlaceholder("Row")
+            } else {
+                node.children.forEach { child ->
+                    renderChild(child)
+                }
             }
         }
     }

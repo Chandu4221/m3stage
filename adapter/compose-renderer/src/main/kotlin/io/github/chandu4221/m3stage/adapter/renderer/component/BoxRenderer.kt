@@ -1,8 +1,11 @@
 package io.github.chandu4221.m3stage.adapter.renderer.component
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import io.github.chandu4221.m3stage.adapter.renderer.EmptyContainerPlaceholder
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -27,9 +30,16 @@ class BoxRenderer : NodeRenderer {
             else -> Alignment.TopStart
         }
 
-        Box(contentAlignment = alignment) {
-            node.children.forEach { child ->
-                renderChild(child)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = alignment
+        ) {
+            if (node.children.isEmpty()) {
+                EmptyContainerPlaceholder("Box")
+            } else {
+                node.children.forEach { child ->
+                    renderChild(child)
+                }
             }
         }
     }
