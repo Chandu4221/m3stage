@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
+import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.ui.CanvasPanel
 import io.github.chandu4221.m3stage.ui.atom.DimensionBadge
 import io.github.chandu4221.m3stage.ui.atom.ToolIconButton
@@ -28,7 +31,9 @@ import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
  */
 @Composable
 fun FloatingCanvasStudio(
-    screen: Screen?,
+    screens: List<Screen>,
+    activeScreenId: ScreenId?,
+    onSelectScreen: (ScreenId) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId) -> Unit,
     lockedNodeIds: Set<NodeId>,
@@ -44,28 +49,28 @@ fun FloatingCanvasStudio(
     onZoomFit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Outer floating rounded card
     Surface(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(12.dp),
-        shape = RoundedCornerShape(20.dp),
+        modifier = modifier.fillMaxSize(),
+        shape = RoundedCornerShape(4.dp),
         color = MaterialTheme.colorScheme.surfaceDim,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Center Scrollable Viewport
-            if (screen != null) {
+            // Multi-Screen Canvas Panel
+            if (screens.isNotEmpty()) {
                 CanvasPanel(
-                    screen = screen,
+                    screens = screens,
+                    activeScreenId = activeScreenId,
+                    onSelectScreen = onSelectScreen,
                     selectedNodeId = selectedNodeId,
                     onNodeClick = onNodeClick,
+                    onAddScreen = onAddScreen,
                     lockedNodeIds = lockedNodeIds,
                     projectDefaultDevice = DevicePreset.Default
                 )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No active screen selected.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No screens in project.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -111,14 +116,14 @@ fun FloatingCanvasStudio(
                 // Island 3: Undo / Redo
                 CapsuleToolbar {
                     ToolIconButton(
-                        icon = Icons.Default.Undo,
+                        icon = Icons.AutoMirrored.Filled.Undo,
                         contentDescription = "Undo",
                         isEnabled = canUndo,
                         onClick = onUndo,
                         tooltip = "Undo (Ctrl+Z)"
                     )
                     ToolIconButton(
-                        icon = Icons.Default.Redo,
+                        icon = Icons.AutoMirrored.Filled.Redo,
                         contentDescription = "Redo",
                         isEnabled = canRedo,
                         onClick = onRedo,
@@ -153,14 +158,15 @@ fun FloatingCanvasStudio(
         }
     }
 }
-
 @Preview
 @Composable
 private fun FloatingCanvasStudioPreview() {
     DualThemePreview {
         Box(modifier = Modifier.size(600.dp, 400.dp)) {
             FloatingCanvasStudio(
-                screen = null,
+                screens = emptyList(),
+                activeScreenId = null,
+                onSelectScreen = {},
                 selectedNodeId = null,
                 onNodeClick = {},
                 lockedNodeIds = emptySet(),

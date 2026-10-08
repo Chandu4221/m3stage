@@ -152,10 +152,20 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 
 ---
 
+### [x] Level 14: Multi-Screen Side-by-Side Artboards on Canvas (Completed)
+- Infinite studio workbench with horizontal & vertical panning (`CanvasPanel`).
+- Renders all screens in the project side-by-side in a horizontal artboard sequence (`48.dp` spacing).
+- Each artboard has dedicated floating controls (Device preset dropdown, orientation toggle, hardware frame switch, dimension badge).
+- Active screen auto-focus: Clicking any screen or component on the canvas activates that screen (`activeScreenId`), highlighting its artboard header with `primaryContainer` and accent border.
+- Integrated "+ Add Screen" ghost artboard card at the end of the canvas row for instant screen creation directly on the workbench.
+- 100% compile-safe, verified via `./gradlew check`.
+
+---
+
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
 - `:domain`: 100% verified, fully typed, compile-safe.
 - `:adapter:compose-codegen`: 100% verified, subpackaged, compiles cleanly.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
 - `:adapter:compose-renderer`: 100% verified, subpackaged with `ThemeResolver`, compiles cleanly.
-- `:desktopApp`: Fully migrated to 100% Dumb Atomic Design (Atoms -> Molecules -> Organisms -> Template -> Page) with floating studio canvas, 2-column component drawer, navigation rail, and dynamic dual-theme previews.
+- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, and Studio NavRail.
 - Full build check: `./gradlew check` **BUILD SUCCESSFUL**.

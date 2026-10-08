@@ -34,7 +34,9 @@ fun EditorShellTemplate(
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
     // Canvas state
-    activeScreen: Screen?,
+    screens: List<Screen>,
+    activeScreenId: io.github.chandu4221.m3stage.model.ScreenId?,
+    onSelectScreen: (io.github.chandu4221.m3stage.model.ScreenId) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId) -> Unit,
     lockedNodeIds: Set<NodeId>,
@@ -52,7 +54,7 @@ fun EditorShellTemplate(
     selectedNode: DesignNode?,
     isNodeLocked: Boolean,
     onToggleNodeLock: (NodeId) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
@@ -82,7 +84,9 @@ fun EditorShellTemplate(
                 .fillMaxHeight()
         ) {
             FloatingCanvasStudio(
-                screen = activeScreen,
+                screens = screens,
+                activeScreenId = activeScreenId,
+                onSelectScreen = onSelectScreen,
                 selectedNodeId = selectedNodeId,
                 onNodeClick = onNodeClick,
                 lockedNodeIds = lockedNodeIds,
@@ -181,7 +185,9 @@ private fun EditorShellTemplatePreview() {
                 searchQuery = "",
                 onSearchQueryChange = {},
                 onComponentSelected = {},
-                activeScreen = null,
+                screens = emptyList(),
+                activeScreenId = null,
+                onSelectScreen = {},
                 selectedNodeId = null,
                 onNodeClick = {},
                 lockedNodeIds = emptySet(),

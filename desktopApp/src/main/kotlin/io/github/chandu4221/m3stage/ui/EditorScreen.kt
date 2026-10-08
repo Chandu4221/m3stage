@@ -45,7 +45,9 @@ fun EditorScreen(store: EditorStore) {
         },
 
         // Floating Canvas
-        activeScreen = activeScreen,
+        screens = project?.screens ?: emptyList(),
+        activeScreenId = activeScreenId,
+        onSelectScreen = { store.setActiveScreen(it) },
         selectedNodeId = selectedNodeId,
         onNodeClick = { nodeId -> store.selectNode(nodeId) },
         lockedNodeIds = lockedNodeIds,
