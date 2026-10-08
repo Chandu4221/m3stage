@@ -16,6 +16,7 @@ data class ProjectDto(
     val id: String,
     val name: String,
     val basePackage: String,
+    val defaultDevice: String = "pixel_8",
     val screens: List<ScreenDto>
 )
 
@@ -24,6 +25,7 @@ data class ScreenDto(
     val id: String,
     val name: String,
     val route: String,
+    val device: String? = null,
     val root: DesignNodeDto
 )
 

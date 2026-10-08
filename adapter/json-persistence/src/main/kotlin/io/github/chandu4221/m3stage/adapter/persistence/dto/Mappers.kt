@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.adapter.persistence.dto
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.SlotId
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.ModifierNode
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Project
@@ -20,6 +21,7 @@ fun Project.toDto(): ProjectDto = ProjectDto(
     id = this.id.value,
     name = this.name,
     basePackage = this.basePackage,
+    defaultDevice = this.defaultDevice.id,
     screens = this.screens.map { it.toDto() }
 )
 
@@ -27,6 +29,7 @@ fun Screen.toDto(): ScreenDto = ScreenDto(
     id = this.id.value,
     name = this.name,
     route = this.route,
+    device = this.device?.id,
     root = this.root.toDto()
 )
 
@@ -77,6 +80,7 @@ fun ProjectDto.toDomain(): Project = Project(
     id = ProjectId(this.id),
     name = this.name,
     basePackage = this.basePackage,
+    defaultDevice = DevicePreset.fromId(this.defaultDevice),
     screens = this.screens.map { it.toDomain() }
 )
 
@@ -84,6 +88,7 @@ fun ScreenDto.toDomain(): Screen = Screen(
     id = ScreenId(this.id),
     name = this.name,
     route = this.route,
+    device = this.device?.let { DevicePreset.fromId(it) },
     root = this.root.toDomain()
 )
 

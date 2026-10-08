@@ -17,6 +17,10 @@
 - **Zero-Size Empty Drop Prevention:**
   - **Tier 1 (Drop Time):** Components instantiate with canonical default template anatomy (e.g. Button drops pre-populated with a Text atom; Card drops with Column and Text children).
   - **Tier 2 (Canvas / Empty State - [x] Completed):** `EmptyContainerPlaceholder.kt` renders interactive dashed-border drop zones with full width and min-height for empty containers (`Column`, `Row`, `Box`, `Card`), keeping layout wireframes visible and selectable without polluting generated code.
+- **Device Viewport & Canvas Metamodel (Industry Standard Option 2):**
+  - **Anti-String Literal Trap Invariant:** NO loose strings (e.g. `"pixel_8"`) for device selection. Represent devices with an exhaustive, strongly-typed `DevicePreset` enum (e.g. `Pixel8`, `Pixel8Pro`, `GalaxyS24`, `PixelFold`, `PixelTablet`, `Desktop`).
+  - **Project Default with Screen-Level Override:** `Project` holds a default `DevicePreset`. `Screen` holds an optional `DevicePreset?` (null = inherit project default).
+  - **Decoupled Responsibilities:** `:domain` owns the typed `DevicePreset` enum and viewport dimensions (`widthDp`, `heightDp`). `:desktopApp` owns the hardware visual frame presentation (bezel, notch/punch-hole, gesture pill, orientation toggle, zoom).
 
 ---
 

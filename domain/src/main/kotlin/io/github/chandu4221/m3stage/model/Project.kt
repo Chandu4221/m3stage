@@ -4,6 +4,7 @@ data class Project(
     val id: ProjectId,
     val name: String,
     val basePackage: String,
+    val defaultDevice: DevicePreset = DevicePreset.Default,
     val screens: List<Screen> = emptyList()
 ) {
     init {

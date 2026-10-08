@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.state.EditorStore
 
 @Composable
@@ -33,7 +34,8 @@ fun EditorScreen(store: EditorStore) {
                     screen = screen,
                     selectedNodeId = selectedNodeId,
                     onNodeClick = { nodeId -> store.selectNode(nodeId) },
-                    lockedNodeIds = lockedNodeIds
+                    lockedNodeIds = lockedNodeIds,
+                    projectDefaultDevice = project?.defaultDevice ?: DevicePreset.Default
                 )
             } ?: Box(
                 modifier = Modifier.fillMaxSize(),
