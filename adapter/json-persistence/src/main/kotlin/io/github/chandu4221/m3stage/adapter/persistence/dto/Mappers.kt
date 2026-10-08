@@ -2,14 +2,7 @@ package io.github.chandu4221.m3stage.adapter.persistence.dto
 
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.SlotId
-import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.DevicePreset
-import io.github.chandu4221.m3stage.model.ModifierNode
-import io.github.chandu4221.m3stage.model.NodeId
-import io.github.chandu4221.m3stage.model.Project
-import io.github.chandu4221.m3stage.model.ProjectId
-import io.github.chandu4221.m3stage.model.Screen
-import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyValue
 
@@ -22,7 +15,9 @@ fun Project.toDto(): ProjectDto = ProjectDto(
     name = this.name,
     basePackage = this.basePackage,
     defaultDevice = this.defaultDevice.id,
-    screens = this.screens.map { it.toDto() }
+    screens = this.screens.map { it.toDto() },
+    seedColor = this.seedColor,
+    isDarkMode = this.isDarkMode,
 )
 
 fun Screen.toDto(): ScreenDto = ScreenDto(
@@ -81,7 +76,9 @@ fun ProjectDto.toDomain(): Project = Project(
     name = this.name,
     basePackage = this.basePackage,
     defaultDevice = DevicePreset.fromId(this.defaultDevice),
-    screens = this.screens.map { it.toDomain() }
+    screens = this.screens.map { it.toDomain() },
+    seedColor = this.seedColor,
+    isDarkMode = this.isDarkMode,
 )
 
 fun ScreenDto.toDomain(): Screen = Screen(

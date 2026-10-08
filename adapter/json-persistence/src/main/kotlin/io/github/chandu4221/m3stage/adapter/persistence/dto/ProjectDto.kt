@@ -17,6 +17,8 @@ data class ProjectDto(
     val name: String,
     val basePackage: String,
     val defaultDevice: String = "pixel_8",
+    val seedColor: Long = 0xFF6750A4L,
+    val isDarkMode: Boolean = false,
     val screens: List<ScreenDto>
 )
 

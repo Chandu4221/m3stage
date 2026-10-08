@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material.icons.extended)
+    implementation(libs.material.kolor)
     // Add your modules
     implementation(project(":domain"))
     implementation(project(":adapter:json-persistence"))

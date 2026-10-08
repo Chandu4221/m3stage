@@ -113,13 +113,49 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 
 ---
 
+### [x] Level 11: Dynamic M3 Theming with MaterialKolor (Completed)
+- Integrated `com.materialkolor:material-kolor:5.0.2` (Google M3 color utilities port for Kotlin Multiplatform).
+- Metamodel updated: `Project` holds `seedColor: Long` (default Baseline Purple `0xFF6750A4`) and `isDarkMode: Boolean`.
+- DTO & Persistence: `ProjectDto` and `Mappers.kt` serialize/deserialize `seedColor` and `isDarkMode` with backward-compatible defaults.
+- Commands & Store: `UpdateThemeCommand` added to undo/redo history; `updateSeedColor` and `toggleDarkMode` exposed on `EditorStore`.
+- Palette Presets: `SeedColorPresets.kt` defined with Baseline Purple, Emerald Green, Indigo, Amber, Sunset Coral, Deep Rose, etc.
+- Unified Shell & Canvas: `DynamicMaterialTheme` in `main.kt` drives the entire desktop app and device canvas dynamically from the active project's seed color and dark mode state.
+- Top Project App Bar: Seed color dropdown swatch picker + dark mode toggle switch added to Tier 1 controls.
+
+---
+
+### [x] Level 12: Comprehensive WCAG a11y & Dynamic Token Auditing (Completed)
+- Eradicated all hardcoded hex colors from canvas backgrounds, bezels, and overlays.
+- Canvas Studio: Migrated to dynamic `MaterialTheme.colorScheme.surfaceDim` adapting comfortably across both Dark and Light modes.
+- Hardware Bezel & Gesture Pill: Uses dynamic `surfaceContainerLowest` and `onSurface.copy(alpha = 0.5f)`.
+- Empty Container Placeholder: Uses M3 `outline` dashed border and `onSurfaceVariant` label text on `surfaceContainerHighest`, guaranteeing WCAG 2.1 AA 4.5:1 text contrast.
+- Selection Overlay: Uses `MaterialTheme.colorScheme.tertiary` for locked items and `MaterialTheme.colorScheme.primary` for selected items; added `Role.Button` semantics.
+- Screen Navigation Tabs: Migrated to Material 3 `FilterChip` with built-in accessibility roles (`Role.Tab`), active state announcements, and proper touch target dimensions.
+- Touch Targets: Expanded dark mode toggle and interactive icons to standard 48×48 dp touch boundaries.
+
+---
+
+### [x] Level 13: Atomic Design for `:desktopApp` UI (100% Dumb Presentational Architecture) (Completed)
+- **Principle**: Pure Presentational UI with Unidirectional Data Flow (UDF).
+  - Atoms, Molecules, Organisms, and Templates are **100% dumb**:
+    - No direct references to `EditorStore` or coroutine scopes.
+    - Pure inputs (`data class` / primitives / enums) and pure output callbacks (`() -> Unit`, `(T) -> Unit`).
+    - Zero business logic side-effects.
+  - Single Smart Boundary: `EditorScreen.kt` (Page layer) connects `EditorStore` flows to `EditorShellTemplate`.
+- **Package Hierarchy**:
+  - `ui.atom`: `ToolIconButton`, `ColorSwatch`, `DotMatrixCell`, `SearchTextField`, `DimensionBadge`.
+  - `ui.molecule`: `CapsuleToolbar`, `SegmentedButtonGroup`, `AlignmentMatrix`, `ComponentTile`.
+  - `ui.organism`: `StudioNavRail`, `PartsDrawer`, `FloatingCanvasStudio`.
+  - `ui.template`: `EditorShellTemplate` (assembles NavRail + Parts Drawer + Floating Canvas Studio + Inspector).
+  - `ui.preview`: `PreviewTheme.kt` with `DualThemePreview` container rendering both Light & Dark mode previews side-by-side with dynamic `MaterialKolor`.
+  - `ui.page`: `EditorScreen` (smart mediator wiring `EditorStore` to template).
+
+---
+
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
 - `:domain`: 100% verified, fully typed, compile-safe.
 - `:adapter:compose-codegen`: 100% verified, subpackaged, compiles cleanly.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
 - `:adapter:compose-renderer`: 100% verified, subpackaged with `ThemeResolver`, compiles cleanly.
-- `:desktopApp`: 100% verified, multi-screen workspace with interactive device frame and attached controls.
+- `:desktopApp`: Fully migrated to 100% Dumb Atomic Design (Atoms -> Molecules -> Organisms -> Template -> Page) with floating studio canvas, 2-column component drawer, navigation rail, and dynamic dual-theme previews.
 - Full build check: `./gradlew check` **BUILD SUCCESSFUL**.
-
-
-

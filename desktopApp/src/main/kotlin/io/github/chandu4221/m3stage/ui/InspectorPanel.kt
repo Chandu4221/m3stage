@@ -1,13 +1,15 @@
 package io.github.chandu4221.m3stage.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
@@ -26,19 +28,45 @@ fun InspectorPanel(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxHeight()
-            .width(250.dp)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text("Inspector", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Inspector",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
         if (selectedNodeId == null || project == null || activeScreenId == null) {
-            Text(
-                text = "Select a node to edit its properties.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 16.dp)
-            )
+            OutlinedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "No Selection",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Click any composable in the canvas or component hierarchy to inspect and edit its properties.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
             return
         }
 
@@ -53,37 +81,35 @@ fun InspectorPanel(
 
 @Composable
 private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: EditorStore) {
-    Card(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+        )
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Type: ${node.kind.displayName}", style = MaterialTheme.typography.titleSmall)
             Text(
-                "ID: ${node.id.value}",
-                style = MaterialTheme.typography.labelSmall,
+                text = "Type: ${node.kind.displayName}",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "ID: ${node.id.value}",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Visibility Toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Visible", modifier = Modifier.weight(1f))
-                Switch(
-                    checked = node.isVisible,
-                    onCheckedChange = { store.toggleVisibility(node.id) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Lock Node",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(4.dp))
-
-            // Lock Toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Locked", modifier = Modifier.weight(1f))
                 Switch(
                     checked = isLocked,
                     onCheckedChange = { store.toggleLock(node.id) }

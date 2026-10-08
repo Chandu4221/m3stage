@@ -5,6 +5,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -14,6 +16,9 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentCategory
@@ -22,7 +27,6 @@ import io.github.chandu4221.m3stage.state.EditorStore
 
 @Composable
 fun ComponentsPalettePanel(store: EditorStore) {
-    // Track which categories are expanded. Default to true for all.
     val expandedCategories = remember {
         mutableStateMapOf<ComponentCategory, Boolean>().apply {
             ComponentCategory.entries.forEach { put(it, true) }
@@ -31,13 +35,15 @@ fun ComponentsPalettePanel(store: EditorStore) {
 
     Column(
         modifier = Modifier
-            .width(240.dp)
-            .padding(8.dp)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(12.dp)
     ) {
         Text(
             text = "Components",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
         )
 
         ComponentCatalog.groupedByCategory.forEach { (category, definitions) ->
@@ -48,14 +54,7 @@ fun ComponentsPalettePanel(store: EditorStore) {
                 definitions = definitions,
                 store = store
             )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        Button(
-            onClick = { store.exportCode() },
-            modifier = Modifier.width(180.dp)
-        ) {
-            Text("Export Code")
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
@@ -71,25 +70,27 @@ private fun CategorySection(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Column {
-            // Category Header
+            // Category Header with Accessible Clickable Role
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onToggle() }
+                    .semantics { role = Role.Button }
+                    .clickable(onClick = onToggle)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = category.displayName,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = "Toggle ${category.displayName}",
+                    contentDescription = if (isExpanded) "Collapse ${category.displayName}" else "Expand ${category.displayName}",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -100,23 +101,26 @@ private fun CategorySection(
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
-                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                     definitions.forEach { definition ->
-                        Button(
+                        FilledTonalButton(
                             onClick = {
-                                // Add to selected node if it's a container, otherwise add to screen root
                                 val targetParentId = store.selectedNodeId.value
                                     ?: store.project.value?.screens?.firstOrNull { it.id == store.activeScreenId.value }?.root?.id
-                                    ?: return@Button
+                                    ?: return@FilledTonalButton
 
                                 store.addNodeToActiveScreen(targetParentId, definition.kind)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            shape = MaterialTheme.shapes.small
+                                .padding(vertical = 3.dp),
+                            shape = MaterialTheme.shapes.small,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                         ) {
-                            Text(definition.displayName)
+                            Text(
+                                text = definition.displayName,
+                                style = MaterialTheme.typography.labelLarge
+                            )
                         }
                     }
                 }

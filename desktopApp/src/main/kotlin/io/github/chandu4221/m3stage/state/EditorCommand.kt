@@ -136,3 +136,21 @@ data class AddScreenCommand(
         return project.copy(screens = project.screens.filter { it.id != newScreen.id })
     }
 }
+
+/**
+ * Updates the project's seed color and dark mode theme. Undo restores the previous theme.
+ */
+data class UpdateThemeCommand(
+    val oldSeedColor: Long,
+    val oldIsDarkMode: Boolean,
+    val newSeedColor: Long,
+    val newIsDarkMode: Boolean
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        return project.copy(seedColor = newSeedColor, isDarkMode = newIsDarkMode)
+    }
+
+    override fun undo(project: Project): Project {
+        return project.copy(seedColor = oldSeedColor, isDarkMode = oldIsDarkMode)
+    }
+}

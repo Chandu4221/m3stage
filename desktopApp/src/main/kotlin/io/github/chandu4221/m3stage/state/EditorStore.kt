@@ -130,4 +130,29 @@ class EditorStore(
         setActiveScreen(screenId)
     }
 
+    // --- Bridge: Update Project Theme ---
+    fun updateSeedColor(newSeed: Long) {
+        val current = project.value ?: return
+        execute(
+            UpdateThemeCommand(
+                oldSeedColor = current.seedColor,
+                oldIsDarkMode = current.isDarkMode,
+                newSeedColor = newSeed,
+                newIsDarkMode = current.isDarkMode
+            )
+        )
+    }
+
+    fun toggleDarkMode() {
+        val current = project.value ?: return
+        execute(
+            UpdateThemeCommand(
+                oldSeedColor = current.seedColor,
+                oldIsDarkMode = current.isDarkMode,
+                newSeedColor = current.seedColor,
+                newIsDarkMode = !current.isDarkMode
+            )
+        )
+    }
+
 }

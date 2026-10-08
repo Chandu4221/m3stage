@@ -9,6 +9,7 @@ kotlinxCoroutines = "1.9.0"
 kotlinpoet = "2.0.0"
 kotlin-formatter = "0.64"
 material-icons-extended = "1.7.3"
+materialKolor = "5.0.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -35,6 +36,8 @@ kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collec
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 # --- CODE FORMATTER ---
 kotlin-formatter = { module = "com.facebook:ktfmt", version.ref = "kotlin-formatter" }
+# --- MATERIAL KOLOR ---
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 
 
 [plugins]

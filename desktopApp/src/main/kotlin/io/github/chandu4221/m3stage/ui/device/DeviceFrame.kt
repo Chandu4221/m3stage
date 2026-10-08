@@ -1,5 +1,6 @@
 package io.github.chandu4221.m3stage.ui.device
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -57,7 +58,7 @@ fun DeviceFrame(
         // --- REALISTIC HARDWARE BEZEL ---
         val bezelThickness = 12.dp
         val bezelRadius = cornerRadius + bezelThickness
-        val bezelColor = Color(0xFF1E2022) // Slate black metallic finish
+        val bezelColor = MaterialTheme.colorScheme.inverseSurface
 
         Surface(
             modifier = modifier
@@ -67,7 +68,8 @@ fun DeviceFrame(
                 )
                 .shadow(16.dp, RoundedCornerShape(bezelRadius)),
             color = bezelColor,
-            shape = RoundedCornerShape(bezelRadius)
+            shape = RoundedCornerShape(bezelRadius),
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Box(
                 modifier = Modifier
@@ -102,7 +104,10 @@ fun DeviceFrame(
                                     .align(Alignment.BottomCenter)
                                     .padding(bottom = 6.dp)
                                     .size(width = 72.dp, height = 4.dp)
-                                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        RoundedCornerShape(2.dp)
+                                    )
                             )
                         }
                     }

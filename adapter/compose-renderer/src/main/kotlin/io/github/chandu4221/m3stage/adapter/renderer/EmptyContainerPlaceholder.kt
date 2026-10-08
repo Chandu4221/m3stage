@@ -25,28 +25,37 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun EmptyContainerPlaceholder(
-    containerName: String, modifier: Modifier = Modifier
+    containerName: String,
+    modifier: Modifier = Modifier
 ) {
-    val outlineColor = MaterialTheme.colorScheme.outlineVariant
+    val outlineColor = MaterialTheme.colorScheme.outline
     val cornerRadius = 6.dp
 
     Box(
-        modifier = modifier.fillMaxWidth().defaultMinSize(minHeight = 56.dp).padding(4.dp).background(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-            shape = RoundedCornerShape(cornerRadius)
-        ).drawBehind {
-            val strokeWidth = 1.5.dp.toPx()
-            val dashEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
-            drawRoundRect(
-                color = outlineColor, style = Stroke(
-                    width = strokeWidth, pathEffect = dashEffect
-                ), cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx())
+        modifier = modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .padding(4.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(cornerRadius)
             )
-        }.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+            .drawBehind {
+                val strokeWidth = 1.5.dp.toPx()
+                val dashEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+                drawRoundRect(
+                    color = outlineColor,
+                    style = Stroke(width = strokeWidth, pathEffect = dashEffect),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx())
+                )
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Text(
             text = "+ Empty $containerName — Add Composables",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

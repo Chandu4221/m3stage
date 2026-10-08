@@ -5,6 +5,8 @@ data class Project(
     val name: String,
     val basePackage: String,
     val defaultDevice: DevicePreset = DevicePreset.Default,
+    val seedColor: Long = 0xFF6750A4L,
+    val isDarkMode: Boolean = false,
     val screens: List<Screen> = emptyList()
 ) {
     init {

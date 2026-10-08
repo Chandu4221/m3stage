@@ -1,68 +1,71 @@
 package io.github.chandu4221.m3stage.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import io.github.chandu4221.m3stage.model.DevicePreset
+import androidx.compose.runtime.*
+import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.state.EditorStore
+import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
+import io.github.chandu4221.m3stage.ui.template.EditorShellTemplate
 
+/**
+ * Smart Page: The ONLY stateful mediator between EditorStore and the dumb UI template.
+ */
 @Composable
 fun EditorScreen(store: EditorStore) {
     val project by store.project.collectAsState()
     val activeScreenId by store.activeScreenId
     val selectedNodeId by store.selectedNodeId
     val lockedNodeIds by store.lockedNodeIds
+    val undoStack by store.undoStack.collectAsState()
+    val redoStack by store.redoStack.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-// === TOP 2-TIER PROJECT APP BAR ===
-        TopProjectAppBar(
-            project = project,
-            activeScreenId = activeScreenId,
-            store = store
-        )
+    var activeRailTab by remember { mutableStateOf(StudioRailTab.Parts) }
+    var searchQuery by remember { mutableStateOf("") }
+    var zoomPercentage by remember { mutableStateOf(100) }
 
-
-        Row(modifier = Modifier.fillMaxSize()) {
-
-            // === COMPONENTS PALETTE ===
-            ComponentsPalettePanel(store = store)
-
-            // Center: Canvas
-            Column(modifier = Modifier.fillMaxSize().weight(1f)) {
-                Text("Canvas")
-
-                project?.screens?.firstOrNull { it.id == activeScreenId }?.let { screen ->
-                    CanvasPanel(
-                        screen = screen,
-                        selectedNodeId = selectedNodeId,
-                        onNodeClick = { nodeId -> store.selectNode(nodeId) },
-                        lockedNodeIds = lockedNodeIds,
-                        projectDefaultDevice = project?.defaultDevice ?: DevicePreset.Default
-                    )
-                } ?: Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No active screen. Create a new project.")
-                }
-            }
-
-            // ==== INSPECTOR COLUMN
-            // Inside the Row in EditorScreen.kt, add this as the 3rd child:
-            InspectorPanel(
-                project = project,
-                activeScreenId = activeScreenId?.value,
-                selectedNodeId = selectedNodeId,
-                isLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
-                store = store
-            )
-        }
+    val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
+    val selectedNode = activeScreen?.root?.let { root ->
+        selectedNodeId?.let { root.findNode(it) }
     }
+
+    EditorShellTemplate(
+        // Rail
+        activeRailTab = activeRailTab,
+        onRailTabSelected = { activeRailTab = it },
+        isDarkMode = project?.isDarkMode ?: false,
+        onToggleDarkMode = { store.toggleDarkMode() },
+
+        // Parts Drawer
+        searchQuery = searchQuery,
+        onSearchQueryChange = { searchQuery = it },
+        onComponentSelected = { kind ->
+            val targetParentId = selectedNodeId
+                ?: activeScreen?.root?.id
+                ?: return@EditorShellTemplate
+            store.addNodeToActiveScreen(targetParentId, kind)
+        },
+
+        // Floating Canvas
+        activeScreen = activeScreen,
+        selectedNodeId = selectedNodeId,
+        onNodeClick = { nodeId -> store.selectNode(nodeId) },
+        lockedNodeIds = lockedNodeIds,
+        canUndo = undoStack.isNotEmpty(),
+        canRedo = redoStack.isNotEmpty(),
+        onUndo = { store.undo() },
+        onRedo = { store.redo() },
+        onAddScreen = {
+            val count = (project?.screens?.size ?: 0) + 1
+            store.addNewScreen("Screen $count", "/screen$count")
+        },
+        onExportCode = { store.exportCode() },
+        zoomPercentage = zoomPercentage,
+        onZoomIn = { zoomPercentage = (zoomPercentage + 10).coerceAtMost(200) },
+        onZoomOut = { zoomPercentage = (zoomPercentage - 10).coerceAtLeast(30) },
+        onZoomFit = { zoomPercentage = 100 },
+
+        // Inspector
+        selectedNode = selectedNode,
+        isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
+        onToggleNodeLock = { nodeId -> store.toggleLock(nodeId) }
+    )
 }

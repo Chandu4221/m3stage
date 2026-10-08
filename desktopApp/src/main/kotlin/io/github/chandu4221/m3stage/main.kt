@@ -1,12 +1,13 @@
 package io.github.chandu4221.m3stage
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.materialkolor.rememberDynamicColorScheme
 import io.github.chandu4221.m3stage.adapter.UuidIdGenerator
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeCodeGenerator
 import io.github.chandu4221.m3stage.adapter.persistence.JsonProjectRepository
@@ -15,34 +16,35 @@ import io.github.chandu4221.m3stage.ui.EditorScreen
 import java.io.File
 
 fun main() = application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "M3 Stage Editor"
-    ) {
-        MaterialTheme {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                val store = remember { createEditorStore() }
+    val store = remember {
+        val projectFile = File(System.getProperty("user.home"), ".m3stage/project.json")
+        projectFile.parentFile?.mkdirs()
 
-                // Load existing project on startup
-                androidx.compose.runtime.LaunchedEffect(Unit) {
-                    store.loadProject()
-                }
-
-                EditorScreen(store = store)
-            }
+        EditorStore(
+            idGenerator = UuidIdGenerator(),
+            repository = JsonProjectRepository(projectFile),
+            codeGenerator = ComposeCodeGenerator()
+        ).apply {
+            loadProject()
         }
     }
-}
 
-private fun createEditorStore(): EditorStore {
-    val idGenerator = UuidIdGenerator()
-    val projectFile = File(System.getProperty("user.home"), "m3stage-project.json")
-    val repository = JsonProjectRepository(projectFile)
-    val codeGenerator = ComposeCodeGenerator()
+    val project by store.project.collectAsState()
+    val seedColor = Color(project?.seedColor ?: 0xFF6750A4L)
+    val isDarkMode = project?.isDarkMode ?: false
 
-    return EditorStore(
-        idGenerator = idGenerator,
-        repository = repository,
-        codeGenerator = codeGenerator
+    // Generates the complete 36-role Material 3 ColorScheme dynamically from the seed color!
+    val dynamicColorScheme = rememberDynamicColorScheme(
+        seedColor = seedColor,
+        isDark = isDarkMode
     )
+
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "m3stage - Material 3 Compose Builder"
+    ) {
+        MaterialTheme(colorScheme = dynamicColorScheme) {
+            EditorScreen(store = store)
+        }
+    }
 }

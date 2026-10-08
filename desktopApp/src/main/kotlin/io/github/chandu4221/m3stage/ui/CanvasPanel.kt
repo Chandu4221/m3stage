@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.DesignRenderer
@@ -48,7 +47,7 @@ fun CanvasPanel(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE8EAED)) // Clean neutral studio gray
+            .background(MaterialTheme.colorScheme.surfaceDim)
             .verticalScroll(rememberScrollState())
             .horizontalScroll(rememberScrollState())
             .padding(48.dp),
