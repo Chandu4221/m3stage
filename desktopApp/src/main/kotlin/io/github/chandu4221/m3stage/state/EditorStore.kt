@@ -107,4 +107,27 @@ class EditorStore(
             )
         )
     }
+
+
+    // --- Bridge: Add New Screen ---
+    fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
+        val rootKind = ComponentKind.Column
+        val rootDef = ComponentCatalog[rootKind]
+        val screenId = context.idGenerator.nextScreenId()
+        val newScreen = Screen(
+            id = screenId,
+            name = name,
+            route = route,
+            device = device,
+            root = DesignNode(
+                id = context.idGenerator.nextNodeId(),
+                kind = rootKind,
+                props = rootDef.createDefaultProps(),
+                children = emptyList()
+            )
+        )
+        execute(AddScreenCommand(newScreen))
+        setActiveScreen(screenId)
+    }
+
 }

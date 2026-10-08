@@ -1,9 +1,6 @@
 package io.github.chandu4221.m3stage.state
 
-import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.NodeId
-import io.github.chandu4221.m3stage.model.Project
-import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.mutation.*
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyValue
@@ -122,5 +119,20 @@ data class UpdateVisibilityCommand(
         val screen = project.findScreen(screenId) ?: return project
         val newRoot = screen.root.updateVisibility(nodeId, oldVisibility)
         return project.updateScreenRoot(screenId, newRoot)
+    }
+}
+
+/**
+ * Adds a new screen to the project. Undo removes it.
+ */
+data class AddScreenCommand(
+    val newScreen: Screen
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        return project.copy(screens = project.screens + newScreen)
+    }
+
+    override fun undo(project: Project): Project {
+        return project.copy(screens = project.screens.filter { it.id != newScreen.id })
     }
 }

@@ -106,6 +106,11 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `InspectorPanel.kt`: Cleaned up to display `node.kind.displayName`.
 - `EditorCommand.kt`: Migrated property commands to `PropertyId` and `PropertyValue`. Removed unused empty command stubs.
 
+### [x] Level 10: 2-Tier Top Project App Bar & Screen Management (Completed)
+- `TopProjectAppBar.kt`: 2-tier design with Tier 1 (branding, project title, Add Screen, Export Screens) and Tier 2 (scrollable LazyRow with screen pills and active screen auto-scroll).
+- `AddScreenCommand` and `store.addNewScreen(name, route, device)` with full Undo/Redo integration.
+- Attached Artboard Controls in `CanvasPanel.kt`: Screen title, Device preset dropdown, Orientation toggle, Bezel frame toggle, Viewport dimensions badge.
+
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
@@ -113,7 +118,7 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `:adapter:compose-codegen`: 100% verified, subpackaged, compiles cleanly.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
 - `:adapter:compose-renderer`: 100% verified, subpackaged with `ThemeResolver`, compiles cleanly.
-- `:desktopApp`: 100% verified, fully integrated with all domain and adapter layers.
+- `:desktopApp`: 100% verified, multi-screen workspace with interactive device frame and attached controls.
 - Full build check: `./gradlew check` **BUILD SUCCESSFUL**.
 
 

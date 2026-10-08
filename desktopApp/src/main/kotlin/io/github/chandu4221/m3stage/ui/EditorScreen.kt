@@ -20,39 +20,49 @@ fun EditorScreen(store: EditorStore) {
     val selectedNodeId by store.selectedNodeId
     val lockedNodeIds by store.lockedNodeIds
 
-    Row(modifier = Modifier.fillMaxSize()) {
-
-        // === COMPONENTS PALETTE ===
-        ComponentsPalettePanel(store = store)
-
-        // Center: Canvas
-        Column(modifier = Modifier.fillMaxSize().weight(1f)) {
-            Text("Canvas")
-
-            project?.screens?.firstOrNull { it.id == activeScreenId }?.let { screen ->
-                CanvasPanel(
-                    screen = screen,
-                    selectedNodeId = selectedNodeId,
-                    onNodeClick = { nodeId -> store.selectNode(nodeId) },
-                    lockedNodeIds = lockedNodeIds,
-                    projectDefaultDevice = project?.defaultDevice ?: DevicePreset.Default
-                )
-            } ?: Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No active screen. Create a new project.")
-            }
-        }
-
-        // ==== INSPECTOR COLUMN
-        // Inside the Row in EditorScreen.kt, add this as the 3rd child:
-        InspectorPanel(
+    Column(modifier = Modifier.fillMaxSize()) {
+// === TOP 2-TIER PROJECT APP BAR ===
+        TopProjectAppBar(
             project = project,
-            activeScreenId = activeScreenId?.value,
-            selectedNodeId = selectedNodeId,
-            isLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
+            activeScreenId = activeScreenId,
             store = store
         )
+
+
+        Row(modifier = Modifier.fillMaxSize()) {
+
+            // === COMPONENTS PALETTE ===
+            ComponentsPalettePanel(store = store)
+
+            // Center: Canvas
+            Column(modifier = Modifier.fillMaxSize().weight(1f)) {
+                Text("Canvas")
+
+                project?.screens?.firstOrNull { it.id == activeScreenId }?.let { screen ->
+                    CanvasPanel(
+                        screen = screen,
+                        selectedNodeId = selectedNodeId,
+                        onNodeClick = { nodeId -> store.selectNode(nodeId) },
+                        lockedNodeIds = lockedNodeIds,
+                        projectDefaultDevice = project?.defaultDevice ?: DevicePreset.Default
+                    )
+                } ?: Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No active screen. Create a new project.")
+                }
+            }
+
+            // ==== INSPECTOR COLUMN
+            // Inside the Row in EditorScreen.kt, add this as the 3rd child:
+            InspectorPanel(
+                project = project,
+                activeScreenId = activeScreenId?.value,
+                selectedNodeId = selectedNodeId,
+                isLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
+                store = store
+            )
+        }
     }
 }
