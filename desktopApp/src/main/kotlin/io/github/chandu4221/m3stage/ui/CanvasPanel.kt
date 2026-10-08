@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.DesignRenderer
 import io.github.chandu4221.m3stage.model.DevicePreset
@@ -36,129 +37,134 @@ fun CanvasPanel(
     var activeDevice by remember(screen.id) {
         mutableStateOf(screen.resolveDevice(projectDefaultDevice))
     }
-    var orientation by remember { mutableStateOf(DeviceOrientation.Portrait) }
+    var orientation by remember(screen.id) { mutableStateOf(DeviceOrientation.Portrait) }
     var showFrame by remember { mutableStateOf(true) }
     var deviceDropdownExpanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // --- TOP TOOLBAR ---
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 2.dp
+    val currentW = if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
+    val currentH = if (orientation == DeviceOrientation.Portrait) activeDevice.heightDp else activeDevice.widthDp
+
+    // --- INFINITE SCROLLABLE CANVAS ---
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFE8EAED)) // Clean neutral studio gray
+            .verticalScroll(rememberScrollState())
+            .horizontalScroll(rememberScrollState())
+            .padding(48.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // --- ATTACHED ARTBOARD CONTROLS (Directly above the device) ---
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 3.dp,
+                shadowElevation = 2.dp
             ) {
-                // Screen Title
-                Text(
-                    text = "Screen: ${screen.name}",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Screen Name
+                    Text(
+                        text = screen.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
 
-                VerticalDivider(modifier = Modifier.height(20.dp))
+                    VerticalDivider(modifier = Modifier.height(18.dp))
 
-                // Device Preset Dropdown
-                Box {
-                    OutlinedButton(
-                        onClick = { deviceDropdownExpanded = true },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(8.dp)
+                    // Device Preset Dropdown
+                    Box {
+                        FilledTonalButton(
+                            onClick = { deviceDropdownExpanded = true },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Devices,
+                                contentDescription = "Device",
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(activeDevice.displayName, style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        DropdownMenu(
+                            expanded = deviceDropdownExpanded,
+                            onDismissRequest = { deviceDropdownExpanded = false }
+                        ) {
+                            DevicePreset.entries.forEach { preset ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(preset.displayName, style = MaterialTheme.typography.bodyMedium)
+                                            Text(
+                                                "${preset.widthDp} × ${preset.heightDp} dp (${preset.category.displayName})",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        activeDevice = preset
+                                        deviceDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Orientation Flip Button
+                    IconButton(
+                        onClick = {
+                            orientation = if (orientation == DeviceOrientation.Portrait) {
+                                DeviceOrientation.Landscape
+                            } else {
+                                DeviceOrientation.Portrait
+                            }
+                        },
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Devices,
-                            contentDescription = "Device",
-                            modifier = Modifier.size(16.dp)
+                            imageVector = if (orientation == DeviceOrientation.Portrait) Icons.Default.CropPortrait else Icons.Default.CropLandscape,
+                            contentDescription = "Toggle Orientation",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(activeDevice.displayName, style = MaterialTheme.typography.labelMedium)
                     }
 
-                    DropdownMenu(
-                        expanded = deviceDropdownExpanded,
-                        onDismissRequest = { deviceDropdownExpanded = false }
+                    // Frame Toggle Chip
+                    FilterChip(
+                        selected = showFrame,
+                        onClick = { showFrame = !showFrame },
+                        label = { Text("Frame", style = MaterialTheme.typography.labelSmall) }
+                    )
+
+                    VerticalDivider(modifier = Modifier.height(18.dp))
+
+                    // Dimensions Badge
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
-                        DevicePreset.entries.forEach { preset ->
-                            DropdownMenuItem(
-                                text = {
-                                    Column {
-                                        Text(preset.displayName, style = MaterialTheme.typography.bodyMedium)
-                                        Text(
-                                            "${preset.widthDp} × ${preset.heightDp} dp (${preset.category.displayName})",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    activeDevice = preset
-                                    deviceDropdownExpanded = false
-                                }
-                            )
-                        }
+                        Text(
+                            text = "$currentW × $currentH dp",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                }
-
-                // Orientation Toggle (Portrait <-> Landscape)
-                IconButton(
-                    onClick = {
-                        orientation = if (orientation == DeviceOrientation.Portrait) {
-                            DeviceOrientation.Landscape
-                        } else {
-                            DeviceOrientation.Portrait
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = if (orientation == DeviceOrientation.Portrait) Icons.Default.CropPortrait else Icons.Default.CropLandscape,
-                        contentDescription = "Toggle Orientation",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                // Frame Toggle (Show Bezel on/off)
-                FilterChip(
-                    selected = showFrame,
-                    onClick = { showFrame = !showFrame },
-                    label = { Text("Device Frame", style = MaterialTheme.typography.labelSmall) }
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Dimensions Badge
-                val currentW =
-                    if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
-                val currentH =
-                    if (orientation == DeviceOrientation.Portrait) activeDevice.heightDp else activeDevice.widthDp
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Text(
-                        text = "$currentW × $currentH dp",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
-        }
 
-        // --- SCROLLABLE CANVAS AREA ---
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFE8EAED)) // Clean neutral studio gray
-                .verticalScroll(rememberScrollState())
-                .horizontalScroll(rememberScrollState())
-                .padding(40.dp),
-            contentAlignment = Alignment.Center
-        ) {
+            // --- THE DEVICE CANVAS ---
             DeviceFrame(
                 preset = activeDevice,
                 orientation = orientation,
