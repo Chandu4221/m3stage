@@ -19,4 +19,11 @@ object ComposeSymbols {
     // Component Defaults
     val CardDefaults = ClassName(ComposeModule.Material3.packageName, "CardDefaults")
     val ButtonDefaults = ClassName(ComposeModule.Material3.packageName, "ButtonDefaults")
+
+    // Foundation Layout & Components
+    val Box = ClassName(ComposeModule.FoundationLayout.packageName, "Box")
+    val Text = ClassName(ComposeModule.Material3.packageName, "Text")
+    val padding = MemberName(ComposeModule.FoundationLayout.packageName, "padding")
+    val fillMaxSize = MemberName(ComposeModule.FoundationLayout.packageName, "fillMaxSize")
+    val ExperimentalMaterial3Api = ClassName(ComposeModule.Material3.packageName, "ExperimentalMaterial3Api")
 }

@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.adapter.codegen
 
 import com.facebook.ktfmt.format.Formatter
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -31,7 +32,9 @@ class ComposeCodeGenerator : CodeGenerator {
         ComponentKind.Column to ColumnCodegen(),
         ComponentKind.Row to RowCodegen(),
         ComponentKind.Box to BoxCodegen(),
-        ComponentKind.Card to CardCodegen()
+        ComponentKind.Card to CardCodegen(),
+        ComponentKind.Scaffold to ScaffoldCodegen(),
+        ComponentKind.TopAppBar to TopAppBarCodegen()
     )
 
     override fun generate(project: Project): GeneratedProject {
@@ -55,11 +58,16 @@ class ComposeCodeGenerator : CodeGenerator {
             return codegen.generate(node, ::walk)
         }
 
+        val optInAnnotation = AnnotationSpec.builder(ClassName("kotlin", "OptIn"))
+            .addMember("%T::class", ComposeSymbols.ExperimentalMaterial3Api)
+            .build()
+
         val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
         val fileSpecBuilder = FileSpec.builder(packageName, screen.name)
             .addFunction(
                 FunSpec.builder("${screen.name}Screen")
                     .addAnnotation(composableAnnotation)
+                    .addAnnotation(optInAnnotation)
                     .addCode(walk(screen.root))
                     .build()
             )

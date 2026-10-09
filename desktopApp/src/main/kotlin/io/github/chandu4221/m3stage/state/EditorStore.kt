@@ -68,12 +68,18 @@ class EditorStore(
     // --- Bridge: Add Node ---
     fun addNodeToActiveScreen(parentId: NodeId, kind: ComponentKind) {
         val screenId = activeScreenId.value ?: return
+        val currentProject = project.value ?: return
+        val activeScreen = currentProject.findScreen(screenId) ?: return
 
         fun buildNode(targetKind: ComponentKind): DesignNode {
             val def = ComponentCatalog[targetKind]
-            // Atomic Design default anatomy: When dropping a Button, pre-populate with a Text atom!
             val defaultChildren = when (targetKind) {
                 ComponentKind.Button -> listOf(buildNode(ComponentKind.Text))
+                ComponentKind.Scaffold -> listOf(
+                    buildNode(ComponentKind.TopAppBar),
+                    buildNode(ComponentKind.Column)
+                )
+
                 else -> emptyList()
             }
 
@@ -87,8 +93,16 @@ class EditorStore(
             )
         }
 
+        // If target parent is a Scaffold and adding content (not TopAppBar), route into its child Column if present
+        val targetNode = activeScreen.root.findNode(parentId)
+        val resolvedParentId = if (targetNode?.kind == ComponentKind.Scaffold && kind != ComponentKind.TopAppBar) {
+            targetNode.children.firstOrNull { it.kind == ComponentKind.Column }?.id ?: parentId
+        } else {
+            parentId
+        }
+
         val newNode = buildNode(kind)
-        execute(AddNodeCommand(screenId, parentId, newNode))
+        execute(AddNodeCommand(screenId, resolvedParentId, newNode))
     }
 
     // --- Bridge: Toggle Visibility ---
@@ -111,19 +125,35 @@ class EditorStore(
 
     // --- Bridge: Add New Screen ---
     fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
-        val rootKind = ComponentKind.Column
-        val rootDef = ComponentCatalog[rootKind]
-        val screenId = context.idGenerator.nextScreenId()
+        val idGen = context.idGenerator
+        val scaffoldDef = ComponentCatalog[ComponentKind.Scaffold]
+        val topBarDef = ComponentCatalog[ComponentKind.TopAppBar]
+        val columnDef = ComponentCatalog[ComponentKind.Column]
+
+        val topBarNode = DesignNode(
+            id = idGen.nextNodeId(),
+            kind = ComponentKind.TopAppBar,
+            props = topBarDef.createDefaultProps(),
+            children = emptyList()
+        )
+        val contentColumnNode = DesignNode(
+            id = idGen.nextNodeId(),
+            kind = ComponentKind.Column,
+            props = columnDef.createDefaultProps(),
+            children = emptyList()
+        )
+
+        val screenId = idGen.nextScreenId()
         val newScreen = Screen(
             id = screenId,
             name = name,
             route = route,
             device = device,
             root = DesignNode(
-                id = context.idGenerator.nextNodeId(),
-                kind = rootKind,
-                props = rootDef.createDefaultProps(),
-                children = emptyList()
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Scaffold,
+                props = scaffoldDef.createDefaultProps(),
+                children = listOf(topBarNode, contentColumnNode)
             )
         )
         execute(AddScreenCommand(newScreen))

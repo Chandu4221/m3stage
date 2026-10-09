@@ -18,8 +18,11 @@ object DesignRenderer {
         ComponentKind.Column to ColumnRenderer(),
         ComponentKind.Row to RowRenderer(),
         ComponentKind.Box to BoxRenderer(),
-        ComponentKind.Card to CardRenderer()
-    )
+        ComponentKind.Card to CardRenderer(),
+        ComponentKind.Scaffold to ScaffoldRenderer(),
+        ComponentKind.TopAppBar to TopAppBarRenderer(),
+
+        )
 
     @Composable
     fun Render(

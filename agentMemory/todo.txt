@@ -9,22 +9,20 @@ Status Key:
 
 ### Critical Issues (Correctness & Trust)
 
-- [IN-PROGRESS] TODO-1: Registry Drift & ComponentKind Exhaustiveness
+- [x] TODO-1: Registry Drift & ComponentKind Exhaustiveness
   - Description: ComponentKind has 11 kinds (defines Icon, Image, TextField, Scaffold, TopAppBar).
   - Progress:
     - [x] Group 1 (Atoms & Leaves): `Icon`, `Image`, `TextField` fully implemented across ComponentCatalog, compose-renderer, and compose-codegen.
     - [x] Graceful Codegen Fallback: Added fallback comment in ComposeCodeGenerator preventing unhandled crashes.
-    - [ ] Group 2 (Organisms & Layouts): `Scaffold`, `TopAppBar` (requires named slots or container layout mapping).
+    - [x] Group 2 (Organisms & Layouts): `Scaffold`, `TopAppBar` fully implemented with compositional children model and default screen root genesis across domain, renderer, codegen, and desktop store.
 
 - [ ] TODO-2: WYSIWYG Inspector-to-Codegen Parity Audit
   - Description: Inspector allows configuring properties that codegen silently ignores. For example, ButtonProps.ContainerColor and ButtonProps.ContentColor exist with defaults, but ButtonCodegen only renders enabled.
   - Risk: User customizes button colors or card elevation on canvas, but exported code silently drops them.
   - Fix: Audit every PropertyDescriptor across all component kinds against its respective Codegen implementation, ensuring 100% property fidelity.
 
-- [ ] TODO-3: Children vs. Slots Duality Resolution
-  - Description: DesignNode defines both children: List<DesignNode> and slots: Map<SlotId, DesignNode>, but DesignRenderer, ButtonCodegen, and collectUsedClassNamesRecursive exclusively iterate children.
-  - Risk: Dead slots field causes architectural confusion and invariant drift.
-  - Fix: Decide on slot implementation: either fully wire slots traversal through the renderer, codegen, and mutation queries, or trim unused slots until multi-slot organisms (like Scaffold / TopAppBar) are implemented.
+- [x] TODO-3: Children vs. Slots Duality Resolution
+  - Description: Resolved via compositional children model where multi-slot organisms (Scaffold) inspect children (TopAppBar vs content children) while maintaining full compatibility with all tree mutation queries and undo/redo stacks.
 
 - [ ] TODO-4: Test Suite & Round-Trip Serialization Testing
   - Description: Zero unit tests across the codebase despite pure-function architecture in :domain and :adapter.

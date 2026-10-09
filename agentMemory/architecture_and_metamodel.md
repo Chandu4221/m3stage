@@ -171,12 +171,23 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - Mapped vector icons for all component kinds in `PartsDrawer.kt`.
 - Verified 100% compile-safe across all 5 modules via `./gradlew check`.
 
+### [x] Level 16: Canonical M3 Scaffold & TopAppBar Integration (Completed)
+- Added `ScaffoldProps` (`ContainerColor`) and `TopAppBarProps` (`Title`, `ContainerColor`, `TitleContentColor`) to `ComponentCatalog`.
+- Added `Scaffold` and `TopAppBar` definitions to `ComponentCatalog.all` (total 11 components, 100% registry coverage matching `ComponentKind`).
+- Implemented `TopAppBarRenderer` and `ScaffoldRenderer` in `:adapter:compose-renderer`.
+- Implemented `TopAppBarCodegen` and `ScaffoldCodegen` in `:adapter:compose-codegen` with `@OptIn(ExperimentalMaterial3Api::class)` screen export support.
+- Adopted compositional children model (`Scaffold` inspects `children` for `TopAppBar` and content containers such as `Column`).
+- Established `Scaffold` (with child `TopAppBar` and child `Column`) as the default root for all newly created screens in `ProjectSessionDelegate.createNewProject()` and `EditorStore.addNewScreen()`.
+- Smart drop redirection in `EditorStore.addNodeToActiveScreen()` automatically routes non-TopAppBar additions into the Scaffold's main content column.
+- Verified 100% compile-safe across all 5 modules via `./gradlew check`.
+
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
-- `:domain`: 100% verified, fully typed, compile-safe with 9 active component definitions.
-- `:adapter:compose-codegen`: 100% verified, 9 components with graceful fallback.
+- `:domain`: 100% verified, fully typed, compile-safe with all 11 component definitions (0 registry drift).
+- `:adapter:compose-codegen`: 100% verified, 11 components with KotlinPoet & `@OptIn` experimental M3 support.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
-- `:adapter:compose-renderer`: 100% verified, 9 components with `ThemeResolver`.
-- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, and Studio NavRail.
+- `:adapter:compose-renderer`: 100% verified, 11 components with `ThemeResolver` and `EmptyContainerPlaceholder`.
+- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, and canonical `Scaffold` screen genesis.
 - Full build check: `./gradlew check` **BUILD SUCCESSFUL**.
+

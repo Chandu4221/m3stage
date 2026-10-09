@@ -48,11 +48,25 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
             }
         }
     }
-
+    
     override fun createNewProject() {
         val idGen = context.idGenerator
-        val rootKind = ComponentKind.Column
-        val rootDef = ComponentCatalog[rootKind]
+        val scaffoldDef = ComponentCatalog[ComponentKind.Scaffold]
+        val topBarDef = ComponentCatalog[ComponentKind.TopAppBar]
+        val columnDef = ComponentCatalog[ComponentKind.Column]
+
+        val topBarNode = DesignNode(
+            id = idGen.nextNodeId(),
+            kind = ComponentKind.TopAppBar,
+            props = topBarDef.createDefaultProps(),
+            children = emptyList()
+        )
+        val contentColumnNode = DesignNode(
+            id = idGen.nextNodeId(),
+            kind = ComponentKind.Column,
+            props = columnDef.createDefaultProps(),
+            children = emptyList()
+        )
 
         val newProject = Project(
             id = idGen.nextProjectId(),
@@ -65,9 +79,9 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                     route = "/",
                     root = DesignNode(
                         id = idGen.nextNodeId(),
-                        kind = rootKind,
-                        props = rootDef.createDefaultProps(),
-                        children = emptyList()
+                        kind = ComponentKind.Scaffold,
+                        props = scaffoldDef.createDefaultProps(),
+                        children = listOf(topBarNode, contentColumnNode)
                     )
                 )
             )

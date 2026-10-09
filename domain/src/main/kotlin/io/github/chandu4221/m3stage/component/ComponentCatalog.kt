@@ -62,6 +62,16 @@ object ComponentCatalog {
         val SingleLine = PropertyKey.BooleanKey(PropertyId("textField.singleLine"))
     }
 
+    object ScaffoldProps {
+        val ContainerColor = PropertyKey.ColorKey(PropertyId("scaffold.containerColor"))
+    }
+
+    object TopAppBarProps {
+        val Title = PropertyKey.StringKey(PropertyId("topAppBar.title"))
+        val ContainerColor = PropertyKey.ColorKey(PropertyId("topAppBar.containerColor"))
+        val TitleContentColor = PropertyKey.ColorKey(PropertyId("topAppBar.titleContentColor"))
+    }
+
     // =========================================================================
     // COMPONENT DEFINITIONS
     // =========================================================================
@@ -251,6 +261,46 @@ object ComponentCatalog {
         )
     )
 
+    val Scaffold = ComponentDefinition(
+        kind = ComponentKind.Scaffold,
+        descriptors = listOf(
+            PropertyDescriptor.ColorPicker(
+                key = ScaffoldProps.ContainerColor,
+                displayName = "Container Color",
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Background)
+            )
+        ),
+        allowedChildren = setOf(
+            ComponentKind.TopAppBar,
+            ComponentKind.Column,
+            ComponentKind.Row,
+            ComponentKind.Box,
+            ComponentKind.Card
+        )
+    )
+
+    val TopAppBar = ComponentDefinition(
+        kind = ComponentKind.TopAppBar,
+        descriptors = listOf(
+            PropertyDescriptor.Text(
+                key = TopAppBarProps.Title,
+                displayName = "Title",
+                defaultValue = PropertyValue.StringValue("Title")
+            ),
+            PropertyDescriptor.ColorPicker(
+                key = TopAppBarProps.ContainerColor,
+                displayName = "Container Color",
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Surface)
+            ),
+            PropertyDescriptor.ColorPicker(
+                key = TopAppBarProps.TitleContentColor,
+                displayName = "Title Content Color",
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnSurface)
+            )
+        ),
+        allowedChildren = setOf(ComponentKind.Text, ComponentKind.Icon, ComponentKind.Button)
+    )
+
     // =========================================================================
     // REGISTRY & LOOKUPS
     // =========================================================================
@@ -264,7 +314,9 @@ object ComponentCatalog {
         Column,
         Row,
         Box,
-        Card
+        Card,
+        Scaffold,
+        TopAppBar
     )
 
     private val byKind: Map<ComponentKind, ComponentDefinition> = all.associateBy { it.kind }
