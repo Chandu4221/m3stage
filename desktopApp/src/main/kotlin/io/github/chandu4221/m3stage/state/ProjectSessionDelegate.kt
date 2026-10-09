@@ -25,14 +25,20 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
         scope.launch {
             try {
                 val loaded = context.repository.load()
-                if (loaded != null && ProjectValidation.validate(loaded).isEmpty()) {
-                    context.projectFlow.value = loaded
-                    context.eventFlow.emit(EditorEvent.LoadSuccess)
-                } else if (loaded == null) {
+                if (loaded != null) {
+                    val validationErrors = ProjectValidation.validate(loaded)
+                    if (validationErrors.isEmpty()) {
+                        context.projectFlow.value = loaded
+                        context.eventFlow.emit(EditorEvent.LoadSuccess)
+                    } else {
+                        context.eventFlow.emit(EditorEvent.LoadFailed("Invalid project invariants: ${validationErrors.joinToString("; ")}"))
+                    }
+                } else {
+                    // Truly first launch: file does not exist on disk
                     createNewProject()
                 }
             } catch (e: Exception) {
-                context.eventFlow.emit(EditorEvent.LoadFailed)
+                context.eventFlow.emit(EditorEvent.LoadFailed(e.message ?: "Failed to load project"))
             }
         }
     }

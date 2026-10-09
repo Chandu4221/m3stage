@@ -35,7 +35,7 @@ object DesignRenderer {
         fun renderNode(currentNode: DesignNode) {
             if (!currentNode.isVisible) return
 
-            val isSelected = currentNode.id.value == selectedNodeId?.value
+            val isSelected = currentNode.id == selectedNodeId
             val isLocked = currentNode.id in lockedNodeIds
 
             SelectionOverlay(

@@ -83,7 +83,8 @@ class ComposeCodeGenerator : CodeGenerator {
         val rawCode = fileSpec.toString()
         return try {
             Formatter.format(Formatter.GOOGLE_FORMAT, rawCode)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            System.err.println("ktfmt formatting fallback for screen '$screenIdentifier': ${e.message}")
             rawCode
         }
     }

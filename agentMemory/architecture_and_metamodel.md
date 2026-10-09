@@ -218,15 +218,29 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - Standardized test runners to `useJUnit()` across all subprojects.
 - All unit tests pass cleanly via `./gradlew test` and `./gradlew check`.
 
+### [x] Level 20: Resilient Persistence, Quarantine Backups & Code Hygiene (Completed)
+- `:adapter:json-persistence`:
+  - Added `CorruptProjectException` and automatic file quarantine backup: corrupted project files are preserved as `project.json.corrupt_<timestamp>` rather than silently dropped and overwritten on auto-save.
+  - Added unit test `JsonProjectRepositoryTest` validating that corrupt files trigger quarantine backups.
+- `:desktopApp`:
+  - Enriched `EditorEvent.LoadFailed(reason)` with typed diagnostic error messages.
+  - Updated `ProjectSessionDelegate.loadProject()` to surface validation and deserialization errors instead of creating blank projects.
+- `:adapter:compose-renderer`:
+  - Unified `currentNode.id == selectedNodeId` value class comparison in `DesignRenderer.kt`.
+- `:adapter:compose-codegen`:
+  - Added diagnostic stderr logging during ktfmt formatting fallback in `ComposeCodeGenerator.kt`.
+- Verified 100% test & build pass across all modules via `./gradlew test` and `./gradlew check`.
+
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
 - `:domain`: 100% verified, fully typed, compile-safe with all 11 component definitions and comprehensive unit test coverage.
 - `:adapter:compose-codegen`: 100% verified, 11 components with full WYSIWYG Inspector parity, KotlinPoet, identifier sanitization, and unit tests.
-- `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, tested with round-trip invariance.
+- `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, tested with round-trip invariance and corrupt file quarantine.
 - `:adapter:compose-renderer`: 100% verified, 11 components with `ThemeResolver` and `EmptyContainerPlaceholder`.
-- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, and canonical `Scaffold` screen genesis.
+- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, canonical `Scaffold` screen genesis, and resilient error recovery.
 - Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+
 
 
 

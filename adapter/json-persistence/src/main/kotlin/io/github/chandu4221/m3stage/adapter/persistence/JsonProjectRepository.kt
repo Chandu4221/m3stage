@@ -33,13 +33,23 @@ class JsonProjectRepository(
         return withContext(Dispatchers.IO) {
             if (!file.exists()) return@withContext null
 
+            val jsonString = file.readText()
             try {
-                val jsonString = file.readText()
                 val dto = json.decodeFromString<ProjectDto>(jsonString)
                 dto.toDomain()
             } catch (e: Exception) {
-                // In a real app, log this error. For now, return null on corrupt file.
-                null
+                // Safeguard: Create a backup of the corrupted file before returning to prevent accidental overwrite
+                val parent = file.parentFile ?: File(".")
+                val corruptBackup = File(parent, "${file.name}.corrupt_${System.currentTimeMillis()}")
+                try {
+                    file.copyTo(corruptBackup, overwrite = true)
+                } catch (_: Exception) {
+                    // Ignore backup copy failure if disk is full/read-only
+                }
+
+                System.err.println("CRITICAL: Failed to load project from ${file.absolutePath}: ${e.message}")
+                System.err.println("Quarantine backup preserved at: ${corruptBackup.absolutePath}")
+                throw CorruptProjectException(file, corruptBackup, e)
             }
         }
     }

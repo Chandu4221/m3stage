@@ -30,9 +30,8 @@ Status Key:
     - `:adapter:json-persistence`: `SerializationRoundTripTest` (Project -> DTO -> JSON -> DTO -> Project round-trip invariance across all 11 component kinds).
     - Unified Gradle test runner across subprojects to `useJUnit()`.
 
-- [ ] TODO-5: Resilient Project Loading & Error Recovery
-  - Description: JsonProjectRepository catches generic Exception and returns null silently with no user feedback or corrupt file recovery.
-  - Fix: Add error logging, retain a .corrupt backup file on deserialization failure, and surface typed errors through ProjectRepository or EditorEvent.LoadFailed(reason).
+- [x] TODO-5: Resilient Project Loading & Error Recovery
+  - Description: Implemented `CorruptProjectException` and automatic quarantine backup in `JsonProjectRepository`. Corrupted files are preserved at `project.json.corrupt_<timestamp>`, preventing accidental file wipeout on auto-save. Surfaced typed `EditorEvent.LoadFailed(reason)` in `ProjectSessionDelegate` and added unit test verification in `JsonProjectRepositoryTest`.
 
 ---
 
@@ -48,11 +47,11 @@ Status Key:
 - [ ] TODO-7: Store Lifecycle & Dispatcher Optimization
   - Description: storeScope in EditorStore collects project indefinitely. Auto-select-first-screen can be cleanly localized in ProjectSessionDelegate. Review Dispatchers.Main vs Dispatchers.Swing.
 
-- [ ] TODO-8: Value Class Equality Consistency
-  - Description: DesignRenderer compares currentNode.id.value == selectedNodeId?.value while elsewhere == is used directly on the NodeId value class. Unify to value class comparison.
+- [x] TODO-8: Value Class Equality Consistency
+  - Description: Unified `currentNode.id == selectedNodeId` in `DesignRenderer.kt` to leverage Kotlin value class equality consistently across the codebase.
 
-- [ ] TODO-9: ktfmt Formatter Error Feedback
-  - Description: Silent catch block during formatting fallback suppresses syntax or formatting issues without logging. Add diagnostics.
+- [x] TODO-9: ktfmt Formatter Error Feedback
+  - Description: Added stderr diagnostic logging in `ComposeCodeGenerator.kt` when ktfmt formatting encounters issues, preventing silent suppression during code export.
 
 ---
 
