@@ -55,6 +55,11 @@ fun EditorShellTemplate(
     isNodeLocked: Boolean,
     onToggleNodeLock: (NodeId) -> Unit,
     modifier: Modifier = Modifier,
+    viewportState: io.github.chandu4221.m3stage.state.CanvasViewportState,
+    onPointerToolChange: (io.github.chandu4221.m3stage.state.CanvasPointerTool) -> Unit,
+    onPanDelta: (androidx.compose.ui.geometry.Offset) -> Unit,
+    onWheelZoom: (Float) -> Unit,
+    onTidy: () -> Unit,
 ) {
     Row(
         modifier = modifier
@@ -96,10 +101,14 @@ fun EditorShellTemplate(
                 onRedo = onRedo,
                 onAddScreen = onAddScreen,
                 onExportCode = onExportCode,
-                zoomPercentage = zoomPercentage,
+                viewportState = viewportState,
+                onPointerToolChange = onPointerToolChange,
+                onPanDelta = onPanDelta,
+                onWheelZoom = onWheelZoom,
                 onZoomIn = onZoomIn,
                 onZoomOut = onZoomOut,
-                onZoomFit = onZoomFit
+                onZoomFit = onZoomFit,
+                onTidy = onTidy
             )
         }
 
@@ -203,7 +212,12 @@ private fun EditorShellTemplatePreview() {
                 onZoomFit = {},
                 selectedNode = null,
                 isNodeLocked = false,
-                onToggleNodeLock = {}
+                onToggleNodeLock = {},
+                viewportState = io.github.chandu4221.m3stage.state.CanvasViewportState(),
+                onPointerToolChange = {},
+                onPanDelta = {},
+                onWheelZoom = {},
+                onTidy = {},
             )
         }
     }

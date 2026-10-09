@@ -1,0 +1,61 @@
+# M3Stage Audit Action Items & TODOs
+
+Status Key:
+- [ ] PENDING: Identified and scheduled.
+- [IN-PROGRESS]: Currently being resolved.
+- [x] DONE: Fully implemented, tested, and verified.
+
+---
+
+### Critical Issues (Correctness & Trust)
+
+- [ ] TODO-1: Registry Drift & ComponentKind Exhaustiveness
+  - Description: ComponentKind has 11 kinds (defines Icon, Image, TextField, Scaffold, TopAppBar), but ComponentCatalog.all, codegen registry, and renderer registry only implement 6 (Text, Button, Column, Row, Box, Card).
+  - Risk: Dropping unhandled kinds renders "Unsupported" on canvas, and crashes codegen with error("Unregistered component kind").
+  - Fix: Either implement complete Catalog + Codegen + Renderer definitions for the remaining 5 kinds or make codegen degrade gracefully with a safe fallback placeholder rather than throwing an unhandled exception.
+
+- [ ] TODO-2: WYSIWYG Inspector-to-Codegen Parity Audit
+  - Description: Inspector allows configuring properties that codegen silently ignores. For example, ButtonProps.ContainerColor and ButtonProps.ContentColor exist with defaults, but ButtonCodegen only renders enabled.
+  - Risk: User customizes button colors or card elevation on canvas, but exported code silently drops them.
+  - Fix: Audit every PropertyDescriptor across all component kinds against its respective Codegen implementation, ensuring 100% property fidelity.
+
+- [ ] TODO-3: Children vs. Slots Duality Resolution
+  - Description: DesignNode defines both children: List<DesignNode> and slots: Map<SlotId, DesignNode>, but DesignRenderer, ButtonCodegen, and collectUsedClassNamesRecursive exclusively iterate children.
+  - Risk: Dead slots field causes architectural confusion and invariant drift.
+  - Fix: Decide on slot implementation: either fully wire slots traversal through the renderer, codegen, and mutation queries, or trim unused slots until multi-slot organisms (like Scaffold / TopAppBar) are implemented.
+
+- [ ] TODO-4: Test Suite & Round-Trip Serialization Testing
+  - Description: Zero unit tests across the codebase despite pure-function architecture in :domain and :adapter.
+  - Fix: Add unit tests in :domain (validations, mutations, queries) and :adapter:json-persistence (round-trip Project -> ProjectDto -> Project serialization invariance).
+
+- [ ] TODO-5: Resilient Project Loading & Error Recovery
+  - Description: JsonProjectRepository catches generic Exception and returns null silently with no user feedback or corrupt file recovery.
+  - Fix: Add error logging, retain a .corrupt backup file on deserialization failure, and surface typed errors through ProjectRepository or EditorEvent.LoadFailed(reason).
+
+---
+
+### Code Generation & Sanitization
+
+- [ ] TODO-6: Kotlin Identifier Sanitization in Codegen
+  - Description: Screens named "My Screen" or starting with digits ("1Home") generate invalid Kotlin identifiers and file names (My Screen.kt, fun My ScreenScreen()).
+  - Fix: Add identifier sanitization and deduplication logic (e.g. sanitizeToKotlinIdentifier(screen.name) -> MyScreenScreen).
+
+---
+
+### Quality of Life & Polish
+
+- [ ] TODO-7: Store Lifecycle & Dispatcher Optimization
+  - Description: storeScope in EditorStore collects project indefinitely. Auto-select-first-screen can be cleanly localized in ProjectSessionDelegate. Review Dispatchers.Main vs Dispatchers.Swing.
+
+- [ ] TODO-8: Value Class Equality Consistency
+  - Description: DesignRenderer compares currentNode.id.value == selectedNodeId?.value while elsewhere == is used directly on the NodeId value class. Unify to value class comparison.
+
+- [ ] TODO-9: ktfmt Formatter Error Feedback
+  - Description: Silent catch block during formatting fallback suppresses syntax or formatting issues without logging. Add diagnostics.
+
+---
+
+### Repository & Documentation Housekeeping
+
+- [ ] TODO-10: Public Documentation & Open Source Readiness
+  - Description: Update root README with actual m3stage features, architectural overview, and screenshots from agentMemory. Add LICENSE and a basic GitHub Actions CI workflow (./gradlew check).

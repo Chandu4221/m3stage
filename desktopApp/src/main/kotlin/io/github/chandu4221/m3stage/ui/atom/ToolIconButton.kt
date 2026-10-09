@@ -13,12 +13,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
@@ -60,6 +62,7 @@ fun ToolIconButton(
 
     if (tooltip != null) {
         TooltipArea(
+            delayMillis = 500, // 500ms delay so it doesn't pop up instantly over mouse
             tooltip = {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -74,8 +77,11 @@ fun ToolIconButton(
                     )
                 }
             },
-            tooltipPlacement = TooltipPlacement.CursorPoint(
-                alignment = androidx.compose.ui.Alignment.BottomCenter
+            // Places the tooltip cleanly ABOVE the button with an 8dp gap
+            tooltipPlacement = TooltipPlacement.ComponentRect(
+                anchor = Alignment.TopCenter,
+                alignment = Alignment.TopCenter,
+                offset = DpOffset(x = 0.dp, y = (-8).dp)
             )
         ) {
             buttonContent()

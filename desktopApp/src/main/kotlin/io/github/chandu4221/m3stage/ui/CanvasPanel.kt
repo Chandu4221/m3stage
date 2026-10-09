@@ -1,6 +1,9 @@
 package io.github.chandu4221.m3stage.ui
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,10 +14,18 @@ import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -25,9 +36,12 @@ import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.state.CanvasPointerTool
+import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.ui.device.DeviceFrame
 import io.github.chandu4221.m3stage.ui.device.DeviceOrientation
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CanvasPanel(
     screens: List<Screen>,
@@ -35,43 +49,76 @@ fun CanvasPanel(
     onSelectScreen: (ScreenId) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId) -> Unit,
-    onAddScreen: () -> Unit,
+    viewportState: CanvasViewportState,
+    onPanDelta: (Offset) -> Unit,
+    onWheelZoom: (Float) -> Unit,
     lockedNodeIds: Set<NodeId> = emptySet(),
     projectDefaultDevice: DevicePreset = DevicePreset.Default,
     modifier: Modifier = Modifier
 ) {
-    // --- INFINITE SCROLLABLE MULTI-ARTBOARD WORKBENCH ---
+    // --- INFINITE TRANSFORMABLE STUDIO WORKBENCH ---
     Box(
         modifier = modifier
             .fillMaxSize()
+            .clipToBounds()
             .background(MaterialTheme.colorScheme.surfaceDim)
-            .verticalScroll(rememberScrollState())
-            .horizontalScroll(rememberScrollState())
-            .padding(vertical = 56.dp, horizontal = 48.dp),
+            // 1. Mouse Dragging (Pans when in Pan tool mode or middle mouse drag)
+            .pointerInput(viewportState.activeTool) {
+                detectDragGestures { change, dragAmount ->
+                    if (viewportState.activeTool == CanvasPointerTool.Pan) {
+                        change.consume()
+                        onPanDelta(dragAmount)
+                    }
+                }
+            }
+            // 2. Mouse Wheel Scroll (Ctrl+Scroll zooms, plain scroll pans)
+            .onPointerEvent(PointerEventType.Scroll) { event ->
+                val change = event.changes.firstOrNull() ?: return@onPointerEvent
+                val deltaY = change.scrollDelta.y
+                val isCtrlPressed = event.keyboardModifiers.isCtrlPressed
+
+                if (isCtrlPressed) {
+                    val zoomDelta = if (deltaY < 0) 0.1f else -0.1f
+                    onWheelZoom(zoomDelta)
+                } else {
+                    val deltaX = change.scrollDelta.x
+                    onPanDelta(Offset(-deltaX * 20f, -deltaY * 20f))
+                }
+            },
         contentAlignment = Alignment.CenterStart
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(48.dp),
-            verticalAlignment = Alignment.Top
+        // --- TRANSFORMABLE ARTBOARDS CONTAINER ---
+        Box(
+            modifier = Modifier
+                .wrapContentSize(unbounded = true)
+                .graphicsLayer {
+                    scaleX = viewportState.zoom
+                    scaleY = viewportState.zoom
+                    translationX = viewportState.panOffset.x
+                    translationY = viewportState.panOffset.y
+                }
+                .padding(vertical = 56.dp, horizontal = 72.dp)
         ) {
-            screens.forEach { screen ->
-                val isActive = screen.id == activeScreenId
-                ScreenArtboard(
-                    screen = screen,
-                    isActive = isActive,
-                    onActivate = { onSelectScreen(screen.id) },
-                    selectedNodeId = if (isActive) selectedNodeId else null,
-                    onNodeClick = { nodeId ->
-                        onSelectScreen(screen.id)
-                        onNodeClick(nodeId)
-                    },
-                    lockedNodeIds = lockedNodeIds,
-                    projectDefaultDevice = projectDefaultDevice
-                )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(48.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                screens.forEach { screen ->
+                    val isActive = screen.id == activeScreenId
+                    ScreenArtboard(
+                        screen = screen,
+                        isActive = isActive,
+                        onActivate = { onSelectScreen(screen.id) },
+                        selectedNodeId = if (isActive) selectedNodeId else null,
+                        onNodeClick = { nodeId ->
+                            onSelectScreen(screen.id)
+                            onNodeClick(nodeId)
+                        },
+                        lockedNodeIds = lockedNodeIds,
+                        projectDefaultDevice = projectDefaultDevice
+                    )
+                }
             }
-
-            // Ghost Add Screen Card at end of Row
-            AddScreenGhostCard(onClick = onAddScreen)
         }
     }
 }

@@ -1,9 +1,11 @@
 package io.github.chandu4221.m3stage.ui.organism
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
@@ -13,12 +15,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.state.CanvasPointerTool
+import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.ui.CanvasPanel
 import io.github.chandu4221.m3stage.ui.atom.DimensionBadge
 import io.github.chandu4221.m3stage.ui.atom.ToolIconButton
@@ -26,8 +30,7 @@ import io.github.chandu4221.m3stage.ui.molecule.CapsuleToolbar
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
 /**
- * Dumb Organism: Floating rounded canvas studio workspace.
- * Floating capsule islands hover over a rounded workspace card.
+ * Dumb Organism: Floating rounded canvas studio workspace with live viewport transforms.
  */
 @Composable
 fun FloatingCanvasStudio(
@@ -43,10 +46,14 @@ fun FloatingCanvasStudio(
     onRedo: () -> Unit,
     onAddScreen: () -> Unit,
     onExportCode: () -> Unit,
-    zoomPercentage: Int,
+    viewportState: CanvasViewportState,
+    onPointerToolChange: (CanvasPointerTool) -> Unit,
+    onPanDelta: (Offset) -> Unit,
+    onWheelZoom: (Float) -> Unit,
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
     onZoomFit: () -> Unit,
+    onTidy: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -56,7 +63,7 @@ fun FloatingCanvasStudio(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Multi-Screen Canvas Panel
+            // Live Transformable Canvas
             if (screens.isNotEmpty()) {
                 CanvasPanel(
                     screens = screens,
@@ -64,7 +71,9 @@ fun FloatingCanvasStudio(
                     onSelectScreen = onSelectScreen,
                     selectedNodeId = selectedNodeId,
                     onNodeClick = onNodeClick,
-                    onAddScreen = onAddScreen,
+                    viewportState = viewportState,
+                    onPanDelta = onPanDelta,
+                    onWheelZoom = onWheelZoom,
                     lockedNodeIds = lockedNodeIds,
                     projectDefaultDevice = DevicePreset.Default
                 )
@@ -82,18 +91,21 @@ fun FloatingCanvasStudio(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Island 1: Pointer Modes
+                // Island 1: Pointer Modes (Select vs. Pan)
                 CapsuleToolbar {
                     ToolIconButton(
                         icon = Icons.Default.NearMe,
-                        contentDescription = "Select pointer",
-                        isSelected = true,
-                        onClick = {}
+                        contentDescription = "Select tool",
+                        isSelected = viewportState.activeTool == CanvasPointerTool.Select,
+                        onClick = { onPointerToolChange(CanvasPointerTool.Select) },
+                        tooltip = "Selection Pointer (V)"
                     )
                     ToolIconButton(
                         icon = Icons.Default.PanTool,
-                        contentDescription = "Pan canvas",
-                        onClick = {}
+                        contentDescription = "Hand tool",
+                        isSelected = viewportState.activeTool == CanvasPointerTool.Pan,
+                        onClick = { onPointerToolChange(CanvasPointerTool.Pan) },
+                        tooltip = "Hand Pan Tool (H / Hold Space)"
                     )
                 }
 
@@ -132,32 +144,51 @@ fun FloatingCanvasStudio(
                 }
             }
 
-            // Bottom-Right Floating Island: Zoom Controls
-            CapsuleToolbar(
+            // Bottom-Right Floating Island: Tidy + Zoom Controls
+            Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ToolIconButton(
-                    icon = Icons.Default.Remove,
-                    contentDescription = "Zoom Out",
-                    onClick = onZoomOut
-                )
-                DimensionBadge(text = "$zoomPercentage%")
-                ToolIconButton(
-                    icon = Icons.Default.Add,
-                    contentDescription = "Zoom In",
-                    onClick = onZoomIn
-                )
-                ToolIconButton(
-                    icon = Icons.Default.FitScreen,
-                    contentDescription = "Zoom to Fit",
-                    onClick = onZoomFit
-                )
+                // Tidy Capsule
+                CapsuleToolbar {
+                    ToolIconButton(
+                        icon = Icons.AutoMirrored.Filled.FormatAlignLeft,
+                        contentDescription = "Tidy Artboards",
+                        onClick = onTidy,
+                        tooltip = "Tidy & Center Artboards"
+                    )
+                }
+
+                // Zoom Capsule
+                CapsuleToolbar {
+                    ToolIconButton(
+                        icon = Icons.Default.Remove,
+                        contentDescription = "Zoom Out",
+                        onClick = onZoomOut,
+                        tooltip = "Zoom Out"
+                    )
+                    DimensionBadge(text = "${viewportState.zoomPercentage}%")
+                    ToolIconButton(
+                        icon = Icons.Default.Add,
+                        contentDescription = "Zoom In",
+                        onClick = onZoomIn,
+                        tooltip = "Zoom In"
+                    )
+                    ToolIconButton(
+                        icon = Icons.Default.FitScreen,
+                        contentDescription = "Zoom to Fit",
+                        onClick = onZoomFit,
+                        tooltip = "Reset Zoom (100%)"
+                    )
+                }
             }
         }
     }
 }
+
 @Preview
 @Composable
 private fun FloatingCanvasStudioPreview() {
@@ -176,10 +207,14 @@ private fun FloatingCanvasStudioPreview() {
                 onRedo = {},
                 onAddScreen = {},
                 onExportCode = {},
-                zoomPercentage = 100,
+                viewportState = CanvasViewportState(),
+                onPointerToolChange = {},
+                onPanDelta = {},
+                onWheelZoom = {},
                 onZoomIn = {},
                 onZoomOut = {},
-                onZoomFit = {}
+                onZoomFit = {},
+                onTidy = {}
             )
         }
     }
