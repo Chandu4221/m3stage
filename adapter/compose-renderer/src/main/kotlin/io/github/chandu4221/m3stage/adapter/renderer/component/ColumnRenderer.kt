@@ -18,7 +18,8 @@ class ColumnRenderer : NodeRenderer {
     @Composable
     override fun Render(
         node: DesignNode,
-        renderChild: @Composable (DesignNode) -> Unit
+        modifier: Modifier,
+        renderChild: @Composable ((DesignNode) -> Unit)
     ) {
         val spacing = node[ComponentCatalog.ColumnProps.Spacing]?.value ?: 0f
         val hAlign = when (node[ComponentCatalog.ColumnProps.HorizontalAlignment]?.name) {
@@ -36,7 +37,7 @@ class ColumnRenderer : NodeRenderer {
         }
 
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             horizontalAlignment = hAlign,
             verticalArrangement = vArrangement
         ) {

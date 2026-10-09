@@ -2,6 +2,7 @@ package io.github.chandu4221.m3stage.adapter.renderer.component
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.adapter.renderer.ThemeResolver
@@ -13,7 +14,8 @@ class TextRenderer : NodeRenderer {
     @Composable
     override fun Render(
         node: DesignNode,
-        renderChild: @Composable (DesignNode) -> Unit
+        modifier: Modifier,
+        renderChild: @Composable ((DesignNode) -> Unit)
     ) {
         val textContent = node[ComponentCatalog.TextProps.TextContent]?.value ?: "Sample Text"
         val typography = ThemeResolver.resolveTypography(node[ComponentCatalog.TextProps.Typography])
@@ -29,7 +31,8 @@ class TextRenderer : NodeRenderer {
             text = textContent,
             style = typography,
             color = color,
-            overflow = textOverflow
+            overflow = textOverflow,
+            modifier = modifier
         )
     }
 }

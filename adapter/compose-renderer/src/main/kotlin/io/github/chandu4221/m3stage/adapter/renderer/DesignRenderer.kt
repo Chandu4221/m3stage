@@ -2,12 +2,7 @@ package io.github.chandu4221.m3stage.adapter.renderer
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import io.github.chandu4221.m3stage.adapter.renderer.component.BoxRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.component.ButtonRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.component.CardRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.component.ColumnRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.component.RowRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.component.TextRenderer
+import io.github.chandu4221.m3stage.adapter.renderer.component.*
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
@@ -16,7 +11,10 @@ object DesignRenderer {
 
     private val registry: Map<ComponentKind, NodeRenderer> = mapOf(
         ComponentKind.Text to TextRenderer(),
+        ComponentKind.Icon to IconRenderer(),
+        ComponentKind.Image to ImageRenderer(),
         ComponentKind.Button to ButtonRenderer(),
+        ComponentKind.TextField to TextFieldRenderer(),
         ComponentKind.Column to ColumnRenderer(),
         ComponentKind.Row to RowRenderer(),
         ComponentKind.Box to BoxRenderer(),

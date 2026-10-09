@@ -46,6 +46,22 @@ object ComponentCatalog {
         val Shape = PropertyKey.ShapeKey(PropertyId("card.shape"))
     }
 
+    object IconProps {
+        val IconName = PropertyKey.StringKey(PropertyId("icon.name"))
+        val Tint = PropertyKey.ColorKey(PropertyId("icon.tint"))
+    }
+
+    object ImageProps {
+        val ContentDescription = PropertyKey.StringKey(PropertyId("image.contentDescription"))
+    }
+
+    object TextFieldProps {
+        val Value = PropertyKey.StringKey(PropertyId("textField.value"))
+        val Label = PropertyKey.StringKey(PropertyId("textField.label"))
+        val Placeholder = PropertyKey.StringKey(PropertyId("textField.placeholder"))
+        val SingleLine = PropertyKey.BooleanKey(PropertyId("textField.singleLine"))
+    }
+
     // =========================================================================
     // COMPONENT DEFINITIONS
     // =========================================================================
@@ -182,11 +198,74 @@ object ComponentCatalog {
         )
     )
 
+    val Icon = ComponentDefinition(
+        kind = ComponentKind.Icon,
+        descriptors = listOf(
+            PropertyDescriptor.Text(
+                key = IconProps.IconName,
+                displayName = "Icon Name",
+                defaultValue = PropertyValue.StringValue("Star")
+            ),
+            PropertyDescriptor.ColorPicker(
+                key = IconProps.Tint,
+                displayName = "Tint Color",
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Primary)
+            )
+        )
+    )
+
+    val Image = ComponentDefinition(
+        kind = ComponentKind.Image,
+        descriptors = listOf(
+            PropertyDescriptor.Text(
+                key = ImageProps.ContentDescription,
+                displayName = "Content Description",
+                defaultValue = PropertyValue.StringValue("Image")
+            )
+        )
+    )
+
+    val TextField = ComponentDefinition(
+        kind = ComponentKind.TextField,
+        descriptors = listOf(
+            PropertyDescriptor.Text(
+                key = TextFieldProps.Label,
+                displayName = "Label",
+                defaultValue = PropertyValue.StringValue("Label")
+            ),
+            PropertyDescriptor.Text(
+                key = TextFieldProps.Placeholder,
+                displayName = "Placeholder",
+                defaultValue = PropertyValue.StringValue("Enter text...")
+            ),
+            PropertyDescriptor.Text(
+                key = TextFieldProps.Value,
+                displayName = "Value",
+                defaultValue = PropertyValue.StringValue("")
+            ),
+            PropertyDescriptor.Switch(
+                key = TextFieldProps.SingleLine,
+                displayName = "Single Line",
+                defaultValue = PropertyValue.BooleanValue(true)
+            )
+        )
+    )
+
     // =========================================================================
     // REGISTRY & LOOKUPS
     // =========================================================================
-
-    val all: List<ComponentDefinition> = listOf(Text, Button, Column, Row, Box, Card)
+    
+    val all: List<ComponentDefinition> = listOf(
+        Text,
+        Icon,
+        Image,
+        Button,
+        TextField,
+        Column,
+        Row,
+        Box,
+        Card
+    )
 
     private val byKind: Map<ComponentKind, ComponentDefinition> = all.associateBy { it.kind }
 

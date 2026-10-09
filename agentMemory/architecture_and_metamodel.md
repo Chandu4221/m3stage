@@ -162,10 +162,21 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 
 ---
 
+### [x] Level 15: Component Registry Expansion (Icon, Image, TextField) (Completed)
+- Added `IconProps`, `ImageProps`, and `TextFieldProps` to `ComponentCatalog`.
+- Added `Icon`, `Image`, and `TextField` definitions with strongly typed descriptors to `ComponentCatalog.all`.
+- Implemented `IconRenderer`, `ImageRenderer`, and `TextFieldRenderer` in `:adapter:compose-renderer`.
+- Implemented `IconCodegen`, `ImageCodegen`, and `TextFieldCodegen` in `:adapter:compose-codegen`.
+- Added graceful fallback handling in `ComposeCodeGenerator` to emit informative code comments instead of crashing with `error("Unregistered...")`.
+- Mapped vector icons for all component kinds in `PartsDrawer.kt`.
+- Verified 100% compile-safe across all 5 modules via `./gradlew check`.
+
+---
+
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
-- `:domain`: 100% verified, fully typed, compile-safe.
-- `:adapter:compose-codegen`: 100% verified, subpackaged, compiles cleanly.
+- `:domain`: 100% verified, fully typed, compile-safe with 9 active component definitions.
+- `:adapter:compose-codegen`: 100% verified, 9 components with graceful fallback.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
-- `:adapter:compose-renderer`: 100% verified, subpackaged with `ThemeResolver`, compiles cleanly.
+- `:adapter:compose-renderer`: 100% verified, 9 components with `ThemeResolver`.
 - `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, and Studio NavRail.
 - Full build check: `./gradlew check` **BUILD SUCCESSFUL**.

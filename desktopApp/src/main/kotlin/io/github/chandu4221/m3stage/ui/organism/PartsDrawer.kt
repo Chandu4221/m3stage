@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Input
+import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -163,16 +163,16 @@ private fun PartsCategorySection(
 
 private fun resolveComponentIcon(kind: ComponentKind): ImageVector = when (kind) {
     ComponentKind.Text -> Icons.Default.TextFields
+    ComponentKind.Icon -> Icons.Default.Star
+    ComponentKind.Image -> Icons.Default.Image
     ComponentKind.Button -> Icons.Default.SmartButton
+    ComponentKind.TextField -> Icons.Default.EditNote
     ComponentKind.Column -> Icons.Default.ViewColumn
     ComponentKind.Row -> Icons.Default.TableRows
     ComponentKind.Box -> Icons.Default.CheckBoxOutlineBlank
     ComponentKind.Card -> Icons.Default.CropSquare
-    ComponentKind.Icon -> Icons.Default.Image
-    ComponentKind.Image -> Icons.Default.Image
-    ComponentKind.TextField -> Icons.AutoMirrored.Filled.Input
-    ComponentKind.Scaffold -> Icons.Default.Portrait
-    ComponentKind.TopAppBar -> Icons.Default.WebAsset
+    ComponentKind.Scaffold -> Icons.Default.Web
+    ComponentKind.TopAppBar -> Icons.AutoMirrored.Filled.MenuOpen
 }
 
 @Preview

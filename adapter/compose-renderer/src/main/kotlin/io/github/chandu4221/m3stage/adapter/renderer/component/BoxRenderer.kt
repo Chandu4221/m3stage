@@ -15,7 +15,8 @@ class BoxRenderer : NodeRenderer {
     @Composable
     override fun Render(
         node: DesignNode,
-        renderChild: @Composable (DesignNode) -> Unit
+        modifier: Modifier,
+        renderChild: @Composable ((DesignNode) -> Unit)
     ) {
         val alignment = when (node[ComponentCatalog.BoxProps.ContentAlignment]?.name) {
             ContentAlignmentOption.TopStart.name -> Alignment.TopStart
@@ -31,7 +32,7 @@ class BoxRenderer : NodeRenderer {
         }
 
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             contentAlignment = alignment
         ) {
             if (node.children.isEmpty()) {

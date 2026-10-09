@@ -17,7 +17,8 @@ class CardRenderer : NodeRenderer {
     @Composable
     override fun Render(
         node: DesignNode,
-        renderChild: @Composable (DesignNode) -> Unit
+        modifier: Modifier,
+        renderChild: @Composable ((DesignNode) -> Unit)
     ) {
         val elevation = node[ComponentCatalog.CardProps.Elevation]?.value ?: 1f
         val containerColor = ThemeResolver.resolveColor(node[ComponentCatalog.CardProps.ContainerColor])
@@ -27,7 +28,7 @@ class CardRenderer : NodeRenderer {
             elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp),
             colors = CardDefaults.cardColors(containerColor = containerColor),
             shape = shape,
-            modifier = Modifier.fillMaxWidth().padding(4.dp)
+            modifier = modifier.fillMaxWidth().padding(4.dp)
         ) {
             if (node.children.isEmpty()) {
                 EmptyContainerPlaceholder("Card")

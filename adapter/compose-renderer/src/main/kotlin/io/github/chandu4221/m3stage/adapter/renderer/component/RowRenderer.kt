@@ -18,7 +18,8 @@ class RowRenderer : NodeRenderer {
     @Composable
     override fun Render(
         node: DesignNode,
-        renderChild: @Composable (DesignNode) -> Unit
+        modifier: Modifier,
+        renderChild: @Composable ((DesignNode) -> Unit)
     ) {
         val spacing = node[ComponentCatalog.RowProps.Spacing]?.value ?: 0f
         val hArrangement = when (node[ComponentCatalog.RowProps.HorizontalArrangement]?.name) {
@@ -36,9 +37,9 @@ class RowRenderer : NodeRenderer {
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             horizontalArrangement = hArrangement,
-            verticalAlignment = vAlign
+            verticalAlignment = vAlign,
         ) {
             if (node.children.isEmpty()) {
                 EmptyContainerPlaceholder("Row")

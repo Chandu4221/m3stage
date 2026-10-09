@@ -16,7 +16,8 @@ class ButtonRenderer : NodeRenderer {
     @Composable
     override fun Render(
         node: DesignNode,
-        renderChild: @Composable (DesignNode) -> Unit
+        modifier: Modifier,
+        renderChild: @Composable ((DesignNode) -> Unit)
     ) {
         val enabled = node[ComponentCatalog.ButtonProps.Enabled]?.value ?: true
         val containerColor = ThemeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContainerColor])
@@ -31,7 +32,7 @@ class ButtonRenderer : NodeRenderer {
             onClick = {},
             enabled = enabled,
             colors = colors,
-            modifier = Modifier.padding(4.dp)
+            modifier = modifier.padding(4.dp)
         ) {
             if (node.children.isEmpty()) {
                 Text(text = "Button")

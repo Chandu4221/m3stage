@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.adapter.renderer
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import io.github.chandu4221.m3stage.model.DesignNode
 
 
@@ -18,6 +19,7 @@ interface NodeRenderer {
     @Composable
     fun Render(
         node: DesignNode,
+        modifier: Modifier = Modifier,
         renderChild: @Composable (DesignNode) -> Unit
     )
 }

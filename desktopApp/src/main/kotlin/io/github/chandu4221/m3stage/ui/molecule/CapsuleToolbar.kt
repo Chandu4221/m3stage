@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Redo
-import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -64,12 +64,12 @@ private fun CapsuleToolbarPreview() {
                 isSelected = true
             )
             ToolIconButton(
-                icon = Icons.Default.Undo,
+                icon = Icons.AutoMirrored.Filled.Undo,
                 contentDescription = "Undo",
                 onClick = {}
             )
             ToolIconButton(
-                icon = Icons.Default.Redo,
+                icon = Icons.AutoMirrored.Filled.Redo,
                 contentDescription = "Redo",
                 onClick = {},
                 isEnabled = false

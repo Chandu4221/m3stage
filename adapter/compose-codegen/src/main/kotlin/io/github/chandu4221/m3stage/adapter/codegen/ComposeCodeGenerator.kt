@@ -5,12 +5,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
-import io.github.chandu4221.m3stage.adapter.codegen.component.BoxCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.ButtonCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.CardCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.ColumnCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.RowCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.TextCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.*
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
@@ -29,7 +24,10 @@ class ComposeCodeGenerator : CodeGenerator {
     // Each codegen internally uses PackageNameResolver for its ClassName.
     private val registry: Map<ComponentKind, ComponentCodegen> = mapOf(
         ComponentKind.Text to TextCodegen(),
+        ComponentKind.Icon to IconCodegen(),
+        ComponentKind.Image to ImageCodegen(),
         ComponentKind.Button to ButtonCodegen(),
+        ComponentKind.TextField to TextFieldCodegen(),
         ComponentKind.Column to ColumnCodegen(),
         ComponentKind.Row to RowCodegen(),
         ComponentKind.Box to BoxCodegen(),
@@ -53,7 +51,7 @@ class ComposeCodeGenerator : CodeGenerator {
         fun walk(node: DesignNode): CodeBlock {
             if (!node.isVisible) return CodeBlock.builder().build()
             val codegen = registry[node.kind]
-                ?: error("Unregistered component kind: ${node.kind}")
+                ?: return CodeBlock.of("// TODO: Unsupported component kind %L\n", node.kind)
             return codegen.generate(node, ::walk)
         }
 

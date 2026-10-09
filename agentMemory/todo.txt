@@ -9,10 +9,12 @@ Status Key:
 
 ### Critical Issues (Correctness & Trust)
 
-- [ ] TODO-1: Registry Drift & ComponentKind Exhaustiveness
-  - Description: ComponentKind has 11 kinds (defines Icon, Image, TextField, Scaffold, TopAppBar), but ComponentCatalog.all, codegen registry, and renderer registry only implement 6 (Text, Button, Column, Row, Box, Card).
-  - Risk: Dropping unhandled kinds renders "Unsupported" on canvas, and crashes codegen with error("Unregistered component kind").
-  - Fix: Either implement complete Catalog + Codegen + Renderer definitions for the remaining 5 kinds or make codegen degrade gracefully with a safe fallback placeholder rather than throwing an unhandled exception.
+- [IN-PROGRESS] TODO-1: Registry Drift & ComponentKind Exhaustiveness
+  - Description: ComponentKind has 11 kinds (defines Icon, Image, TextField, Scaffold, TopAppBar).
+  - Progress:
+    - [x] Group 1 (Atoms & Leaves): `Icon`, `Image`, `TextField` fully implemented across ComponentCatalog, compose-renderer, and compose-codegen.
+    - [x] Graceful Codegen Fallback: Added fallback comment in ComposeCodeGenerator preventing unhandled crashes.
+    - [ ] Group 2 (Organisms & Layouts): `Scaffold`, `TopAppBar` (requires named slots or container layout mapping).
 
 - [ ] TODO-2: WYSIWYG Inspector-to-Codegen Parity Audit
   - Description: Inspector allows configuring properties that codegen silently ignores. For example, ButtonProps.ContainerColor and ButtonProps.ContentColor exist with defaults, but ButtonCodegen only renders enabled.
