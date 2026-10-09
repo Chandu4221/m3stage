@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
+import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -17,18 +18,32 @@ class CardCodegen : ComponentCodegen {
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val elevation = node[ComponentCatalog.CardProps.Elevation]?.value ?: 1f
+        val containerColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.CardProps.ContainerColor])
+        val shapeCode = ThemeCodeResolver.resolveShape(node[ComponentCatalog.CardProps.Shape])
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
-            // %M is KotlinPoet for MemberName (extension properties and functions)
             .add(
                 "elevation = %T.cardElevation(defaultElevation = %L.%M),\n",
                 ComposeSymbols.CardDefaults,
                 elevation,
                 ComposeSymbols.Dp
             )
-            .unindent()
+
+        if (containerColorCode != null) {
+            builder.add(
+                "colors = %T.cardColors(containerColor = %L),\n",
+                ComposeSymbols.CardDefaults,
+                containerColorCode
+            )
+        }
+
+        if (shapeCode != null) {
+            builder.add("shape = %L,\n", shapeCode)
+        }
+
+        builder.unindent()
             .add(") {\n")
             .indent()
 

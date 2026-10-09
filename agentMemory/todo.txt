@@ -16,17 +16,19 @@ Status Key:
     - [x] Graceful Codegen Fallback: Added fallback comment in ComposeCodeGenerator preventing unhandled crashes.
     - [x] Group 2 (Organisms & Layouts): `Scaffold`, `TopAppBar` fully implemented with compositional children model and default screen root genesis across domain, renderer, codegen, and desktop store.
 
-- [ ] TODO-2: WYSIWYG Inspector-to-Codegen Parity Audit
-  - Description: Inspector allows configuring properties that codegen silently ignores. For example, ButtonProps.ContainerColor and ButtonProps.ContentColor exist with defaults, but ButtonCodegen only renders enabled.
-  - Risk: User customizes button colors or card elevation on canvas, but exported code silently drops them.
-  - Fix: Audit every PropertyDescriptor across all component kinds against its respective Codegen implementation, ensuring 100% property fidelity.
+- [x] TODO-2: WYSIWYG Inspector-to-Codegen Parity Audit
+  - Description: Audited every PropertyDescriptor across all 11 component kinds against its respective Codegen implementation.
+  - Fix: Implemented ThemeCodeResolver and updated all 11 component codegens (Text, Icon, Image, Button, TextField, Column, Row, Box, Card, Scaffold, TopAppBar) with 100% property fidelity covering colors, typography, shapes, alignments, arrangements, and spacing.
 
 - [x] TODO-3: Children vs. Slots Duality Resolution
   - Description: Resolved via compositional children model where multi-slot organisms (Scaffold) inspect children (TopAppBar vs content children) while maintaining full compatibility with all tree mutation queries and undo/redo stacks.
 
-- [ ] TODO-4: Test Suite & Round-Trip Serialization Testing
-  - Description: Zero unit tests across the codebase despite pure-function architecture in :domain and :adapter.
-  - Fix: Add unit tests in :domain (validations, mutations, queries) and :adapter:json-persistence (round-trip Project -> ProjectDto -> Project serialization invariance).
+- [x] TODO-4: Test Suite & Round-Trip Serialization Testing
+  - Description: Implemented comprehensive unit test suite:
+    - `:domain`: `ProjectValidationTest` (invariants, duplicate IDs, empty screens), `DesignNodeOperationsTest` (find, parent, path, immutable add/remove/updateProp mutations), `ComponentCatalogTest` (all 11 kinds registered with valid default props).
+    - `:adapter:compose-codegen`: `KotlinIdentifierSanitizerTest` (PascalCase conversion, leading digit prefixing, deduplication, function naming).
+    - `:adapter:json-persistence`: `SerializationRoundTripTest` (Project -> DTO -> JSON -> DTO -> Project round-trip invariance across all 11 component kinds).
+    - Unified Gradle test runner across subprojects to `useJUnit()`.
 
 - [ ] TODO-5: Resilient Project Loading & Error Recovery
   - Description: JsonProjectRepository catches generic Exception and returns null silently with no user feedback or corrupt file recovery.
@@ -36,9 +38,8 @@ Status Key:
 
 ### Code Generation & Sanitization
 
-- [ ] TODO-6: Kotlin Identifier Sanitization in Codegen
-  - Description: Screens named "My Screen" or starting with digits ("1Home") generate invalid Kotlin identifiers and file names (My Screen.kt, fun My ScreenScreen()).
-  - Fix: Add identifier sanitization and deduplication logic (e.g. sanitizeToKotlinIdentifier(screen.name) -> MyScreenScreen).
+- [x] TODO-6: Kotlin Identifier Sanitization in Codegen
+  - Description: Implemented `KotlinIdentifierSanitizer` in `:adapter:compose-codegen`. Converts screen names to safe PascalCase identifiers, handles leading digits, deduplicates duplicate screen names across projects, and formats function names (`toFunctionName`).
 
 ---
 

@@ -4,28 +4,30 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
-import io.github.chandu4221.m3stage.component.ComponentCatalog.IconProps
+import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
+import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.property.PropertyValue
 
 class IconCodegen : ComponentCodegen {
     override val className: ClassName = ClassName(PackageNameResolver.resolve(ComponentKind.Icon), "Icon")
 
-    override fun generate(
-        node: DesignNode,
-        walk: (DesignNode) -> CodeBlock
-    ): CodeBlock {
-        val iconName = (node.props[IconProps.IconName.id] as? PropertyValue.StringValue)?.value ?: "Star"
+    override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
+        val iconName = node[ComponentCatalog.IconProps.IconName]?.value ?: "Star"
+        val tintCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.IconProps.Tint])
         val iconsDefault = ClassName("androidx.compose.material.icons", "Icons")
 
         val builder = CodeBlock.builder()
-        builder.add("%T(\n", className)
-        builder.indent()
-        builder.add("imageVector = %T.Default.%L,\n", iconsDefault, iconName)
-        builder.add("contentDescription = %S\n", iconName)
-        builder.unindent()
-        builder.add(")\n")
+            .add("%T(\n", className)
+            .indent()
+            .add("imageVector = %T.Default.%L,\n", iconsDefault, iconName)
+            .add("contentDescription = %S,\n", iconName)
+
+        if (tintCode != null) {
+            builder.add("tint = %L,\n", tintCode)
+        }
+
+        builder.unindent().add(")\n")
         return builder.build()
     }
 }

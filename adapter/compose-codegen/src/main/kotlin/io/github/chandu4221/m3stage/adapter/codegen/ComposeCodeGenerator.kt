@@ -1,11 +1,7 @@
 package io.github.chandu4221.m3stage.adapter.codegen
 
 import com.facebook.ktfmt.format.Formatter
-import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.*
 import io.github.chandu4221.m3stage.adapter.codegen.component.*
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -38,18 +34,25 @@ class ComposeCodeGenerator : CodeGenerator {
     )
 
     override fun generate(project: Project): GeneratedProject {
+        val seenNames = mutableMapOf<String, Int>()
+
         val files = project.screens.map { screen ->
-            val content = exportScreen(screen, project.basePackage)
+            val baseName = KotlinIdentifierSanitizer.toPascalCase(screen.name)
+            val count = seenNames.getOrDefault(baseName, 0)
+            seenNames[baseName] = count + 1
+            val sanitizedName = if (count == 0) baseName else "${baseName}_$count"
+
+            val content = exportScreen(screen, sanitizedName, project.basePackage)
             GeneratedFile(
                 packageName = project.basePackage,
-                fileName = "${screen.name}.kt",
+                fileName = "$sanitizedName.kt",
                 content = content
             )
         }
         return GeneratedProject(files)
     }
 
-    private fun exportScreen(screen: Screen, packageName: String): String {
+    private fun exportScreen(screen: Screen, screenIdentifier: String, packageName: String): String {
         val usedClassNames = collectUsedClassNames(screen.root)
         fun walk(node: DesignNode): CodeBlock {
             if (!node.isVisible) return CodeBlock.builder().build()
@@ -63,9 +66,11 @@ class ComposeCodeGenerator : CodeGenerator {
             .build()
 
         val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
-        val fileSpecBuilder = FileSpec.builder(packageName, screen.name)
+        val functionName = KotlinIdentifierSanitizer.toFunctionName(screenIdentifier)
+
+        val fileSpecBuilder = FileSpec.builder(packageName, screenIdentifier)
             .addFunction(
-                FunSpec.builder("${screen.name}Screen")
+                FunSpec.builder(functionName)
                     .addAnnotation(composableAnnotation)
                     .addAnnotation(optInAnnotation)
                     .addCode(walk(screen.root))

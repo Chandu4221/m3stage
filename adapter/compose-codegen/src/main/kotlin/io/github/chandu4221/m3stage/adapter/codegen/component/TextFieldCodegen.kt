@@ -3,35 +3,39 @@ package io.github.chandu4221.m3stage.adapter.codegen.component
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
-import io.github.chandu4221.m3stage.component.ComponentCatalog.TextFieldProps
+import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.property.PropertyValue
 
 class TextFieldCodegen : ComponentCodegen {
     override val className: ClassName = ClassName(PackageNameResolver.resolve(ComponentKind.TextField), "TextField")
 
-    override fun generate(
-        node: DesignNode,
-        walk: (DesignNode) -> CodeBlock
-    ): CodeBlock {
-        val textValue = (node.props[TextFieldProps.Value.id] as? PropertyValue.StringValue)?.value ?: ""
-        val label = (node.props[TextFieldProps.Label.id] as? PropertyValue.StringValue)?.value ?: ""
-        val singleLine = (node.props[TextFieldProps.SingleLine.id] as? PropertyValue.BooleanValue)?.value ?: true
+    override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
+        val textValue = node[ComponentCatalog.TextFieldProps.Value]?.value ?: ""
+        val label = node[ComponentCatalog.TextFieldProps.Label]?.value ?: ""
+        val placeholder = node[ComponentCatalog.TextFieldProps.Placeholder]?.value ?: ""
+        val singleLine = node[ComponentCatalog.TextFieldProps.SingleLine]?.value ?: true
 
-        val textClass = ClassName("androidx.compose.material3", "Text")
         val builder = CodeBlock.builder()
-        builder.add("%T(\n", className)
-        builder.indent()
-        builder.add("value = %S,\n", textValue)
-        builder.add("onValueChange = {},\n")
+            .add("%T(\n", className)
+            .indent()
+            .add("value = %S,\n", textValue)
+            .add("onValueChange = {},\n")
+
         if (label.isNotEmpty()) {
-            builder.add("label = { %T(%S) },\n", textClass, label)
+            builder.add("label = { %T(%S) },\n", ComposeSymbols.Text, label)
         }
-        builder.add("singleLine = %L\n", singleLine)
+        if (placeholder.isNotEmpty()) {
+            builder.add("placeholder = { %T(%S) },\n", ComposeSymbols.Text, placeholder)
+        }
+        if (!singleLine) {
+            builder.add("singleLine = false,\n")
+        }
+
         builder.unindent()
-        builder.add(")\n")
+            .add(")\n")
         return builder.build()
     }
 }

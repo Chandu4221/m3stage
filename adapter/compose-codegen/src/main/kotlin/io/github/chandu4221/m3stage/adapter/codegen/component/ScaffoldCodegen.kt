@@ -5,6 +5,8 @@ import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
+import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
+import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 
@@ -15,6 +17,7 @@ class ScaffoldCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
+        val containerColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.ScaffoldProps.ContainerColor])
         val topBarNode = node.children.firstOrNull { it.kind == ComponentKind.TopAppBar }
         val contentChildren = node.children.filter { it != topBarNode }
 
@@ -22,6 +25,10 @@ class ScaffoldCodegen : ComponentCodegen {
             .add("%T(\n", className)
             .indent()
             .add("modifier = %T.%M(),\n", ComposeSymbols.Modifier, ComposeSymbols.fillMaxSize)
+
+        if (containerColorCode != null) {
+            builder.add("containerColor = %L,\n", containerColorCode)
+        }
 
         if (topBarNode != null) {
             builder.add("topBar = {\n")

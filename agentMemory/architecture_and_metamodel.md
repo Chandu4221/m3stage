@@ -88,7 +88,7 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 
 ### [x] Level 8: `:adapter:compose-renderer` (Completed)
 - Subpackage reorganization into `adapter.renderer.component` (`BoxRenderer`, `ButtonRenderer`, `CardRenderer`, `ColumnRenderer`, `RowRenderer`, `TextRenderer`).
-- New `ThemeResolver.kt` cleanly resolves domain tokens (`M3ColorToken`, `M3TypographyToken`, `M3ShapeToken`) into runtime Compose `MaterialTheme` color schemes, text styles, and shapes.
+- New `ThemeCodeResolver.kt` cleanly resolves domain tokens (`M3ColorToken`, `M3TypographyToken`, `M3ShapeToken`) into runtime Compose `MaterialTheme` color schemes, text styles, and shapes.
 - `DesignRenderer.kt` refactored to use `Map<ComponentKind, NodeRenderer>` and route via `currentNode.kind`.
 - `ButtonRenderer.kt` updated to follow Atomic Design (molecule rendering child atoms with container/content colors and enabled state).
 - All 10 files compile and verify cleanly.
@@ -181,13 +181,52 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - Smart drop redirection in `EditorStore.addNodeToActiveScreen()` automatically routes non-TopAppBar additions into the Scaffold's main content column.
 - Verified 100% compile-safe across all 5 modules via `./gradlew check`.
 
+### [x] Level 17: WYSIWYG Inspector-to-Codegen Parity (Completed)
+- Expanded `ComposeSymbols` with `MaterialTheme`, `Color`, `Alignment`, `Arrangement`, `RoundedCornerShape`, `TextOverflow`, `TopAppBarDefaults`.
+- Implemented `ThemeCodeResolver` in `:adapter:compose-codegen` to convert `M3ColorToken`, hex colors, `M3TypographyToken`, and `M3ShapeToken` to idiomatic Compose KotlinPoet expressions.
+- Upgraded all 11 component codegens with 100% property fidelity:
+  - `Text`: exports `color`, `style`, and `overflow` (Ellipsis).
+  - `Icon`: exports `tint`.
+  - `Image`: exports `contentDescription`.
+  - `Button`: exports `ButtonDefaults.buttonColors(containerColor, contentColor)`.
+  - `TextField`: exports `label`, `placeholder`, `singleLine`.
+  - `Column`: exports `horizontalAlignment` and `verticalArrangement` (`Arrangement.spacedBy` or positioning).
+  - `Row`: exports `horizontalArrangement` (`Arrangement.spacedBy` or positioning) and `verticalAlignment`.
+  - `Box`: exports `contentAlignment`.
+  - `Card`: exports `elevation`, `CardDefaults.cardColors(containerColor)`, and `shape`.
+  - `Scaffold`: exports `containerColor`.
+  - `TopAppBar`: exports `TopAppBarDefaults.topAppBarColors(containerColor, titleContentColor)`.
+- Verified 100% compile-safe across all 5 modules via `./gradlew check`.
+
+### [x] Level 18: Kotlin Identifier Sanitization in Codegen (Completed)
+- Implemented `KotlinIdentifierSanitizer` in `:adapter:compose-codegen`.
+- Converts arbitrary user-facing screen names (e.g. `"Screen 1"`, `"my-profile"`) to safe, idiomatic PascalCase.
+- Correctly prefixes identifiers starting with numbers with `"Screen"` (e.g. `"1Home"` $\rightarrow$ `"Screen1Home"`).
+- Automatically avoids redundant double suffixes (e.g. `"HomeScreen"` remains `HomeScreen`, while `"Home"` becomes `HomeScreen`).
+- Deduplicates screen names across project screens (e.g. `"Screen 1"` and duplicate `"Screen 1"` become `"Screen1.kt"` and `"Screen1_1.kt"`).
+- Verified 100% compile-safe across all 5 modules via `./gradlew check`.
+
+### [x] Level 19: Comprehensive Unit Test Suite & Round-Trip Invariance (Completed)
+- `:domain`:
+  - `ProjectValidationTest`: Verifies invariants (empty screen enforcement, duplicate Node ID detection across nested subtrees, valid project passing).
+  - `DesignNodeOperationsTest`: Verifies immutable node tree lookups (`findNode`, `findParent`, `pathIdsTo`) and tree mutations (`addNode`, `removeNode`, `updateProp`).
+  - `ComponentCatalogTest`: Verifies 100% registration of all 11 `ComponentKind` definitions and default props generator.
+- `:adapter:compose-codegen`:
+  - `KotlinIdentifierSanitizerTest`: Verifies PascalCase generation, leading digit prefixing, deduplication, and function naming.
+- `:adapter:json-persistence`:
+  - `SerializationRoundTripTest`: Proves end-to-end data fidelity: `Project` -> `ProjectDto` -> `JSON string` -> `ProjectDto` -> `Project` round-trip equality across all 11 component types and property tokens.
+- Standardized test runners to `useJUnit()` across all subprojects.
+- All unit tests pass cleanly via `./gradlew test` and `./gradlew check`.
+
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
-- `:domain`: 100% verified, fully typed, compile-safe with all 11 component definitions (0 registry drift).
-- `:adapter:compose-codegen`: 100% verified, 11 components with KotlinPoet & `@OptIn` experimental M3 support.
-- `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, compiles cleanly.
+- `:domain`: 100% verified, fully typed, compile-safe with all 11 component definitions and comprehensive unit test coverage.
+- `:adapter:compose-codegen`: 100% verified, 11 components with full WYSIWYG Inspector parity, KotlinPoet, identifier sanitization, and unit tests.
+- `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, tested with round-trip invariance.
 - `:adapter:compose-renderer`: 100% verified, 11 components with `ThemeResolver` and `EmptyContainerPlaceholder`.
 - `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, and canonical `Scaffold` screen genesis.
-- Full build check: `./gradlew check` **BUILD SUCCESSFUL**.
+- Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+
+
 
