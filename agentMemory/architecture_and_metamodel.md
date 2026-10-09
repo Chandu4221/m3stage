@@ -231,6 +231,15 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
   - Added diagnostic stderr logging during ktfmt formatting fallback in `ComposeCodeGenerator.kt`.
 - Verified 100% test & build pass across all modules via `./gradlew test` and `./gradlew check`.
 
+### [x] Level 21: Store Lifecycle & Coroutine Dispatcher Optimization (Completed)
+- `:desktopApp`:
+  - `EditorStore` implements `AutoCloseable` with `close()` cancelling `storeScope` and `ProjectSessionDelegate.close()`.
+  - Hooked `store.close()` to `Window(onCloseRequest)` in `main.kt` ensuring clean teardown of active coroutines.
+  - Offloaded CPU-heavy code generation (KotlinPoet AST parsing & ktfmt Google Java/Kotlin formatting) to `Dispatchers.Default` (background worker pool) in `ProjectSessionDelegate.exportCode()`.
+  - Offloaded file disk I/O in code export to `Dispatchers.IO`.
+  - Desktop UI thread (`Dispatchers.Main` / Swing EDT) never blocks, ensuring smooth 60 FPS interactions.
+- Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
@@ -238,8 +247,9 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `:adapter:compose-codegen`: 100% verified, 11 components with full WYSIWYG Inspector parity, KotlinPoet, identifier sanitization, and unit tests.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, tested with round-trip invariance and corrupt file quarantine.
 - `:adapter:compose-renderer`: 100% verified, 11 components with `ThemeResolver` and `EmptyContainerPlaceholder`.
-- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, canonical `Scaffold` screen genesis, and resilient error recovery.
+- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, canonical `Scaffold` screen genesis, resilient error recovery, and background coroutine offloading.
 - Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+
 
 
 

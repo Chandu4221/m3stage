@@ -8,16 +8,13 @@ import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class EditorStore(
     idGenerator: IdGenerator,
     repository: ProjectRepository,
     codeGenerator: CodeGenerator,
-) : SelectionState, HistoryState, ProjectSession {
+) : SelectionState, HistoryState, ProjectSession, AutoCloseable {
 
     private val context = EditorContext(idGenerator, repository, codeGenerator)
     private val selectionDelegate = SelectionDelegate()
@@ -64,6 +61,11 @@ class EditorStore(
     override fun createNewProject() = sessionDelegate.createNewProject()
 
     override fun exportCode() = sessionDelegate.exportCode()
+
+    override fun close() {
+        storeScope.cancel()
+        sessionDelegate.close()
+    }
 
     // --- Bridge: Add Node ---
     fun addNodeToActiveScreen(parentId: NodeId, kind: ComponentKind) {

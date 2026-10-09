@@ -44,8 +44,8 @@ Status Key:
 
 ### Quality of Life & Polish
 
-- [ ] TODO-7: Store Lifecycle & Dispatcher Optimization
-  - Description: storeScope in EditorStore collects project indefinitely. Auto-select-first-screen can be cleanly localized in ProjectSessionDelegate. Review Dispatchers.Main vs Dispatchers.Swing.
+- [x] TODO-7: Store Lifecycle & Dispatcher Optimization
+  - Description: Implemented `AutoCloseable` on `EditorStore` with coroutine scope cancellation and hooked up to window close in `main.kt`. Offloaded CPU-heavy code generation (KotlinPoet AST & ktfmt) to `Dispatchers.Default` and file disk writing to `Dispatchers.IO` in `ProjectSessionDelegate.exportCode()`.
 
 - [x] TODO-8: Value Class Equality Consistency
   - Description: Unified `currentNode.id == selectedNodeId` in `DesignRenderer.kt` to leverage Kotlin value class equality consistently across the codebase.

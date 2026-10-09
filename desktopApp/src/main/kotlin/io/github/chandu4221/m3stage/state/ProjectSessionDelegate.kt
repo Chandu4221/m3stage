@@ -6,14 +6,11 @@ import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.validation.ProjectValidation
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 class ProjectSessionDelegate(private val context: EditorContext) : ProjectSession {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -31,7 +28,15 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                         context.projectFlow.value = loaded
                         context.eventFlow.emit(EditorEvent.LoadSuccess)
                     } else {
-                        context.eventFlow.emit(EditorEvent.LoadFailed("Invalid project invariants: ${validationErrors.joinToString("; ")}"))
+                        context.eventFlow.emit(
+                            EditorEvent.LoadFailed(
+                                "Invalid project invariants: ${
+                                    validationErrors.joinToString(
+                                        "; "
+                                    )
+                                }"
+                            )
+                        )
                     }
                 } else {
                     // Truly first launch: file does not exist on disk
@@ -54,7 +59,7 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
             }
         }
     }
-    
+
     override fun createNewProject() {
         val idGen = context.idGenerator
         val scaffoldDef = ComponentCatalog[ComponentKind.Scaffold]
@@ -95,22 +100,30 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
         context.projectFlow.value = newProject
     }
 
+    fun close() {
+        scope.cancel()
+    }
+
     override fun exportCode() {
         val current = context.projectFlow.value ?: return
         scope.launch {
             try {
-                // 1. Generate the code using the domain port
-                val generatedProject = context.codeGenerator.generate(current)
-
-                // 2. Define output directory (MVP: User home directory)
-                val outputDir = java.io.File(System.getProperty("user.home"), "m3stage-export")
-                if (!outputDir.exists()) outputDir.mkdirs()
-
-                // 3. Write files to disk
-                generatedProject.files.forEach { file ->
-                    java.io.File(outputDir, file.fileName).writeText(file.content)
+                // 1. Offload CPU-heavy code generation (KotlinPoet AST + ktfmt formatting) to Dispatchers.Default
+                val generatedProject = withContext(Dispatchers.Default) {
+                    context.codeGenerator.generate(current)
                 }
 
+                // 2. Offload disk I/O writing to Dispatchers.IO
+                val outputDir = withContext(Dispatchers.IO) {
+                    val dir = java.io.File(System.getProperty("user.home"), "m3stage-export")
+                    if (!dir.exists()) dir.mkdirs()
+                    generatedProject.files.forEach { file ->
+                        java.io.File(dir, file.fileName).writeText(file.content)
+                    }
+                    dir
+                }
+
+                // 3. Emit UI success event on Dispatchers.Main
                 context.eventFlow.emit(EditorEvent.ExportSuccess(outputDir.absolutePath))
             } catch (e: Exception) {
                 context.eventFlow.emit(EditorEvent.ExportFailed(e.message ?: "Unknown error"))

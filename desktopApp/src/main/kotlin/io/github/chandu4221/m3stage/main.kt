@@ -40,7 +40,10 @@ fun main() = application {
     )
 
     Window(
-        onCloseRequest = ::exitApplication,
+        onCloseRequest = {
+            store.close()
+            exitApplication()
+        },
         title = "m3stage - Material 3 Compose Builder"
     ) {
         MaterialTheme(colorScheme = dynamicColorScheme) {
