@@ -240,6 +240,14 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
   - Desktop UI thread (`Dispatchers.Main` / Swing EDT) never blocks, ensuring smooth 60 FPS interactions.
 - Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
 
+### [x] Level 22: Export Dialog Modal & ZIP Archive Packaging (Completed)
+- `:desktopApp`:
+  - Created `ExportDialog` molecule with customizable base package name input, screen chip previews, and confirmation actions.
+  - Enhanced `ProjectSessionDelegate.exportCode(customPackageName)` to package all generated `.kt` files into a clean `m3stage-export.zip` archive matching the package directory structure (`com/example/app/...`).
+  - Saves ZIP archive to `~/Downloads/m3stage-export.zip` (fallback to user home) using standard JDK `java.util.zip.ZipOutputStream`.
+  - Added bottom-center `SnackbarHost` in `EditorScreen` giving user immediate feedback on export success or failure.
+- Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
@@ -247,8 +255,9 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `:adapter:compose-codegen`: 100% verified, 11 components with full WYSIWYG Inspector parity, KotlinPoet, identifier sanitization, and unit tests.
 - `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, tested with round-trip invariance and corrupt file quarantine.
 - `:adapter:compose-renderer`: 100% verified, 11 components with `ThemeResolver` and `EmptyContainerPlaceholder`.
-- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, canonical `Scaffold` screen genesis, resilient error recovery, and background coroutine offloading.
+- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, canonical `Scaffold` screen genesis, resilient error recovery, background coroutine offloading, and interactive ZIP export dialog with Snackbar feedback.
 - Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+
 
 
 

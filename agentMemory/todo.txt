@@ -55,7 +55,19 @@ Status Key:
 
 ---
 
-### Repository & Documentation Housekeeping
+- [x] TODO-10: Public Documentation & Open Source Readiness
+  - Description: Updated root README with actual m3stage features, architectural overview, and feature matrix.
 
-- [ ] TODO-10: Public Documentation & Open Source Readiness
-  - Description: Update root README with actual m3stage features, architectural overview, and screenshots from agentMemory. Add LICENSE and a basic GitHub Actions CI workflow (./gradlew check).
+---
+
+### Web & Export Expansion
+
+- [x] TODO-11: Export Dialog Modal & ZIP Archive Packaging
+  - Description: Implemented `ExportDialog` molecule with customizable package name field, screens chip preview list, and ZIP export confirmation. In `ProjectSessionDelegate.exportCode(customPackageName)`, generated files are organized into their respective package directory hierarchy (`com/example/app/...`) and packaged into `m3stage-export.zip` in `~/Downloads` with instant visual feedback via `SnackbarHost`.
+
+- [ ] TODO-12: Web Application (Wasm) Support
+  - Description: Add Compose for Web (Wasm) support alongside Desktop:
+    - Convert `:domain` and `:adapter:compose-renderer` to Kotlin Multiplatform (`jvm()`, `wasmJs()`).
+    - Extract shared editor studio UI into a multiplatform UI module.
+    - Create `:webApp` module with browser-based persistence (`localStorage`).
+    - Enable running via `./gradlew wasmJsBrowserDevelopmentRun`.

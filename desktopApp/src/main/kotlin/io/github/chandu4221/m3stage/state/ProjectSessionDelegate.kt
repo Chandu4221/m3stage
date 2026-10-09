@@ -104,27 +104,41 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
         scope.cancel()
     }
 
-    override fun exportCode() {
+    override fun exportCode(customPackageName: String?) {
         val current = context.projectFlow.value ?: return
+        val effectiveProject = if (!customPackageName.isNullOrBlank()) {
+            current.copy(basePackage = customPackageName.trim())
+        } else {
+            current
+        }
+
         scope.launch {
             try {
-                // 1. Offload CPU-heavy code generation (KotlinPoet AST + ktfmt formatting) to Dispatchers.Default
+                // 1. Offload CPU-heavy code generation to Dispatchers.Default
                 val generatedProject = withContext(Dispatchers.Default) {
-                    context.codeGenerator.generate(current)
+                    context.codeGenerator.generate(effectiveProject)
                 }
 
-                // 2. Offload disk I/O writing to Dispatchers.IO
-                val outputDir = withContext(Dispatchers.IO) {
-                    val dir = java.io.File(System.getProperty("user.home"), "m3stage-export")
-                    if (!dir.exists()) dir.mkdirs()
-                    generatedProject.files.forEach { file ->
-                        java.io.File(dir, file.fileName).writeText(file.content)
+                // 2. Offload ZIP packaging and disk I/O to Dispatchers.IO
+                val zipFile = withContext(Dispatchers.IO) {
+                    val downloadsDir = java.io.File(System.getProperty("user.home"), "Downloads")
+                    val targetDir = if (downloadsDir.exists()) downloadsDir else java.io.File(System.getProperty("user.home"))
+                    val zip = java.io.File(targetDir, "m3stage-export.zip")
+
+                    java.util.zip.ZipOutputStream(java.io.FileOutputStream(zip)).use { zos ->
+                        generatedProject.files.forEach { file ->
+                            val packagePath = file.packageName.replace('.', '/')
+                            val entryPath = if (packagePath.isEmpty()) file.fileName else "$packagePath/${file.fileName}"
+                            zos.putNextEntry(java.util.zip.ZipEntry(entryPath))
+                            zos.write(file.content.toByteArray(Charsets.UTF_8))
+                            zos.closeEntry()
+                        }
                     }
-                    dir
+                    zip
                 }
 
-                // 3. Emit UI success event on Dispatchers.Main
-                context.eventFlow.emit(EditorEvent.ExportSuccess(outputDir.absolutePath))
+                // 3. Emit UI success event
+                context.eventFlow.emit(EditorEvent.ExportSuccess(zipFile.absolutePath))
             } catch (e: Exception) {
                 context.eventFlow.emit(EditorEvent.ExportFailed(e.message ?: "Unknown error"))
             }

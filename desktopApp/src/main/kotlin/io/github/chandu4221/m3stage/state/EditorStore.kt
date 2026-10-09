@@ -60,7 +60,7 @@ class EditorStore(
     override fun saveProject() = sessionDelegate.saveProject()
     override fun createNewProject() = sessionDelegate.createNewProject()
 
-    override fun exportCode() = sessionDelegate.exportCode()
+    override fun exportCode(customPackageName: String?) = sessionDelegate.exportCode(customPackageName)
 
     override fun close() {
         storeScope.cancel()
