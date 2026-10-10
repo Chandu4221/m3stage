@@ -63,8 +63,31 @@ fun ModifierNode.toDto(): ModifierNodeDto = when (this) {
     is ModifierNode.FillMaxWidth -> ModifierNodeDto.FillMaxWidth(fraction)
     is ModifierNode.FillMaxHeight -> ModifierNodeDto.FillMaxHeight(fraction)
     is ModifierNode.FillMaxSize -> ModifierNodeDto.FillMaxSize(fraction)
-    is ModifierNode.Background -> ModifierNodeDto.Background(color.toDto() as PropValDto.ColorValDto)
+    is ModifierNode.Size -> ModifierNodeDto.Size(width, height)
+    is ModifierNode.Width -> ModifierNodeDto.Width(width)
+    is ModifierNode.Height -> ModifierNodeDto.Height(height)
+    is ModifierNode.WrapContentSize -> ModifierNodeDto.WrapContentSize(unbounded)
+    is ModifierNode.Background -> ModifierNodeDto.Background(
+        color = color.toDto() as PropValDto.ColorValDto,
+        shape = shape?.toDto() as? PropValDto.ShapeValDto
+    )
+
+    is ModifierNode.Border -> ModifierNodeDto.Border(
+        width = width,
+        color = color.toDto() as PropValDto.ColorValDto,
+        shape = shape.toDto() as PropValDto.ShapeValDto
+    )
+
     is ModifierNode.Clip -> ModifierNodeDto.Clip(shape.toDto() as PropValDto.ShapeValDto)
+    is ModifierNode.Shadow -> ModifierNodeDto.Shadow(
+        elevation = elevation,
+        shape = shape.toDto() as PropValDto.ShapeValDto,
+        clip = clip
+    )
+
+    is ModifierNode.Alpha -> ModifierNodeDto.Alpha(alpha)
+    is ModifierNode.Clickable -> ModifierNodeDto.Clickable(enabled)
+    is ModifierNode.Offset -> ModifierNodeDto.Offset(x, y)
 }
 
 // ==========================================
@@ -124,6 +147,29 @@ fun ModifierNodeDto.toDomain(): ModifierNode = when (this) {
     is ModifierNodeDto.FillMaxWidth -> ModifierNode.FillMaxWidth(fraction)
     is ModifierNodeDto.FillMaxHeight -> ModifierNode.FillMaxHeight(fraction)
     is ModifierNodeDto.FillMaxSize -> ModifierNode.FillMaxSize(fraction)
-    is ModifierNodeDto.Background -> ModifierNode.Background(color.toDomain() as PropertyValue.ColorValue)
+    is ModifierNodeDto.Size -> ModifierNode.Size(width, height)
+    is ModifierNodeDto.Width -> ModifierNode.Width(width)
+    is ModifierNodeDto.Height -> ModifierNode.Height(height)
+    is ModifierNodeDto.WrapContentSize -> ModifierNode.WrapContentSize(unbounded)
+    is ModifierNodeDto.Background -> ModifierNode.Background(
+        color = color.toDomain() as PropertyValue.ColorValue,
+        shape = shape?.toDomain() as? PropertyValue.ShapeValue
+    )
+
+    is ModifierNodeDto.Border -> ModifierNode.Border(
+        width = width,
+        color = color.toDomain() as PropertyValue.ColorValue,
+        shape = shape.toDomain() as PropertyValue.ShapeValue
+    )
+
     is ModifierNodeDto.Clip -> ModifierNode.Clip(shape.toDomain() as PropertyValue.ShapeValue)
+    is ModifierNodeDto.Shadow -> ModifierNode.Shadow(
+        elevation = elevation,
+        shape = shape.toDomain() as PropertyValue.ShapeValue,
+        clip = clip
+    )
+
+    is ModifierNodeDto.Alpha -> ModifierNode.Alpha(alpha)
+    is ModifierNodeDto.Clickable -> ModifierNode.Clickable(enabled)
+    is ModifierNodeDto.Offset -> ModifierNode.Offset(x, y)
 }

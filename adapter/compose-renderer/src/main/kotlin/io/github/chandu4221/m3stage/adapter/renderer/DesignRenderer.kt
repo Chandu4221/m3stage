@@ -2,6 +2,7 @@ package io.github.chandu4221.m3stage.adapter.renderer
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import io.github.chandu4221.m3stage.adapter.renderer.component.*
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -21,8 +22,7 @@ object DesignRenderer {
         ComponentKind.Card to CardRenderer(),
         ComponentKind.Scaffold to ScaffoldRenderer(),
         ComponentKind.TopAppBar to TopAppBarRenderer(),
-
-        )
+    )
 
     @Composable
     fun Render(
@@ -45,7 +45,8 @@ object DesignRenderer {
             ) {
                 val renderer = registry[currentNode.kind]
                 if (renderer != null) {
-                    renderer.Render(currentNode) { child -> renderNode(child) }
+                    val elementModifier = Modifier.resolveModifiers(currentNode.modifiers)
+                    renderer.Render(currentNode, modifier = elementModifier) { child -> renderNode(child) }
                 } else {
                     Text(text = "Unsupported: ${currentNode.kind.displayName}")
                 }

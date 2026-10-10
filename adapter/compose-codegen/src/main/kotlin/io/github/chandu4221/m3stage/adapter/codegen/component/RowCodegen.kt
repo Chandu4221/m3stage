@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
+import io.github.chandu4221.m3stage.adapter.codegen.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
@@ -19,12 +20,17 @@ class RowCodegen : ComponentCodegen {
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val spacing = node[ComponentCatalog.RowProps.Spacing]?.value ?: 0f
-        val hArrangementName = node[ComponentCatalog.RowProps.HorizontalArrangement]?.name
         val vAlignName = node[ComponentCatalog.RowProps.VerticalAlignment]?.name
+        val hArrangementName = node[ComponentCatalog.RowProps.HorizontalArrangement]?.name
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
+
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        }
 
         // Horizontal arrangement
         val hArrangementCode = when (hArrangementName) {

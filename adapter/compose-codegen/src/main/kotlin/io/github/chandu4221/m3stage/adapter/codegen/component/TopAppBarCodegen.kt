@@ -2,10 +2,7 @@ package io.github.chandu4221.m3stage.adapter.codegen.component
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
-import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
-import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
+import io.github.chandu4221.m3stage.adapter.codegen.*
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -19,7 +16,8 @@ class TopAppBarCodegen : ComponentCodegen {
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val title = node[ComponentCatalog.TopAppBarProps.Title]?.value ?: "Title"
         val containerColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.TopAppBarProps.ContainerColor])
-        val titleContentColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.TopAppBarProps.TitleContentColor])
+        val titleContentColorCode =
+            ThemeCodeResolver.resolveColor(node[ComponentCatalog.TopAppBarProps.TitleContentColor])
         val actions = node.children.filter { it.kind == ComponentKind.Icon || it.kind == ComponentKind.Button }
 
         val builder = CodeBlock.builder()
@@ -38,6 +36,11 @@ class TopAppBarCodegen : ComponentCodegen {
             }
             builder.unindent()
             builder.add("),\n")
+        }
+
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
         }
 
         if (actions.isNotEmpty()) {

@@ -1,73 +1,110 @@
-# M3Stage Audit Action Items & TODOs
+# M3Stage – Production TODO (ranked)
 
-Status Key:
-- [ ] PENDING: Identified and scheduled.
-- [IN-PROGRESS]: Currently being resolved.
-- [x] DONE: Fully implemented, tested, and verified.
-
----
-
-### Critical Issues (Correctness & Trust)
-
-- [x] TODO-1: Registry Drift & ComponentKind Exhaustiveness
-  - Description: ComponentKind has 11 kinds (defines Icon, Image, TextField, Scaffold, TopAppBar).
-  - Progress:
-    - [x] Group 1 (Atoms & Leaves): `Icon`, `Image`, `TextField` fully implemented across ComponentCatalog, compose-renderer, and compose-codegen.
-    - [x] Graceful Codegen Fallback: Added fallback comment in ComposeCodeGenerator preventing unhandled crashes.
-    - [x] Group 2 (Organisms & Layouts): `Scaffold`, `TopAppBar` fully implemented with compositional children model and default screen root genesis across domain, renderer, codegen, and desktop store.
-
-- [x] TODO-2: WYSIWYG Inspector-to-Codegen Parity Audit
-  - Description: Audited every PropertyDescriptor across all 11 component kinds against its respective Codegen implementation.
-  - Fix: Implemented ThemeCodeResolver and updated all 11 component codegens (Text, Icon, Image, Button, TextField, Column, Row, Box, Card, Scaffold, TopAppBar) with 100% property fidelity covering colors, typography, shapes, alignments, arrangements, and spacing.
-
-- [x] TODO-3: Children vs. Slots Duality Resolution
-  - Description: Resolved via compositional children model where multi-slot organisms (Scaffold) inspect children (TopAppBar vs content children) while maintaining full compatibility with all tree mutation queries and undo/redo stacks.
-
-- [x] TODO-4: Test Suite & Round-Trip Serialization Testing
-  - Description: Implemented comprehensive unit test suite:
-    - `:domain`: `ProjectValidationTest` (invariants, duplicate IDs, empty screens), `DesignNodeOperationsTest` (find, parent, path, immutable add/remove/updateProp mutations), `ComponentCatalogTest` (all 11 kinds registered with valid default props).
-    - `:adapter:compose-codegen`: `KotlinIdentifierSanitizerTest` (PascalCase conversion, leading digit prefixing, deduplication, function naming).
-    - `:adapter:json-persistence`: `SerializationRoundTripTest` (Project -> DTO -> JSON -> DTO -> Project round-trip invariance across all 11 component kinds).
-    - Unified Gradle test runner across subprojects to `useJUnit()`.
-
-- [x] TODO-5: Resilient Project Loading & Error Recovery
-  - Description: Implemented `CorruptProjectException` and automatic quarantine backup in `JsonProjectRepository`. Corrupted files are preserved at `project.json.corrupt_<timestamp>`, preventing accidental file wipeout on auto-save. Surfaced typed `EditorEvent.LoadFailed(reason)` in `ProjectSessionDelegate` and added unit test verification in `JsonProjectRepositoryTest`.
+Status key: [ ] pending, [~] in progress, [x] done.
+Priority: P0 = blocks trust, P1 = core product, P2 = engineering soundness, P3 = product depth, P4 = ship and operate.
+Rank = order to work on. Do not start a tier's items before the previous tier's exit gate passes.
 
 ---
 
-### Code Generation & Sanitization
+## Reopen (marked done in the legacy list, not true in code)
 
-- [x] TODO-6: Kotlin Identifier Sanitization in Codegen
-  - Description: Implemented `KotlinIdentifierSanitizer` in `:adapter:compose-codegen`. Converts screen names to safe PascalCase identifiers, handles leading digits, deduplicates duplicate screen names across projects, and formats function names (`toFunctionName`).
-
----
-
-### Quality of Life & Polish
-
-- [x] TODO-7: Store Lifecycle & Dispatcher Optimization
-  - Description: Implemented `AutoCloseable` on `EditorStore` with coroutine scope cancellation and hooked up to window close in `main.kt`. Offloaded CPU-heavy code generation (KotlinPoet AST & ktfmt) to `Dispatchers.Default` and file disk writing to `Dispatchers.IO` in `ProjectSessionDelegate.exportCode()`.
-
-- [x] TODO-8: Value Class Equality Consistency
-  - Description: Unified `currentNode.id == selectedNodeId` in `DesignRenderer.kt` to leverage Kotlin value class equality consistently across the codebase.
-
-- [x] TODO-9: ktfmt Formatter Error Feedback
-  - Description: Added stderr diagnostic logging in `ComposeCodeGenerator.kt` when ktfmt formatting encounters issues, preventing silent suppression during code export.
+- [ ] TODO-2 reopened: preview/export parity is not met (see TODO-17).
+- [ ] TODO-3 reopened: `children` vs `slots` is unresolved (see TODO-28).
+- [ ] TODO-4 reopened: round-trip test covers 7 of 11 kinds; no codegen, renderer, or store tests (see TODO-33).
+- [ ] TODO-5 reopened: nothing ever calls save, so recovery is moot (see TODO-13).
+- [ ] TODO-10 reopened: README claims shortcuts, drag-and-drop, property editing, formatting in `check` (see TODO-44).
 
 ---
 
-- [x] TODO-10: Public Documentation & Open Source Readiness
-  - Description: Updated root README with actual m3stage features, architectural overview, and feature matrix.
+## P0 – Trust (data safety and correct output)
+
+Exit gate M1 "Trustworthy": a user can design, quit, relaunch, and find their work intact; exported code compiles; nothing crashes on bad input.
+
+- [ ] TODO-13 (1): Durable persistence. Autosave (debounced ~500 ms), save on window close, atomic write (temp file + fsync + atomic move), `Mutex` around saves, save-failure surfaced to the user, dirty indicator.
+  - Accept: kill -9 during save never corrupts the file; reopen restores state; test with injected failing repository.
+- [ ] TODO-14 (2): Strict, versioned file format. Add `schemaVersion`; migration chain; unknown component kind or unknown `DevicePreset` id fails the load (never defaults to `Box`/Pixel 8); preserve unknown fields; stop DTOs from embedding domain enums (use string ids with explicit mapping); cap quarantine backups; report backup-copy failure honestly.
+  - Accept: loading a file from a "newer" version leaves the file untouched and shows a clear error.
+- [ ] TODO-15 (3): Compilable codegen. Icon allowlist enum with correct `MemberName` imports (no raw strings in code); Image placeholder fixed; unique file and function names across all screens; ktfmt failure becomes a reported error instead of silent fallback; omit unneeded `@OptIn`.
+  - Accept: generated output for every `ComponentKind` compiles in CI (kotlin-compile-testing or a fixture Gradle project).
+- [ ] TODO-16 (4): Export hardening. Validate package name in the dialog and in the domain (including Kotlin keywords); move `copy(...)` inside error handling; native Save dialog; no silent overwrite; show real generated file names; catch `IllegalArgumentException`; never throw on the UI thread.
+- [ ] TODO-17 (5): Preview/export parity contract. One shared layout-defaults object used by both renderer and codegen (fillMaxWidth, padding, TextField variant, Icon tint, Button text color, spacing + arrangement semantics, null-shape behavior). Selection wrapper must not alter layout.
+  - Accept: golden tests per kind; a test fails if renderer and codegen disagree.
+- [ ] TODO-18 (6): Engineering floor. GitHub Actions (build, test, `check` on Linux/macOS/Windows), LICENSE file, `.editorconfig`, ktfmt/spotless + detekt in `check`, branch protection, delete `agentMemory/` from the repo.
 
 ---
 
-### Web & Export Expansion
+## P1 – Core product (what a user expects from a builder)
 
-- [x] TODO-11: Export Dialog Modal & ZIP Archive Packaging
-  - Description: Implemented `ExportDialog` molecule with customizable package name field, screens chip preview list, and ZIP export confirmation. In `ProjectSessionDelegate.exportCode(customPackageName)`, generated files are organized into their respective package directory hierarchy (`com/example/app/...`) and packaged into `m3stage-export.zip` in `~/Downloads` with instant visual feedback via `SnackbarHost`.
+Exit gate M2 "Usable": a user can build a realistic multi-screen UI with only the mouse and keyboard and export it.
 
-- [ ] TODO-12: Web Application (Wasm) Support
-  - Description: Add Compose for Web (Wasm) support alongside Desktop:
-    - Convert `:domain` and `:adapter:compose-renderer` to Kotlin Multiplatform (`jvm()`, `wasmJs()`).
-    - Extract shared editor studio UI into a multiplatform UI module.
-    - Create `:webApp` module with browser-based persistence (`localStorage`).
-    - Enable running via `./gradlew wasmJsBrowserDevelopmentRun`.
+- [ ] TODO-19 (7): Property Inspector generated from `ComponentCatalog[kind].descriptors`, grouped by `PropertyGroup`. Editors for text, switch, dp slider, enum, color (token + custom), typography, shape. Emits `UpdatePropCommand`; coalesce drag/typing into one undo step; show/reset to default.
+- [ ] TODO-20 (8): Domain-enforced structure. `canAccept(parent, child)` from `allowedChildren`/`isContainer`; mutations return a result instead of silent no-ops; `HistoryDelegate` ignores no-op commands; selection reconciled after undo/redo/delete; reject invalid drops with visible feedback; typed property values (validate type per key).
+- [ ] TODO-21 (9): Node operations. Delete, duplicate, copy/paste (across screens), move/reorder (up/down), wrap-in, hide/show, rename. Undo for all (fix `RemoveNodeCommand` to restore the original index).
+- [ ] TODO-22 (10): Layers/tree panel with selection sync, drag-reorder, visibility and lock toggles; fix canvas selection of Button/TextField (intercept pointer events in the Initial pass or use a selection layer above the content).
+- [ ] TODO-23 (11): Drag-and-drop from palette to canvas and tree with insertion indicators; click-to-add stays as fallback.
+- [ ] TODO-24 (12): Real shortcuts: undo/redo, delete, duplicate, copy/paste, zoom, tools (V/H/Space), save, export. Single shortcut registry that also feeds tooltips (remove tooltips for unimplemented keys).
+- [ ] TODO-25 (13): Project lifecycle. New/Open/Save As/Recent, project name and base package editable and persisted, multi-project support, unsaved-changes prompt, screen rename/delete/duplicate/reorder.
+- [ ] TODO-26 (14): Theming that matches Compose. Wire seed color picker (custom hex + presets), light/dark preview side by side, export `Color.kt`/`Theme.kt`/`Type.kt`; separate studio chrome theme from the design theme.
+- [ ] TODO-27 (15): Make device state part of the document: persist `Screen.device`, honor `Project.defaultDevice`, orientation/frame state saved; undoable.
+
+---
+
+## P2 – Engineering soundness (so features stop breaking each other)
+
+Exit gate M3 "Solid": refactors are safe because tests catch regressions; large projects stay responsive.
+
+- [ ] TODO-28 (16): Resolve `children` vs `slots`. Choose one model (recommended: named slots for Scaffold/TopAppBar, children elsewhere, enforced in queries/mutations/validation/renderer/codegen) or delete slots.
+- [ ] TODO-29 (17): `NodeFactory` in `:domain` for default anatomy (Scaffold, Button+Text, Card). Remove the three duplicate genesis implementations.
+- [ ] TODO-30 (18): Typed options. Carry domain option enums through `PropertyValue` (no `EnumValue(name: String)` + string `when` tables); one mapping per target (preview, codegen).
+- [ ] TODO-31 (19): Performance. Structural sharing in tree mutations (return same instance when unchanged); stable/immutable annotations; benchmark 20 screens x 500 nodes; avoid re-rendering inactive artboards when off-screen; cursor-anchored zoom.
+- [ ] TODO-32 (20): Decouple concerns. Move bezel details (corner radius, notch) out of `DevicePreset`; stop exposing mutable flows in `EditorContext`; replace `SharedFlow` events with a buffered `Channel` or replay so events are never dropped; inject dispatchers.
+- [ ] TODO-33 (21): Test strategy. Store/History/Session tests (fake repo, test dispatchers); renderer tests (compose ui-test); property-based tree tests (mutations preserve invariants); round-trip fuzz over all kinds and value types; migration tests; coverage report in CI with a floor.
+- [ ] TODO-34 (22): Dead code purge. Remove `TopProjectAppBar`, `ComponentsPalettePanel`, `InspectorPanel`, `AlignmentMatrix`, `DotMatrixCell`, `SegmentedButtonGroup`, `ColorSwatch`, `AddScreenGhostCard`, commented stubs in `NodeQueries.kt`, or wire them (decide per item). Remove stub rail tabs until implemented.
+- [ ] TODO-35 (23): Observability. Structured logging instead of `System.err`; global uncaught-exception handler with user-visible report dialog; crash log file; do not swallow `CancellationException`.
+
+---
+
+## P3 – Product depth (differentiation)
+
+Exit gate M4a "Credible": output looks like code a Compose developer would write.
+
+- [x] TODO-36 (24): Wire `ModifierNode` end to end (padding, size, weight, fill, background, clip, offset, alignment) in inspector, renderer, codegen.
+- [ ] TODO-37 (25): Component coverage (in order): Spacer, Divider, Checkbox, Switch, RadioButton, IconButton, FAB, Chip, ListItem, NavigationBar, LazyColumn/LazyRow, Dialog, BottomSheet, Tabs. Each ships with renderer + codegen + golden test + compile test.
+- [ ] TODO-38 (26): Idiomatic export. Parameterized composables (`modifier: Modifier = Modifier`, state hoisting for TextField/Switch), `@Preview`, no explicit default values, string resources option, navigation graph from `Screen.route`, optional per-component extraction into reusable composables.
+- [ ] TODO-39 (27): Real image and icon sources (asset import, resource references, full Material icon picker with search).
+- [ ] TODO-40 (28): Export targets: Android module, Compose Multiplatform, Gradle snippet and dependency notes, write directly to a chosen project folder with a diff/preview step.
+- [ ] TODO-41 (29): Responsive design: window size classes, adaptive layouts per device preset.
+
+---
+
+## P4 – Ship and operate
+
+Exit gate M4b "Shippable": a stranger can install, use, report a bug, and update.
+
+- [ ] TODO-42 (30): Packaging and distribution. Signed/notarized macOS DMG, signed Windows MSI, Linux DEB/AppImage; app icon; bundled JRE; installer smoke test in CI; release workflow with changelog.
+- [ ] TODO-43 (31): Auto-update channel, semantic versioning, release notes.
+- [ ] TODO-44 (32): Accurate documentation. README that matches behavior, user guide, CONTRIBUTING, architecture decision records, CHANGELOG, known limitations.
+- [ ] TODO-45 (33): Accessibility of the studio: full keyboard navigation, focus order, screen-reader labels, 48dp targets, contrast checks; correct semantics (remove `Role.Tab` on artboards, `Role.Button` on every node).
+- [ ] TODO-46 (34): Security and compliance. Never inject user text into code unescaped (audit every `%L`); dependency pinning, Dependabot, SBOM, license audit (ktfmt, KotlinPoet, MaterialKolor); opt-in only telemetry with privacy policy.
+- [ ] TODO-47 (35): Build hygiene. Convention plugins, shared `group`/`version`, remove unused catalog entries, split `kotlinx` version refs, replace `material3` alpha pin with a stable release, central repositories.
+- [ ] TODO-48 (36): Localization of studio strings.
+- [ ] TODO-49 (37): Scale limits: tested ceilings (screens, nodes, file size) with graceful degradation.
+
+---
+
+## Deferred
+
+- [ ] TODO-12: Web (Wasm) support. Start only after M2 and M3 gates; the KMP split will be cheaper once domain/persistence boundaries are clean.
+- [ ] Figma import, plugin API, collaboration: only after M4b.
+
+---
+
+## Milestone gates
+
+| Gate | Tiers | Must be true |
+|------|-------|--------------|
+| M1 Trustworthy | P0 | Autosave, versioned format, compiling export, parity tests, CI green on 3 OSes |
+| M2 Usable | P1 | Inspector, node ops, tree, DnD, shortcuts, project lifecycle, theme export |
+| M3 Solid | P2 | Invariants in domain, store/renderer tests, perf budget met, no dead code |
+| M4a Credible | P3 | Idiomatic export, modifiers, 15+ components |
+| M4b Shippable | P4 | Signed installers, updates, docs, accessibility pass |

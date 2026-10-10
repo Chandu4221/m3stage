@@ -240,13 +240,24 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
   - Desktop UI thread (`Dispatchers.Main` / Swing EDT) never blocks, ensuring smooth 60 FPS interactions.
 - Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
 
-### [x] Level 22: Export Dialog Modal & ZIP Archive Packaging (Completed)
+### [x] Level 23: First-Class Compose Modifiers Pipeline (Completed)
+- `:domain`:
+  - Expanded `ModifierNode` sealed interface (Padding, Size, Width, Height, FillMaxWidth, FillMaxHeight, FillMaxSize, WrapContentSize, Background, Border, Clip, Shadow, Alpha, Clickable, Offset).
+  - Added immutable mutations: `addModifier`, `removeModifier`, `updateModifier`, `reorderModifier`, `setModifiers`.
+- `:adapter:json-persistence`:
+  - Added polymorphic `ModifierNodeDto` with `@SerialName` annotations.
+  - Added exhaustive bidirectional mappers (`toDto()` and `toDomain()`).
+- `:adapter:compose-renderer`:
+  - Implemented `ModifierResolver.kt` applying Compose `Modifier` chains sequentially in real-time.
+  - Connected `elementModifier` in `DesignRenderer.kt` across all 11 component kinds.
+- `:adapter:compose-codegen`:
+  - Implemented `ModifierCodeResolver.kt` translating modifier nodes into clean KotlinPoet `CodeBlock`s.
+  - Wired modifier generation across all 11 component codegens and added essential modifier imports.
 - `:desktopApp`:
-  - Created `ExportDialog` molecule with customizable base package name input, screen chip previews, and confirmation actions.
-  - Enhanced `ProjectSessionDelegate.exportCode(customPackageName)` to package all generated `.kt` files into a clean `m3stage-export.zip` archive matching the package directory structure (`com/example/app/...`).
-  - Saves ZIP archive to `~/Downloads/m3stage-export.zip` (fallback to user home) using standard JDK `java.util.zip.ZipOutputStream`.
-  - Added bottom-center `SnackbarHost` in `EditorScreen` giving user immediate feedback on export success or failure.
-- Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+  - Implemented `AddModifierCommand`, `RemoveModifierCommand`, `UpdateModifierCommand`, `ReorderModifierCommand` with full undo/redo.
+  - Created `ModifierSection.kt` with live sliders, number inputs, reordering (Move Up / Down), and delete.
+  - Fixed parameter wiring in `EditorShellTemplate.kt`, `EditorScreen.kt`, and `InspectorPanel.kt`.
+- Full build and test check: `./gradlew test` and `:desktopApp:compileKotlin` **BUILD SUCCESSFUL**.
 
 ---
 

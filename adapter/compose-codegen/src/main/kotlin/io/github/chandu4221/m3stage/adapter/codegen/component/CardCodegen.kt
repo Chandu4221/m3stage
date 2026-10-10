@@ -2,10 +2,7 @@ package io.github.chandu4221.m3stage.adapter.codegen.component
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
-import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
-import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
+import io.github.chandu4221.m3stage.adapter.codegen.*
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -18,29 +15,29 @@ class CardCodegen : ComponentCodegen {
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val elevation = node[ComponentCatalog.CardProps.Elevation]?.value ?: 1f
-        val containerColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.CardProps.ContainerColor])
-        val shapeCode = ThemeCodeResolver.resolveShape(node[ComponentCatalog.CardProps.Shape])
+        val containerColor = ThemeCodeResolver.resolveColor(node[ComponentCatalog.CardProps.ContainerColor])
+        val shape = ThemeCodeResolver.resolveShape(node[ComponentCatalog.CardProps.Shape])
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
-            .add(
-                "elevation = %T.cardElevation(defaultElevation = %L.%M),\n",
-                ComposeSymbols.CardDefaults,
-                elevation,
-                ComposeSymbols.Dp
-            )
 
-        if (containerColorCode != null) {
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        }
+        // ... (rest unchanged)
+
+        if (containerColor != null) {
             builder.add(
                 "colors = %T.cardColors(containerColor = %L),\n",
                 ComposeSymbols.CardDefaults,
-                containerColorCode
+                containerColor
             )
         }
 
-        if (shapeCode != null) {
-            builder.add("shape = %L,\n", shapeCode)
+        if (shape != null) {
+            builder.add("shape = %L,\n", shape)
         }
 
         builder.unindent()

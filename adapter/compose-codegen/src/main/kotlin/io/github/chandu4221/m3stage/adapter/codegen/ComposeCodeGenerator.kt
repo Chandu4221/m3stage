@@ -79,6 +79,23 @@ class ComposeCodeGenerator : CodeGenerator {
         usedClassNames.forEach { className ->
             fileSpecBuilder.addImport(className.packageName, className.simpleName)
         }
+        // Essential Compose Multiplatform UI & Modifier imports
+        fileSpecBuilder.addImport("androidx.compose.ui", "Modifier")
+        fileSpecBuilder.addImport("androidx.compose.ui.unit", "dp")
+        fileSpecBuilder.addImport(
+            "androidx.compose.foundation.layout",
+            "fillMaxSize",
+            "fillMaxWidth",
+            "fillMaxHeight",
+            "padding",
+            "size",
+            "width",
+            "height",
+            "wrapContentSize",
+            "offset"
+        )
+        fileSpecBuilder.addImport("androidx.compose.foundation", "background", "border", "clickable")
+        fileSpecBuilder.addImport("androidx.compose.ui.draw", "clip", "shadow", "alpha")
         val fileSpec = fileSpecBuilder.build()
         val rawCode = fileSpec.toString()
         return try {

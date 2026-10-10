@@ -10,20 +10,20 @@ import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
+import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
+import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.state.EditorStore
+import io.github.chandu4221.m3stage.ui.InspectorPanel
 import io.github.chandu4221.m3stage.ui.organism.FloatingCanvasStudio
 import io.github.chandu4221.m3stage.ui.organism.PartsDrawer
 import io.github.chandu4221.m3stage.ui.organism.StudioNavRail
 import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
-/**
- * Dumb Template: Modern visual builder workspace layout.
- * Assembles StudioNavRail + Drawer + FloatingCanvasStudio + Inspector.
- * 100% dumb presentational component.
- */
 @Composable
 fun EditorShellTemplate(
+    project: Project?,
     // Rail state
     activeRailTab: StudioRailTab,
     onRailTabSelected: (StudioRailTab) -> Unit,
@@ -35,8 +35,8 @@ fun EditorShellTemplate(
     onComponentSelected: (ComponentKind) -> Unit,
     // Canvas state
     screens: List<Screen>,
-    activeScreenId: io.github.chandu4221.m3stage.model.ScreenId?,
-    onSelectScreen: (io.github.chandu4221.m3stage.model.ScreenId) -> Unit,
+    activeScreenId: ScreenId?,
+    onSelectScreen: (ScreenId) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId) -> Unit,
     lockedNodeIds: Set<NodeId>,
@@ -60,10 +60,10 @@ fun EditorShellTemplate(
     onPanDelta: (androidx.compose.ui.geometry.Offset) -> Unit,
     onWheelZoom: (Float) -> Unit,
     onTidy: () -> Unit,
+    store: EditorStore,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
         // 1. Far-Left Studio Navigation Rail
         StudioNavRail(
@@ -73,16 +73,14 @@ fun EditorShellTemplate(
             onToggleDarkMode = onToggleDarkMode
         )
 
-        // 2. Sliding Left Drawer (Parts or Tree)
-        if (activeRailTab == StudioRailTab.Parts) {
-            PartsDrawer(
-                searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange,
-                onComponentSelected = onComponentSelected
-            )
-        }
+        // 2. Expandable Drawer
+        PartsDrawer(
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange,
+            onComponentSelected = onComponentSelected
+        )
 
-        // 3. Center Floating Canvas Workspace
+        // 3. Central Canvas
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -115,109 +113,17 @@ fun EditorShellTemplate(
         // 4. Right Inspector Surface
         Surface(
             modifier = Modifier
-                .width(280.dp)
+                .width(320.dp)
                 .fillMaxHeight(),
             color = MaterialTheme.colorScheme.surfaceContainer,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
-            // Placeholder inspector slot (will house visual controls organism in Phase 4)
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Inspector",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (selectedNode != null) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = selectedNode.kind.displayName,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Lock Node", style = MaterialTheme.typography.bodyMedium)
-                                Switch(
-                                    checked = isNodeLocked,
-                                    onCheckedChange = { onToggleNodeLock(selectedNode.id) }
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    OutlinedCard(
-                        colors = CardDefaults.outlinedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "No Selection",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Select an element from the canvas to inspect its properties.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun EditorShellTemplatePreview() {
-    DualThemePreview {
-        Box(modifier = Modifier.size(900.dp, 500.dp)) {
-            EditorShellTemplate(
-                activeRailTab = StudioRailTab.Parts,
-                onRailTabSelected = {},
-                isDarkMode = false,
-                onToggleDarkMode = {},
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onComponentSelected = {},
-                screens = emptyList(),
-                activeScreenId = null,
-                onSelectScreen = {},
-                selectedNodeId = null,
-                onNodeClick = {},
-                lockedNodeIds = emptySet(),
-                canUndo = true,
-                canRedo = false,
-                onUndo = {},
-                onRedo = {},
-                onAddScreen = {},
-                onExportCode = {},
-                zoomPercentage = 100,
-                onZoomIn = {},
-                onZoomOut = {},
-                onZoomFit = {},
-                selectedNode = null,
-                isNodeLocked = false,
-                onToggleNodeLock = {},
-                viewportState = io.github.chandu4221.m3stage.state.CanvasViewportState(),
-                onPointerToolChange = {},
-                onPanDelta = {},
-                onWheelZoom = {},
-                onTidy = {},
+            InspectorPanel(
+                project = project,
+                activeScreenId = activeScreenId?.value,
+                selectedNodeId = selectedNodeId,
+                isLocked = isNodeLocked,
+                store = store
             )
         }
     }

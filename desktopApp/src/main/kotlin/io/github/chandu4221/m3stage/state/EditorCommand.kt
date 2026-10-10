@@ -154,3 +154,111 @@ data class UpdateThemeCommand(
         return project.copy(seedColor = oldSeedColor, isDarkMode = oldIsDarkMode)
     }
 }
+
+
+/**
+ * Adds a modifier to a node. Undo removes it.
+ */
+data class AddModifierCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val modifier: ModifierNode
+) : EditorCommand {
+    private var addedIndex: Int = -1
+
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val targetNode = screen.root.findNode(nodeId) ?: return project
+        addedIndex = targetNode.modifiers.size
+        val newRoot = screen.root.addModifier(nodeId, modifier)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        if (addedIndex < 0) return project
+        val newRoot = screen.root.removeModifier(nodeId, addedIndex)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}
+
+/**
+ * Removes a modifier from a node at an index. Undo re-inserts it.
+ */
+data class RemoveModifierCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val index: Int
+) : EditorCommand {
+    private var removedModifier: ModifierNode? = null
+
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val targetNode = screen.root.findNode(nodeId) ?: return project
+        if (index !in targetNode.modifiers.indices) return project
+        removedModifier = targetNode.modifiers[index]
+        val newRoot = screen.root.removeModifier(nodeId, index)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val mod = removedModifier ?: return project
+        val targetNode = screen.root.findNode(nodeId) ?: return project
+        val mutable = targetNode.modifiers.toMutableList()
+        val safeIndex = index.coerceIn(0, mutable.size)
+        mutable.add(safeIndex, mod)
+        val newRoot = screen.root.setModifiers(nodeId, mutable)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}
+
+/**
+ * Updates a modifier at a specific index. Undo restores previous modifier.
+ */
+data class UpdateModifierCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val index: Int,
+    val newModifier: ModifierNode
+) : EditorCommand {
+    private var oldModifier: ModifierNode? = null
+
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val targetNode = screen.root.findNode(nodeId) ?: return project
+        if (index !in targetNode.modifiers.indices) return project
+        oldModifier = targetNode.modifiers[index]
+        val newRoot = screen.root.updateModifier(nodeId, index, newModifier)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val old = oldModifier ?: return project
+        val newRoot = screen.root.updateModifier(nodeId, index, old)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}
+
+/**
+ * Reorders a modifier from one index to another. Undo reverses the reorder.
+ */
+data class ReorderModifierCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val fromIndex: Int,
+    val toIndex: Int
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.reorderModifier(nodeId, fromIndex, toIndex)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.reorderModifier(nodeId, toIndex, fromIndex)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}

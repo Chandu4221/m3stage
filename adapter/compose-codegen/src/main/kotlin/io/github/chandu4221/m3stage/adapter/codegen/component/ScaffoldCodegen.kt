@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
+import io.github.chandu4221.m3stage.adapter.codegen.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
 import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
 import io.github.chandu4221.m3stage.component.ComponentCatalog
@@ -28,6 +29,13 @@ class ScaffoldCodegen : ComponentCodegen {
 
         if (containerColorCode != null) {
             builder.add("containerColor = %L,\n", containerColorCode)
+        }
+
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        } else {
+            builder.add("modifier = %T.%M(),\n", ComposeSymbols.Modifier, ComposeSymbols.fillMaxSize)
         }
 
         if (topBarNode != null) {

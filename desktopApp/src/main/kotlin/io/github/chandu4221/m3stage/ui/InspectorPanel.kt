@@ -17,6 +17,7 @@ import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
 import io.github.chandu4221.m3stage.state.EditorStore
+import io.github.chandu4221.m3stage.ui.molecule.ModifierSection
 
 @Composable
 fun InspectorPanel(
@@ -100,21 +101,14 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Lock Node",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = isLocked,
-                    onCheckedChange = { store.toggleLock(node.id) }
-                )
-            }
         }
     }
+    Spacer(modifier = Modifier.height(12.dp))
+    // First-Class Modifiers Pipeline
+    ModifierSection(
+        node = node,
+        isLocked = isLocked,
+        store = store
+    )
+    Spacer(modifier = Modifier.height(12.dp))
 }

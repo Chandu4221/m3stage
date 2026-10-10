@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
+import io.github.chandu4221.m3stage.adapter.codegen.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
 import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
 import io.github.chandu4221.m3stage.component.ComponentCatalog
@@ -18,26 +19,31 @@ class ButtonCodegen : ComponentCodegen {
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val enabled = node[ComponentCatalog.ButtonProps.Enabled]?.value ?: true
-        val containerColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContainerColor])
-        val contentColorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContentColor])
+        val containerColor = ThemeCodeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContainerColor])
+        val contentColor = ThemeCodeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContentColor])
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
-            .add("onClick = { /* TODO: Hook action */ },\n")
+            .add("onClick = { /* TODO: Action */ },\n")
+
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        }
 
         if (!enabled) {
             builder.add("enabled = false,\n")
         }
 
-        if (containerColorCode != null || contentColorCode != null) {
+        if (containerColor != null || contentColor != null) {
             builder.add("colors = %T.buttonColors(\n", ComposeSymbols.ButtonDefaults)
             builder.indent()
-            if (containerColorCode != null) {
-                builder.add("containerColor = %L,\n", containerColorCode)
+            if (containerColor != null) {
+                builder.add("containerColor = %L,\n", containerColor)
             }
-            if (contentColorCode != null) {
-                builder.add("contentColor = %L,\n", contentColorCode)
+            if (contentColor != null) {
+                builder.add("contentColor = %L,\n", contentColor)
             }
             builder.unindent()
             builder.add("),\n")

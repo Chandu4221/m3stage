@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.mutation
 
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.ModifierNode
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey
@@ -115,4 +116,72 @@ fun DesignNode.updateVisibility(nodeId: NodeId, isVisible: Boolean): DesignNode 
         return copy(isVisible = isVisible)
     }
     return copy(children = children.map { it.updateVisibility(nodeId, isVisible) })
+}
+
+/**
+ * Appends a modifier to the node's modifier chain.
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.addModifier(nodeId: NodeId, modifier: ModifierNode): DesignNode {
+    if (this.id == nodeId) {
+        return copy(modifiers = modifiers + modifier)
+    }
+    return copy(children = children.map { it.addModifier(nodeId, modifier) })
+}
+
+/**
+ * Removes a modifier at a specific index in the node's modifier chain.
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.removeModifier(nodeId: NodeId, index: Int): DesignNode {
+    if (this.id == nodeId) {
+        if (index !in modifiers.indices) return this
+        val mutable = modifiers.toMutableList()
+        mutable.removeAt(index)
+        return copy(modifiers = mutable.toList())
+    }
+    return copy(children = children.map { it.removeModifier(nodeId, index) })
+}
+
+/**
+ * Updates a modifier at a specific index in the node's modifier chain.
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.updateModifier(nodeId: NodeId, index: Int, modifier: ModifierNode): DesignNode {
+    if (this.id == nodeId) {
+        if (index !in modifiers.indices) return this
+        val mutable = modifiers.toMutableList()
+        mutable[index] = modifier
+        return copy(modifiers = mutable.toList())
+    }
+    return copy(children = children.map { it.updateModifier(nodeId, index, modifier) })
+}
+
+/**
+ * Reorders a modifier in the chain from one position to another.
+ * Modifier order matters in Compose (e.g. padding before background vs background before padding).
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.reorderModifier(nodeId: NodeId, fromIndex: Int, toIndex: Int): DesignNode {
+    if (this.id == nodeId) {
+        if (fromIndex !in modifiers.indices || toIndex !in modifiers.indices || fromIndex == toIndex) {
+            return this
+        }
+        val mutable = modifiers.toMutableList()
+        val item = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, item)
+        return copy(modifiers = mutable.toList())
+    }
+    return copy(children = children.map { it.reorderModifier(nodeId, fromIndex, toIndex) })
+}
+
+/**
+ * Sets the entire modifier list for a node.
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.setModifiers(nodeId: NodeId, newModifiers: List<ModifierNode>): DesignNode {
+    if (this.id == nodeId) {
+        return copy(modifiers = newModifiers)
+    }
+    return copy(children = children.map { it.setModifiers(nodeId, newModifiers) })
 }

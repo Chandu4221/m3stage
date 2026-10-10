@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
+import io.github.chandu4221.m3stage.adapter.codegen.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
@@ -21,14 +22,21 @@ class ColumnCodegen : ComponentCodegen {
         val spacing = node[ComponentCatalog.ColumnProps.Spacing]?.value ?: 0f
         val hAlignName = node[ComponentCatalog.ColumnProps.HorizontalAlignment]?.name
         val vArrangementName = node[ComponentCatalog.ColumnProps.VerticalArrangement]?.name
-
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        }
 
         // Horizontal alignment
         val hAlignCode = when (hAlignName) {
-            HorizontalAlignmentOption.CenterHorizontally.name -> CodeBlock.of("%T.CenterHorizontally", ComposeSymbols.Alignment)
+            HorizontalAlignmentOption.CenterHorizontally.name -> CodeBlock.of(
+                "%T.CenterHorizontally",
+                ComposeSymbols.Alignment
+            )
+
             HorizontalAlignmentOption.End.name -> CodeBlock.of("%T.End", ComposeSymbols.Alignment)
             else -> null
         }

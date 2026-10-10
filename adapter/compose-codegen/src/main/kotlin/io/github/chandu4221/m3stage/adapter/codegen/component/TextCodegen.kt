@@ -2,10 +2,7 @@ package io.github.chandu4221.m3stage.adapter.codegen.component
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
-import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
-import io.github.chandu4221.m3stage.adapter.codegen.ThemeCodeResolver
+import io.github.chandu4221.m3stage.adapter.codegen.*
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -22,12 +19,16 @@ class TextCodegen : ComponentCodegen {
         val colorCode = ThemeCodeResolver.resolveColor(node[ComponentCatalog.TextProps.Color])
         val typoCode = ThemeCodeResolver.resolveTypography(node[ComponentCatalog.TextProps.Typography])
         val overflowName = node[ComponentCatalog.TextProps.Overflow]?.name
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
             .add("text = %S,\n", textStr)
 
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        }
         if (colorCode != null) {
             builder.add("color = %L,\n", colorCode)
         }

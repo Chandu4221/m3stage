@@ -131,10 +131,57 @@ sealed interface ModifierNodeDto {
     data class FillMaxSize(val fraction: Float) : ModifierNodeDto
 
     @Serializable
+    @SerialName("mod_size")
+    data class Size(val width: Float, val height: Float) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_width")
+    data class Width(val width: Float) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_height")
+    data class Height(val height: Float) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_wrap_content")
+    data class WrapContentSize(val unbounded: Boolean = false) : ModifierNodeDto
+
+    @Serializable
     @SerialName("mod_bg")
-    data class Background(val color: PropValDto.ColorValDto) : ModifierNodeDto
+    data class Background(
+        val color: PropValDto.ColorValDto,
+        val shape: PropValDto.ShapeValDto? = null
+    ) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_border")
+    data class Border(
+        val width: Float,
+        val color: PropValDto.ColorValDto,
+        val shape: PropValDto.ShapeValDto
+    ) : ModifierNodeDto
 
     @Serializable
     @SerialName("mod_clip")
     data class Clip(val shape: PropValDto.ShapeValDto) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_shadow")
+    data class Shadow(
+        val elevation: Float,
+        val shape: PropValDto.ShapeValDto,
+        val clip: Boolean
+    ) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_alpha")
+    data class Alpha(val alpha: Float) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_clickable")
+    data class Clickable(val enabled: Boolean = true) : ModifierNodeDto
+
+    @Serializable
+    @SerialName("mod_offset")
+    data class Offset(val x: Float, val y: Float) : ModifierNodeDto
 }

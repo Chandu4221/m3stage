@@ -78,6 +78,7 @@ fun EditorScreen(store: EditorStore) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         EditorShellTemplate(
+            project = project,
             // Rail
             activeRailTab = activeRailTab,
             onRailTabSelected = { activeRailTab = it },
@@ -132,6 +133,7 @@ fun EditorScreen(store: EditorStore) {
             onZoomOut = { viewportState = viewportState.zoomOut() },
             onZoomFit = { viewportState = viewportState.zoomFit() },
             onTidy = { viewportState = viewportState.tidy() },
+            store = store,
         )
 
         // Add this right here, inside the Box after EditorShellTemplate:

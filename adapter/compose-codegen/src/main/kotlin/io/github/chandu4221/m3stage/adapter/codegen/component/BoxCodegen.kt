@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeSymbols
+import io.github.chandu4221.m3stage.adapter.codegen.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.PackageNameResolver
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
@@ -31,10 +32,16 @@ class BoxCodegen : ComponentCodegen {
             ContentAlignmentOption.BottomEnd.name -> CodeBlock.of("%T.BottomEnd", ComposeSymbols.Alignment)
             else -> null
         }
+        val contentAlignment = node[ComponentCatalog.BoxProps.ContentAlignment]?.name
+        val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
+
+        if (modifierCode != null) {
+            builder.add("modifier = %L,\n", modifierCode)
+        }
 
         if (alignmentCode != null) {
             builder.add("contentAlignment = %L,\n", alignmentCode)
