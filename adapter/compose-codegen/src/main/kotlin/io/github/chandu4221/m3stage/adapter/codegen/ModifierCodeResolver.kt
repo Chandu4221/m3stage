@@ -1,11 +1,11 @@
 package io.github.chandu4221.m3stage.adapter.codegen
 
 import com.squareup.kotlinpoet.CodeBlock
-import io.github.chandu4221.m3stage.model.ModifierNode
+import io.github.chandu4221.m3stage.model.ModifierSpec
 
 object ModifierCodeResolver {
 
-    fun generateModifierChain(modifiers: List<ModifierNode>): CodeBlock? {
+    fun generateModifierChain(modifiers: List<ModifierSpec>): CodeBlock? {
         if (modifiers.isEmpty()) return null
 
         val builder = CodeBlock.builder()
@@ -13,7 +13,7 @@ object ModifierCodeResolver {
 
         for (node in modifiers) {
             when (node) {
-                is ModifierNode.Padding -> {
+                is ModifierSpec.Padding -> {
                     if (node.start == node.end && node.top == node.bottom && node.start == node.top) {
                         builder.add("\n.padding(%L.dp)", node.start)
                     } else if (node.start == node.end && node.top == node.bottom) {
@@ -29,7 +29,7 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.FillMaxWidth -> {
+                is ModifierSpec.FillMaxWidth -> {
                     if (node.fraction == 1f) {
                         builder.add("\n.fillMaxWidth()")
                     } else {
@@ -37,7 +37,7 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.FillMaxHeight -> {
+                is ModifierSpec.FillMaxHeight -> {
                     if (node.fraction == 1f) {
                         builder.add("\n.fillMaxHeight()")
                     } else {
@@ -45,7 +45,7 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.FillMaxSize -> {
+                is ModifierSpec.FillMaxSize -> {
                     if (node.fraction == 1f) {
                         builder.add("\n.fillMaxSize()")
                     } else {
@@ -53,19 +53,19 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.Size -> {
+                is ModifierSpec.Size -> {
                     builder.add("\n.size(width = %L.dp, height = %L.dp)", node.width, node.height)
                 }
 
-                is ModifierNode.Width -> {
+                is ModifierSpec.Width -> {
                     builder.add("\n.width(%L.dp)", node.width)
                 }
 
-                is ModifierNode.Height -> {
+                is ModifierSpec.Height -> {
                     builder.add("\n.height(%L.dp)", node.height)
                 }
 
-                is ModifierNode.WrapContentSize -> {
+                is ModifierSpec.WrapContentSize -> {
                     if (node.unbounded) {
                         builder.add("\n.wrapContentSize(unbounded = true)")
                     } else {
@@ -73,7 +73,7 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.Background -> {
+                is ModifierSpec.Background -> {
                     val colorCode = ThemeCodeResolver.resolveColor(node.color)
                     if (node.shape != null) {
                         val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
@@ -83,18 +83,18 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.Border -> {
+                is ModifierSpec.Border -> {
                     val colorCode = ThemeCodeResolver.resolveColor(node.color)
                     val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
                     builder.add("\n.border(width = %L.dp, color = %L, shape = %L)", node.width, colorCode, shapeCode)
                 }
 
-                is ModifierNode.Clip -> {
+                is ModifierSpec.Clip -> {
                     val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
                     builder.add("\n.clip(%L)", shapeCode)
                 }
 
-                is ModifierNode.Shadow -> {
+                is ModifierSpec.Shadow -> {
                     val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
                     if (node.clip) {
                         builder.add("\n.shadow(elevation = %L.dp, shape = %L, clip = true)", node.elevation, shapeCode)
@@ -103,17 +103,11 @@ object ModifierCodeResolver {
                     }
                 }
 
-                is ModifierNode.Alpha -> {
+                is ModifierSpec.Alpha -> {
                     builder.add("\n.alpha(%Lf)", node.alpha)
                 }
 
-                is ModifierNode.Clickable -> {
-                    if (node.enabled) {
-                        builder.add("\n.clickable { /* TODO: onClick */ }")
-                    }
-                }
-
-                is ModifierNode.Offset -> {
+                is ModifierSpec.Offset -> {
                     builder.add("\n.offset(x = %L.dp, y = %L.dp)", node.x, node.y)
                 }
             }

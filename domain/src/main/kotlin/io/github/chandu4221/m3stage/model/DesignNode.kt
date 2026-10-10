@@ -10,7 +10,7 @@ data class DesignNode(
     val id: NodeId,
     val kind: ComponentKind,
     val props: Map<PropertyId, PropertyValue> = emptyMap(),
-    val modifiers: List<ModifierNode> = emptyList(),
+    val modifiers: List<ModifierSpec> = emptyList(),
     val children: List<DesignNode> = emptyList(),
     val slots: Map<SlotId, List<DesignNode>> = emptyMap(),
     val isVisible: Boolean = true

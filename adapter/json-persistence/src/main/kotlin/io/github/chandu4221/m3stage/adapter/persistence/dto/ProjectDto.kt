@@ -178,10 +178,6 @@ sealed interface ModifierNodeDto {
     data class Alpha(val alpha: Float) : ModifierNodeDto
 
     @Serializable
-    @SerialName("mod_clickable")
-    data class Clickable(val enabled: Boolean = true) : ModifierNodeDto
-
-    @Serializable
     @SerialName("mod_offset")
     data class Offset(val x: Float, val y: Float) : ModifierNodeDto
 }

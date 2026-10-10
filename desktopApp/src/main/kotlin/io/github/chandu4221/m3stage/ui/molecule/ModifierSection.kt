@@ -8,11 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.ModifierNode
+import io.github.chandu4221.m3stage.model.ModifierSpec
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.theme.M3ColorToken
@@ -89,49 +88,49 @@ fun ModifierSection(
                         DropdownMenuItem(
                             text = { Text("Padding") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.Padding(16f, 16f, 16f, 16f))
+                                store.addModifier(node.id, ModifierSpec.Padding(16f, 16f, 16f, 16f))
                                 showAddMenu = false
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Fill Max Width") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.FillMaxWidth())
+                                store.addModifier(node.id, ModifierSpec.FillMaxWidth())
                                 showAddMenu = false
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Fill Max Height") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.FillMaxHeight())
+                                store.addModifier(node.id, ModifierSpec.FillMaxHeight())
                                 showAddMenu = false
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Fill Max Size") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.FillMaxSize())
+                                store.addModifier(node.id, ModifierSpec.FillMaxSize())
                                 showAddMenu = false
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Size (W x H)") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.Size(100f, 100f))
+                                store.addModifier(node.id, ModifierSpec.Size(100f, 100f))
                                 showAddMenu = false
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Width") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.Width(100f))
+                                store.addModifier(node.id, ModifierSpec.Width(100f))
                                 showAddMenu = false
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("Height") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.Height(100f))
+                                store.addModifier(node.id, ModifierSpec.Height(100f))
                                 showAddMenu = false
                             }
                         )
@@ -140,7 +139,7 @@ fun ModifierSection(
                             onClick = {
                                 store.addModifier(
                                     node.id,
-                                    ModifierNode.Background(PropertyValue.ColorValue.Token(M3ColorToken.PrimaryContainer))
+                                    ModifierSpec.Background(PropertyValue.ColorValue.Token(M3ColorToken.PrimaryContainer))
                                 )
                                 showAddMenu = false
                             }
@@ -150,7 +149,7 @@ fun ModifierSection(
                             onClick = {
                                 store.addModifier(
                                     node.id,
-                                    ModifierNode.Border(
+                                    ModifierSpec.Border(
                                         width = 1f,
                                         color = PropertyValue.ColorValue.Token(M3ColorToken.Outline),
                                         shape = PropertyValue.ShapeValue.UniformDp(8f)
@@ -164,7 +163,7 @@ fun ModifierSection(
                             onClick = {
                                 store.addModifier(
                                     node.id,
-                                    ModifierNode.Clip(PropertyValue.ShapeValue.UniformDp(8f))
+                                    ModifierSpec.Clip(PropertyValue.ShapeValue.UniformDp(8f))
                                 )
                                 showAddMenu = false
                             }
@@ -174,7 +173,7 @@ fun ModifierSection(
                             onClick = {
                                 store.addModifier(
                                     node.id,
-                                    ModifierNode.Shadow(
+                                    ModifierSpec.Shadow(
                                         elevation = 4f,
                                         shape = PropertyValue.ShapeValue.UniformDp(8f)
                                     )
@@ -185,21 +184,15 @@ fun ModifierSection(
                         DropdownMenuItem(
                             text = { Text("Alpha (Opacity)") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.Alpha(0.8f))
+                                store.addModifier(node.id, ModifierSpec.Alpha(0.8f))
                                 showAddMenu = false
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text("Clickable") },
-                            onClick = {
-                                store.addModifier(node.id, ModifierNode.Clickable(true))
-                                showAddMenu = false
-                            }
-                        )
+                      
                         DropdownMenuItem(
                             text = { Text("Offset") },
                             onClick = {
-                                store.addModifier(node.id, ModifierNode.Offset(0f, 0f))
+                                store.addModifier(node.id, ModifierSpec.Offset(0f, 0f))
                                 showAddMenu = false
                             }
                         )
@@ -246,11 +239,11 @@ fun ModifierSection(
 
 @Composable
 private fun ModifierItemCard(
-    mod: ModifierNode,
+    mod: ModifierSpec,
     index: Int,
     totalCount: Int,
     isLocked: Boolean,
-    onUpdate: (ModifierNode) -> Unit,
+    onUpdate: (ModifierSpec) -> Unit,
     onRemove: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit
@@ -324,7 +317,7 @@ private fun ModifierItemCard(
                     .padding(top = 6.dp)
             ) {
                 when (mod) {
-                    is ModifierNode.Padding -> {
+                    is ModifierSpec.Padding -> {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -344,25 +337,25 @@ private fun ModifierItemCard(
                         }
                     }
 
-                    is ModifierNode.FillMaxWidth -> {
+                    is ModifierSpec.FillMaxWidth -> {
                         SliderField(label = "Fraction", value = mod.fraction) {
                             onUpdate(mod.copy(fraction = it))
                         }
                     }
 
-                    is ModifierNode.FillMaxHeight -> {
+                    is ModifierSpec.FillMaxHeight -> {
                         SliderField(label = "Fraction", value = mod.fraction) {
                             onUpdate(mod.copy(fraction = it))
                         }
                     }
 
-                    is ModifierNode.FillMaxSize -> {
+                    is ModifierSpec.FillMaxSize -> {
                         SliderField(label = "Fraction", value = mod.fraction) {
                             onUpdate(mod.copy(fraction = it))
                         }
                     }
 
-                    is ModifierNode.Size -> {
+                    is ModifierSpec.Size -> {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -376,19 +369,19 @@ private fun ModifierItemCard(
                         }
                     }
 
-                    is ModifierNode.Width -> {
+                    is ModifierSpec.Width -> {
                         NumberField(label = "Width (dp)", value = mod.width) {
                             onUpdate(mod.copy(width = it))
                         }
                     }
 
-                    is ModifierNode.Height -> {
+                    is ModifierSpec.Height -> {
                         NumberField(label = "Height (dp)", value = mod.height) {
                             onUpdate(mod.copy(height = it))
                         }
                     }
 
-                    is ModifierNode.WrapContentSize -> {
+                    is ModifierSpec.WrapContentSize -> {
                         Text(
                             text = "Allows content to measure at its desired size.",
                             style = MaterialTheme.typography.bodySmall,
@@ -396,28 +389,13 @@ private fun ModifierItemCard(
                         )
                     }
 
-                    is ModifierNode.Alpha -> {
+                    is ModifierSpec.Alpha -> {
                         SliderField(label = "Alpha", value = mod.alpha) {
                             onUpdate(mod.copy(alpha = it))
                         }
                     }
 
-                    is ModifierNode.Clickable -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Enabled", style = MaterialTheme.typography.bodySmall)
-                            Switch(
-                                checked = mod.enabled,
-                                onCheckedChange = { onUpdate(mod.copy(enabled = it)) },
-                                modifier = Modifier.scale(0.8f)
-                            )
-                        }
-                    }
-
-                    is ModifierNode.Offset -> {
+                    is ModifierSpec.Offset -> {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -431,7 +409,7 @@ private fun ModifierItemCard(
                         }
                     }
 
-                    is ModifierNode.Background -> {
+                    is ModifierSpec.Background -> {
                         Text(
                             text = "Color: ${mod.color}",
                             style = MaterialTheme.typography.bodySmall,
@@ -439,13 +417,13 @@ private fun ModifierItemCard(
                         )
                     }
 
-                    is ModifierNode.Border -> {
+                    is ModifierSpec.Border -> {
                         NumberField(label = "Border Width (dp)", value = mod.width) {
                             onUpdate(mod.copy(width = it))
                         }
                     }
 
-                    is ModifierNode.Clip -> {
+                    is ModifierSpec.Clip -> {
                         Text(
                             text = "Shape: ${mod.shape}",
                             style = MaterialTheme.typography.bodySmall,
@@ -453,7 +431,7 @@ private fun ModifierItemCard(
                         )
                     }
 
-                    is ModifierNode.Shadow -> {
+                    is ModifierSpec.Shadow -> {
                         NumberField(label = "Elevation (dp)", value = mod.elevation) {
                             onUpdate(mod.copy(elevation = it))
                         }
@@ -509,20 +487,19 @@ private fun SliderField(
     }
 }
 
-private fun getModifierTitle(mod: ModifierNode): String = when (mod) {
-    is ModifierNode.Padding -> "Padding"
-    is ModifierNode.FillMaxWidth -> "Fill Max Width"
-    is ModifierNode.FillMaxHeight -> "Fill Max Height"
-    is ModifierNode.FillMaxSize -> "Fill Max Size"
-    is ModifierNode.Size -> "Size"
-    is ModifierNode.Width -> "Width"
-    is ModifierNode.Height -> "Height"
-    is ModifierNode.WrapContentSize -> "Wrap Content Size"
-    is ModifierNode.Background -> "Background"
-    is ModifierNode.Border -> "Border"
-    is ModifierNode.Clip -> "Clip"
-    is ModifierNode.Shadow -> "Shadow"
-    is ModifierNode.Alpha -> "Alpha"
-    is ModifierNode.Clickable -> "Clickable"
-    is ModifierNode.Offset -> "Offset"
+private fun getModifierTitle(mod: ModifierSpec): String = when (mod) {
+    is ModifierSpec.Padding -> "Padding"
+    is ModifierSpec.FillMaxWidth -> "Fill Max Width"
+    is ModifierSpec.FillMaxHeight -> "Fill Max Height"
+    is ModifierSpec.FillMaxSize -> "Fill Max Size"
+    is ModifierSpec.Size -> "Size"
+    is ModifierSpec.Width -> "Width"
+    is ModifierSpec.Height -> "Height"
+    is ModifierSpec.WrapContentSize -> "Wrap Content Size"
+    is ModifierSpec.Background -> "Background"
+    is ModifierSpec.Border -> "Border"
+    is ModifierSpec.Clip -> "Clip"
+    is ModifierSpec.Shadow -> "Shadow"
+    is ModifierSpec.Alpha -> "Alpha"
+    is ModifierSpec.Offset -> "Offset"
 }

@@ -188,7 +188,7 @@ class EditorStore(
     }
 
     // --- Bridge: Modifier Operations ---
-    fun addModifier(nodeId: NodeId, modifier: ModifierNode) {
+    fun addModifier(nodeId: NodeId, modifier: ModifierSpec) {
         val screenId = activeScreenId.value ?: return
         execute(AddModifierCommand(screenId, nodeId, modifier))
     }
@@ -198,7 +198,7 @@ class EditorStore(
         execute(RemoveModifierCommand(screenId, nodeId, index))
     }
 
-    fun updateModifier(nodeId: NodeId, index: Int, modifier: ModifierNode) {
+    fun updateModifier(nodeId: NodeId, index: Int, modifier: ModifierSpec) {
         val screenId = activeScreenId.value ?: return
         execute(UpdateModifierCommand(screenId, nodeId, index, modifier))
     }

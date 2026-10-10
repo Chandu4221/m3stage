@@ -2,7 +2,7 @@
 
 ## 1. Core Architectural Objectives
 - **Compile-Time Safety & Exhaustiveness:** Replace loose string identifiers and dynamic maps with Kotlin sealed types and exhaustive enums. Eliminating runtime null checks (`?: error(...)`) and ensuring all `when` expressions are checked by the Kotlin compiler.
-- **Decouple UI Taxonomy from Classpath Resolution:** Separate human-facing palette categories (`ComponentCategory`) from physical Compose package roots (`ComposeModule`).
+- **Decouple UI Taxonomy from Classpath Resolution:** Separate human-facing palette categories (`ComponentCategory`) from physical Compose package roots (`ComposePackage`).
 - **Material 3 Design Token Integrity:** Retain dynamic theming semantics (`MaterialTheme.colorScheme.primary`, `typography.bodyMedium`, `shape.medium`) rather than emitting raw hex or literal values.
 - **Atomic Design Architecture (Composition over Prop Flattening):**
   - **Atoms:** Primitives like `Text` (owns string, typography, color), `Icon` (owns imageVector, tint), `Image`, `Spacer`.
@@ -57,7 +57,7 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `PropertyDescriptor.kt`: Inspector UI descriptors (`Text`, `Switch`, `DpSlider`, `EnumDropdown`, `ColorPicker`, `TypographyPicker`, `ShapePicker`).
 
 ### [x] Level 3: `component/` (Completed)
-- `ComposeModule.kt`: Classpath roots (`Material3`, `FoundationLayout`, `Foundation`, `Ui`).
+- `ComposePackage.kt`: Classpath roots (`Material3`, `FoundationLayout`, `Foundation`, `Ui`).
 - `ComponentCategory.kt`: Palette categories in PascalCase (`Layouts`, `Surfaces`, `Inputs`, `Display`, `Navigation`).
 - `ComponentKind.kt`: Exhaustive enum of all supported components (`Text`, `Icon`, `Image`, `Button`, `TextField`, `Column`, `Row`, `Box`, `Scaffold`, `Card`, `TopAppBar`).
 - `SlotDefinition.kt`: Anatomy & named slot rules (`SlotId`, `isRequired`, `maxChildren`, `allowedKinds`).
@@ -66,7 +66,7 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 
 ### [x] Level 4: `model/` (Completed)
 - `Identifiers.kt`: Cleaned up to solely hold document aggregate identity types (`ProjectId`, `ScreenId`, `NodeId`).
-- `ModifierNode.kt`: Refactored to reference `PropertyValue.ColorValue` and `PropertyValue.ShapeValue`.
+- `ModifierSpec.kt`: Refactored to reference `PropertyValue.ColorValue` and `PropertyValue.ShapeValue`.
 - `DesignNode.kt`: Strongly typed AST root with `kind: ComponentKind`, `props: Map<PropertyId, PropertyValue>`, and `slots: Map<SlotId, List<DesignNode>>`.
 
 ### [x] Level 5: `mutation/` & `validation/` (Completed)
@@ -83,7 +83,7 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 ### [x] Level 7: `:adapter:json-persistence` (Completed)
 - Clean split between DTO definitions in `dto/ProjectDto.kt` and domain conversion functions in `dto/Mappers.kt`.
 - `ProjectDto.kt`: Pure `@Serializable` DTOs (`ProjectDto`, `ScreenDto`, `DesignNodeDto`, `PropValDto`, `ModifierNodeDto`) supporting named `slots`.
-- `Mappers.kt`: Exhaustive, type-safe bidirectional mapping between domain entities (`DesignNode`, `PropertyValue`, `ModifierNode`, `M3ColorToken`) and DTOs.
+- `Mappers.kt`: Exhaustive, type-safe bidirectional mapping between domain entities (`DesignNode`, `PropertyValue`, `ModifierSpec`, `M3ColorToken`) and DTOs.
 - Resilient mapping of legacy or stored string IDs to `ComponentKind` via `ComponentKind.entries.firstOrNull { it.id == this.type } ?: ComponentKind.Box`.
 
 ### [x] Level 8: `:adapter:compose-renderer` (Completed)
@@ -242,7 +242,7 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 
 ### [x] Level 23: First-Class Compose Modifiers Pipeline (Completed)
 - `:domain`:
-  - Expanded `ModifierNode` sealed interface (Padding, Size, Width, Height, FillMaxWidth, FillMaxHeight, FillMaxSize, WrapContentSize, Background, Border, Clip, Shadow, Alpha, Clickable, Offset).
+  - Expanded `ModifierSpec` sealed interface (Padding, Size, Width, Height, FillMaxWidth, FillMaxHeight, FillMaxSize, WrapContentSize, Background, Border, Clip, Shadow, Alpha, Clickable, Offset).
   - Added immutable mutations: `addModifier`, `removeModifier`, `updateModifier`, `reorderModifier`, `setModifiers`.
 - `:adapter:json-persistence`:
   - Added polymorphic `ModifierNodeDto` with `@SerialName` annotations.

@@ -162,7 +162,7 @@ data class UpdateThemeCommand(
 data class AddModifierCommand(
     val screenId: ScreenId,
     val nodeId: NodeId,
-    val modifier: ModifierNode
+    val modifier: ModifierSpec
 ) : EditorCommand {
     private var addedIndex: Int = -1
 
@@ -190,7 +190,7 @@ data class RemoveModifierCommand(
     val nodeId: NodeId,
     val index: Int
 ) : EditorCommand {
-    private var removedModifier: ModifierNode? = null
+    private var removedModifier: ModifierSpec? = null
 
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
@@ -220,9 +220,9 @@ data class UpdateModifierCommand(
     val screenId: ScreenId,
     val nodeId: NodeId,
     val index: Int,
-    val newModifier: ModifierNode
+    val newModifier: ModifierSpec
 ) : EditorCommand {
-    private var oldModifier: ModifierNode? = null
+    private var oldModifier: ModifierSpec? = null
 
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project

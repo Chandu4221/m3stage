@@ -1,7 +1,7 @@
 package io.github.chandu4221.m3stage.mutation
 
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.ModifierNode
+import io.github.chandu4221.m3stage.model.ModifierSpec
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey
@@ -122,7 +122,7 @@ fun DesignNode.updateVisibility(nodeId: NodeId, isVisible: Boolean): DesignNode 
  * Appends a modifier to the node's modifier chain.
  * Returns a new immutable tree root.
  */
-fun DesignNode.addModifier(nodeId: NodeId, modifier: ModifierNode): DesignNode {
+fun DesignNode.addModifier(nodeId: NodeId, modifier: ModifierSpec): DesignNode {
     if (this.id == nodeId) {
         return copy(modifiers = modifiers + modifier)
     }
@@ -147,7 +147,7 @@ fun DesignNode.removeModifier(nodeId: NodeId, index: Int): DesignNode {
  * Updates a modifier at a specific index in the node's modifier chain.
  * Returns a new immutable tree root.
  */
-fun DesignNode.updateModifier(nodeId: NodeId, index: Int, modifier: ModifierNode): DesignNode {
+fun DesignNode.updateModifier(nodeId: NodeId, index: Int, modifier: ModifierSpec): DesignNode {
     if (this.id == nodeId) {
         if (index !in modifiers.indices) return this
         val mutable = modifiers.toMutableList()
@@ -179,7 +179,7 @@ fun DesignNode.reorderModifier(nodeId: NodeId, fromIndex: Int, toIndex: Int): De
  * Sets the entire modifier list for a node.
  * Returns a new immutable tree root.
  */
-fun DesignNode.setModifiers(nodeId: NodeId, newModifiers: List<ModifierNode>): DesignNode {
+fun DesignNode.setModifiers(nodeId: NodeId, newModifiers: List<ModifierSpec>): DesignNode {
     if (this.id == nodeId) {
         return copy(modifiers = newModifiers)
     }
