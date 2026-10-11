@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.adapter.codegen
+package io.github.chandu4221.m3stage.adapter.codegen.resolver
 
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.modifier.ModifierSpec
@@ -13,6 +13,7 @@ object ModifierCodeResolver {
 
         for (node in modifiers) {
             when (node) {
+                // 1. Padding
                 is ModifierSpec.Padding -> {
                     if (node.start == node.end && node.top == node.bottom && node.start == node.top) {
                         builder.add("\n.padding(%L.dp)", node.start)
@@ -29,6 +30,7 @@ object ModifierCodeResolver {
                     }
                 }
 
+                // 2. Size
                 is ModifierSpec.FillMaxWidth -> {
                     if (node.fraction == 1f) {
                         builder.add("\n.fillMaxWidth()")
@@ -73,6 +75,28 @@ object ModifierCodeResolver {
                     }
                 }
 
+                is ModifierSpec.Weight -> {
+                    if (node.fill) {
+                        builder.add("\n.weight(%Lf)", node.weight)
+                    } else {
+                        builder.add("\n.weight(%Lf, fill = false)", node.weight)
+                    }
+                }
+
+                is ModifierSpec.AspectRatio -> {
+                    builder.add("\n.aspectRatio(%Lf)", node.ratio)
+                }
+
+                // 3. Position & Order
+                is ModifierSpec.Offset -> {
+                    builder.add("\n.offset(x = %L.dp, y = %L.dp)", node.x, node.y)
+                }
+
+                is ModifierSpec.ZIndex -> {
+                    builder.add("\n.zIndex(%Lf)", node.zIndex)
+                }
+
+                // 4. Drawing & Border
                 is ModifierSpec.Background -> {
                     val colorCode = ThemeCodeResolver.resolveColor(node.color)
                     if (node.shape != null) {
@@ -89,11 +113,6 @@ object ModifierCodeResolver {
                     builder.add("\n.border(width = %L.dp, color = %L, shape = %L)", node.width, colorCode, shapeCode)
                 }
 
-                is ModifierSpec.Clip -> {
-                    val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
-                    builder.add("\n.clip(%L)", shapeCode)
-                }
-
                 is ModifierSpec.Shadow -> {
                     val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
                     if (node.clip) {
@@ -103,12 +122,36 @@ object ModifierCodeResolver {
                     }
                 }
 
+                // 5. Graphics Layer
+                is ModifierSpec.Clip -> {
+                    val shapeCode = ThemeCodeResolver.resolveShape(node.shape)
+                    builder.add("\n.clip(%L)", shapeCode)
+                }
+
                 is ModifierSpec.Alpha -> {
                     builder.add("\n.alpha(%Lf)", node.alpha)
                 }
 
-                is ModifierSpec.Offset -> {
-                    builder.add("\n.offset(x = %L.dp, y = %L.dp)", node.x, node.y)
+                // 6. Transformations
+                is ModifierSpec.Rotate -> {
+                    builder.add("\n.rotate(%Lf)", node.degrees)
+                }
+
+                is ModifierSpec.Scale -> {
+                    builder.add("\n.scale(%Lf)", node.scale)
+                }
+
+                // 7. Scroll
+                is ModifierSpec.VerticalScroll -> {
+                    if (node.enabled) {
+                        builder.add("\n.verticalScroll(rememberScrollState())")
+                    }
+                }
+
+                is ModifierSpec.HorizontalScroll -> {
+                    if (node.enabled) {
+                        builder.add("\n.horizontalScroll(rememberScrollState())")
+                    }
                 }
             }
         }

@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.adapter.codegen
+package io.github.chandu4221.m3stage.adapter.codegen.resolver
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.MemberName

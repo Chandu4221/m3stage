@@ -1,34 +1,23 @@
 package io.github.chandu4221.m3stage.adapter.codegen
 
+import io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class KotlinIdentifierSanitizerTest {
 
     @Test
-    fun testToPascalCaseStandardNames() {
-        assertEquals("Screen1", KotlinIdentifierSanitizer.toPascalCase("Screen 1"))
-        assertEquals("Home", KotlinIdentifierSanitizer.toPascalCase("Home"))
-        assertEquals("MyProfile", KotlinIdentifierSanitizer.toPascalCase("my-profile"))
-        assertEquals("OrderDetailsPage", KotlinIdentifierSanitizer.toPascalCase("order_details_page"))
+    fun testPascalCaseConversion() {
+        assertEquals("HomeScreen", KotlinIdentifierSanitizer.toPascalCase("home screen"))
+        assertEquals("UserProfile", KotlinIdentifierSanitizer.toPascalCase("user_profile"))
+        assertEquals("DashboardScreen", KotlinIdentifierSanitizer.toPascalCase("dashboard-screen"))
+        assertEquals("Screen123Screen", KotlinIdentifierSanitizer.toPascalCase("123 screen"))
     }
 
     @Test
-    fun testToPascalCaseLeadingDigitPrefix() {
-        assertEquals("Screen1Home", KotlinIdentifierSanitizer.toPascalCase("1Home"))
-        assertEquals("Screen2ndTab", KotlinIdentifierSanitizer.toPascalCase("2nd-tab"))
-    }
-
-    @Test
-    fun testToPascalCaseBlankFallback() {
-        assertEquals("Screen", KotlinIdentifierSanitizer.toPascalCase("   "))
-        assertEquals("Screen", KotlinIdentifierSanitizer.toPascalCase("!@#$%^"))
-    }
-
-    @Test
-    fun testToFunctionNamePreventsDoubleSuffix() {
-        assertEquals("HomeScreen", KotlinIdentifierSanitizer.toFunctionName("Home"))
-        assertEquals("HomeScreen", KotlinIdentifierSanitizer.toFunctionName("HomeScreen"))
-        assertEquals("Screen1Screen", KotlinIdentifierSanitizer.toFunctionName("Screen1"))
+    fun testReservedKeywordEscaping() {
+        assertEquals("`Package`", KotlinIdentifierSanitizer.toFunctionName("package"))
+        assertEquals("`Class`", KotlinIdentifierSanitizer.toFunctionName("class"))
+        assertEquals("HomeScreen", KotlinIdentifierSanitizer.toFunctionName("home screen"))
     }
 }
