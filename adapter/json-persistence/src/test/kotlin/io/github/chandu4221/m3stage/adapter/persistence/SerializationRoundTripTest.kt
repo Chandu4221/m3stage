@@ -1,11 +1,18 @@
 package io.github.chandu4221.m3stage.adapter.persistence
 
 import io.github.chandu4221.m3stage.adapter.persistence.dto.ProjectDto
-import io.github.chandu4221.m3stage.adapter.persistence.dto.toDomain
-import io.github.chandu4221.m3stage.adapter.persistence.dto.toDto
-import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.adapter.persistence.mapper.toDomain
+import io.github.chandu4221.m3stage.adapter.persistence.mapper.toDto
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.component.definition.ButtonDefinition
+import io.github.chandu4221.m3stage.component.definition.CardDefinition
+import io.github.chandu4221.m3stage.component.definition.ColumnDefinition
+import io.github.chandu4221.m3stage.component.definition.IconDefinition
+import io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition
+import io.github.chandu4221.m3stage.component.definition.TextDefinition
+import io.github.chandu4221.m3stage.component.definition.TopAppBarDefinition
 import io.github.chandu4221.m3stage.model.*
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 import io.github.chandu4221.m3stage.theme.M3ShapeToken
@@ -23,64 +30,98 @@ class SerializationRoundTripTest {
 
     @Test
     fun testProjectRoundTripSerializationInvariance() {
+        val actionIcon = DesignNode(
+            id = NodeId("action-icon"),
+            kind = ComponentKind.Icon,
+            props = mapOf(
+                IconDefinition.IconName.id to PropertyValue.StringValue("Favorite")
+            ),
+            modifiers = listOf(
+                ModifierSpec.Size(24f, 24f),
+                ModifierSpec.Rotate(45f)
+            )
+        )
+
+        val topBar = DesignNode(
+            id = NodeId("top-bar"),
+            kind = ComponentKind.TopAppBar,
+            props = mapOf(
+                TopAppBarDefinition.Title.id to PropertyValue.StringValue("Dashboard"),
+                TopAppBarDefinition.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Surface)
+            ),
+            modifiers = listOf(
+                ModifierSpec.FillMaxWidth(1f),
+                ModifierSpec.ZIndex(2f)
+            ),
+            slots = mapOf(
+                TopAppBarDefinition.ActionsSlot.id to listOf(actionIcon)
+            )
+        )
+
+        val btnText = DesignNode(
+            id = NodeId("btn-txt"),
+            kind = ComponentKind.Text,
+            props = mapOf(
+                TextDefinition.TextContent.id to PropertyValue.StringValue("Submit"),
+                TextDefinition.Typography.id to PropertyValue.TypographyValue.Token(M3TypographyToken.LabelLarge)
+            )
+        )
+
+        val button = DesignNode(
+            id = NodeId("btn-1"),
+            kind = ComponentKind.Button,
+            props = mapOf(
+                ButtonDefinition.Enabled.id to PropertyValue.BooleanValue(true)
+            ),
+            modifiers = listOf(
+                ModifierSpec.Weight(1f, fill = true)
+            ),
+            children = listOf(btnText),
+            slots = mapOf(
+                ButtonDefinition.LabelSlot.id to listOf(btnText)
+            )
+        )
+
+        val card = DesignNode(
+            id = NodeId("card-1"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Elevation.id to PropertyValue.DpValue(4f),
+                CardDefinition.Shape.id to PropertyValue.ShapeValue.Token(M3ShapeToken.Large)
+            ),
+            modifiers = listOf(
+                ModifierSpec.AspectRatio(1.5f),
+                ModifierSpec.Scale(1.1f),
+                ModifierSpec.Alpha(0.9f)
+            )
+        )
+
+        val contentColumn = DesignNode(
+            id = NodeId("content-column"),
+            kind = ComponentKind.Column,
+            props = mapOf(
+                ColumnDefinition.Spacing.id to PropertyValue.DpValue(16f)
+            ),
+            modifiers = listOf(
+                ModifierSpec.Padding.all(16f),
+                ModifierSpec.VerticalScroll(enabled = true),
+                ModifierSpec.HorizontalScroll(enabled = false)
+            ),
+            children = listOf(card, button)
+        )
+
         val rootNode = DesignNode(
             id = NodeId("root-scaffold"),
             kind = ComponentKind.Scaffold,
             props = mapOf(
-                ComponentCatalog.ScaffoldProps.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Background)
+                ScaffoldDefinition.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Background)
             ),
-            children = listOf(
-                DesignNode(
-                    id = NodeId("top-bar"),
-                    kind = ComponentKind.TopAppBar,
-                    props = mapOf(
-                        ComponentCatalog.TopAppBarProps.Title.id to PropertyValue.StringValue("Dashboard"),
-                        ComponentCatalog.TopAppBarProps.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Surface)
-                    ),
-                    children = listOf(
-                        DesignNode(
-                            id = NodeId("action-icon"),
-                            kind = ComponentKind.Icon,
-                            props = mapOf(
-                                ComponentCatalog.IconProps.IconName.id to PropertyValue.StringValue("Favorite")
-                            )
-                        )
-                    )
-                ),
-                DesignNode(
-                    id = NodeId("content-column"),
-                    kind = ComponentKind.Column,
-                    props = mapOf(
-                        ComponentCatalog.ColumnProps.Spacing.id to PropertyValue.DpValue(16f)
-                    ),
-                    children = listOf(
-                        DesignNode(
-                            id = NodeId("card-1"),
-                            kind = ComponentKind.Card,
-                            props = mapOf(
-                                ComponentCatalog.CardProps.Elevation.id to PropertyValue.DpValue(4f),
-                                ComponentCatalog.CardProps.Shape.id to PropertyValue.ShapeValue.Token(M3ShapeToken.Large)
-                            )
-                        ),
-                        DesignNode(
-                            id = NodeId("btn-1"),
-                            kind = ComponentKind.Button,
-                            props = mapOf(
-                                ComponentCatalog.ButtonProps.Enabled.id to PropertyValue.BooleanValue(true)
-                            ),
-                            children = listOf(
-                                DesignNode(
-                                    id = NodeId("btn-txt"),
-                                    kind = ComponentKind.Text,
-                                    props = mapOf(
-                                        ComponentCatalog.TextProps.TextContent.id to PropertyValue.StringValue("Submit"),
-                                        ComponentCatalog.TextProps.Typography.id to PropertyValue.TypographyValue.Token(M3TypographyToken.LabelLarge)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
+            modifiers = listOf(
+                ModifierSpec.FillMaxSize(1f)
+            ),
+            slots = mapOf(
+                ScaffoldDefinition.TopBarSlot.id to listOf(topBar),
+                ScaffoldDefinition.ContentSlot.id to listOf(contentColumn)
             )
         )
 

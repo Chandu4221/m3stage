@@ -1,8 +1,8 @@
 package io.github.chandu4221.m3stage.adapter.persistence
 
 import io.github.chandu4221.m3stage.adapter.persistence.dto.ProjectDto
-import io.github.chandu4221.m3stage.adapter.persistence.dto.toDomain
-import io.github.chandu4221.m3stage.adapter.persistence.dto.toDto
+import io.github.chandu4221.m3stage.adapter.persistence.mapper.toDomain
+import io.github.chandu4221.m3stage.adapter.persistence.mapper.toDto
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import kotlinx.coroutines.Dispatchers
