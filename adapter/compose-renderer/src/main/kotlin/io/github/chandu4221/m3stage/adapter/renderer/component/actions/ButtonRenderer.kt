@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.adapter.renderer.component
+package io.github.chandu4221.m3stage.adapter.renderer.component.actions
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -8,8 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.ThemeResolver
-import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
+import io.github.chandu4221.m3stage.component.definition.ButtonDefinition
 import io.github.chandu4221.m3stage.model.DesignNode
 
 class ButtonRenderer : NodeRenderer {
@@ -19,14 +19,18 @@ class ButtonRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val enabled = node[ComponentCatalog.ButtonProps.Enabled]?.value ?: true
-        val containerColor = ThemeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContainerColor])
-        val contentColor = ThemeResolver.resolveColor(node[ComponentCatalog.ButtonProps.ContentColor])
+        val enabled = node[ButtonDefinition.Enabled]?.value ?: true
+        val containerColor = ThemeResolver.resolveColor(node[ButtonDefinition.ContainerColor])
+        val contentColor = ThemeResolver.resolveColor(node[ButtonDefinition.ContentColor])
 
         val colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor
         )
+
+        val leadingIcon = node.slots[ButtonDefinition.LeadingIconSlot.id]?.firstOrNull()
+        val label = node.slots[ButtonDefinition.LabelSlot.id]?.firstOrNull()
+        val trailingIcon = node.slots[ButtonDefinition.TrailingIconSlot.id]?.firstOrNull()
 
         Button(
             onClick = {},
@@ -34,7 +38,11 @@ class ButtonRenderer : NodeRenderer {
             colors = colors,
             modifier = modifier.padding(4.dp)
         ) {
-            if (node.children.isEmpty()) {
+            if (leadingIcon != null || label != null || trailingIcon != null) {
+                leadingIcon?.let { renderChild(it) }
+                label?.let { renderChild(it) }
+                trailingIcon?.let { renderChild(it) }
+            } else if (node.children.isEmpty()) {
                 Text(text = "Button")
             } else {
                 node.children.forEach { child ->

@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.adapter.renderer.component
+package io.github.chandu4221.m3stage.adapter.renderer.component.containment
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,9 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import io.github.chandu4221.m3stage.adapter.renderer.EmptyContainerPlaceholder
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
-import io.github.chandu4221.m3stage.adapter.renderer.ThemeResolver
-import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition
 import io.github.chandu4221.m3stage.model.DesignNode
 
 class ScaffoldRenderer : NodeRenderer {
@@ -20,15 +20,27 @@ class ScaffoldRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val containerColor = ThemeResolver.resolveColor(node[ComponentCatalog.ScaffoldProps.ContainerColor])
-        val topBarNode = node.children.firstOrNull { it.kind == ComponentKind.TopAppBar }
-        val contentChildren = node.children.filter { it != topBarNode }
+        val containerColor = ThemeResolver.resolveColor(node[ScaffoldDefinition.ContainerColor])
+        
+        // Slot resolution with backward-compatible raw children fallback
+        val topBarNode = node.slots[ScaffoldDefinition.TopBarSlot.id]?.firstOrNull()
+            ?: node.children.firstOrNull { it.kind == ComponentKind.TopAppBar }
+        val bottomBarNode = node.slots[ScaffoldDefinition.BottomBarSlot.id]?.firstOrNull()
+        val fabNode = node.slots[ScaffoldDefinition.FloatingActionButtonSlot.id]?.firstOrNull()
+        val contentChildren = node.slots[ScaffoldDefinition.ContentSlot.id]
+            ?: node.children.filter { it != topBarNode && it != bottomBarNode && it != fabNode }
 
         Scaffold(
             modifier = modifier.fillMaxSize(),
             containerColor = containerColor,
             topBar = {
                 topBarNode?.let { renderChild(it) }
+            },
+            bottomBar = {
+                bottomBarNode?.let { renderChild(it) }
+            },
+            floatingActionButton = {
+                fabNode?.let { renderChild(it) }
             }
         ) { innerPadding ->
             Box(
@@ -36,7 +48,7 @@ class ScaffoldRenderer : NodeRenderer {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                if (contentChildren.isEmpty() && topBarNode == null) {
+                if (contentChildren.isEmpty() && topBarNode == null && bottomBarNode == null && fabNode == null) {
                     EmptyContainerPlaceholder("Scaffold")
                 } else {
                     contentChildren.forEach { child ->

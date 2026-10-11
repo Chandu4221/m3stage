@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.adapter.renderer
+package io.github.chandu4221.m3stage.adapter.renderer.resolver
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
