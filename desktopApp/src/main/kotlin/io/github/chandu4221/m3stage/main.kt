@@ -12,7 +12,7 @@ import io.github.chandu4221.m3stage.adapter.UuidIdGenerator
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeCodeGenerator
 import io.github.chandu4221.m3stage.adapter.persistence.JsonProjectRepository
 import io.github.chandu4221.m3stage.state.EditorStore
-import io.github.chandu4221.m3stage.ui.EditorScreen
+import io.github.chandu4221.m3stage.ui.page.EditorScreen
 import java.io.File
 
 fun main() = application {

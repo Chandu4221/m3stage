@@ -53,8 +53,8 @@ Exit gate M2 "Usable": a user can build a realistic multi-screen UI with only th
 
 Exit gate M3 "Solid": refactors are safe because tests catch regressions; large projects stay responsive.
 
-- [ ] TODO-28 (16): Resolve `children` vs `slots` via M3 Anatomy. Named slots with typed rules (`SlotDefinition`) for Scaffold/TopAppBar/Button in `component/slot/` and `component/definition/`, arbitrary container children elsewhere.
-- [ ] TODO-29 (17): High-cohesion component anatomy (`createDefaultSubtree` in each `XDefinition`). Component definitions own their default structure and properties; eliminates duplicate genesis in EditorStore/ProjectSessionDelegate.
+- [x] TODO-28 (16): Resolve `children` vs `slots` via M3 Anatomy. Named slots with typed rules (`SlotDefinition`) for Scaffold/TopAppBar/Button in `component/slot/` and `component/definition/`, arbitrary container children elsewhere.
+- [x] TODO-29 (17): High-cohesion component anatomy (`createDefaultSubtree` in each `XDefinition`). Component definitions own their default structure and properties; eliminates duplicate genesis in EditorStore/ProjectSessionDelegate.
 - [ ] TODO-30 (18): Typed options. Carry domain option enums through `PropertyValue` (no `EnumValue(name: String)` + string `when` tables); one mapping per target (preview, codegen).
 - [ ] TODO-31 (19): Performance. Structural sharing in tree mutations (return same instance when unchanged); stable/immutable annotations; benchmark 20 screens x 500 nodes; avoid re-rendering inactive artboards when off-screen; cursor-anchored zoom.
 - [ ] TODO-32 (20): Decouple concerns. Move bezel details (corner radius, notch) out of `DevicePreset`; stop exposing mutable flows in `EditorContext`; replace `SharedFlow` events with a buffered `Channel` or replay so events are never dropped; inject dispatchers.
@@ -69,7 +69,7 @@ Exit gate M3 "Solid": refactors are safe because tests catch regressions; large 
 Exit gate M4a "Credible": output looks like code a Compose developer would write.
 
 - [x] TODO-36 (24): Wire `ModifierNode` end to end (padding, size, weight, fill, background, clip, offset, alignment) in inspector, renderer, codegen.
-- [ ] TODO-37 (25): Component coverage (in order): Spacer, Divider, Checkbox, Switch, RadioButton, IconButton, FAB, Chip, ListItem, NavigationBar, LazyColumn/LazyRow, Dialog, BottomSheet, Tabs. Each ships with renderer + codegen + golden test + compile test.
+- [x] TODO-37 (25): Component coverage (in order): Spacer, Divider, Checkbox, Switch, RadioButton, IconButton, FAB, Chip, ListItem, NavigationBar, LazyColumn/LazyRow, Dialog, BottomSheet, Tabs. Each ships with renderer + codegen + golden test + compile test.
 - [ ] TODO-38 (26): Idiomatic export. Parameterized composables (`modifier: Modifier = Modifier`, state hoisting for TextField/Switch), `@Preview`, no explicit default values, string resources option, navigation graph from `Screen.route`, optional per-component extraction into reusable composables.
 - [ ] TODO-39 (27): Real image and icon sources (asset import, resource references, full Material icon picker with search).
 - [ ] TODO-40 (28): Export targets: Android module, Compose Multiplatform, Gradle snippet and dependency notes, write directly to a chosen project folder with a diff/preview step.

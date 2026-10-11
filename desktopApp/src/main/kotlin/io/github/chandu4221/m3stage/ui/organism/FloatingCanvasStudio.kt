@@ -23,7 +23,6 @@ import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportState
-import io.github.chandu4221.m3stage.ui.CanvasPanel
 import io.github.chandu4221.m3stage.ui.atom.DimensionBadge
 import io.github.chandu4221.m3stage.ui.atom.ToolIconButton
 import io.github.chandu4221.m3stage.ui.molecule.CapsuleToolbar

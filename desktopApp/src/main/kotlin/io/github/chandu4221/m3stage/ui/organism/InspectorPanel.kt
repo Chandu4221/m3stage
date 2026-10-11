@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.ui
+package io.github.chandu4221.m3stage.ui.organism
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*

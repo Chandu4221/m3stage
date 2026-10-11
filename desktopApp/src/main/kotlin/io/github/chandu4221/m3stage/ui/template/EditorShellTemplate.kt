@@ -14,7 +14,7 @@ import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.EditorStore
-import io.github.chandu4221.m3stage.ui.InspectorPanel
+import io.github.chandu4221.m3stage.ui.organism.InspectorPanel
 import io.github.chandu4221.m3stage.ui.organism.FloatingCanvasStudio
 import io.github.chandu4221.m3stage.ui.organism.PartsDrawer
 import io.github.chandu4221.m3stage.ui.organism.StudioNavRail

@@ -276,12 +276,12 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 ---
 
 ## 4. Current State: Complete End-to-End Metamodel Architecture Verification
-- `:domain`: 100% verified, fully typed, compile-safe with all 11 component definitions and comprehensive unit test coverage.
-- `:adapter:compose-codegen`: 100% verified, 11 components with full WYSIWYG Inspector parity, KotlinPoet, identifier sanitization, and unit tests.
-- `:adapter:json-persistence`: 100% verified, split DTOs/Mappers, tested with round-trip invariance and corrupt file quarantine.
-- `:adapter:compose-renderer`: 100% verified, 11 components with `ThemeResolver` and `EmptyContainerPlaceholder`.
-- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer, Studio NavRail, canonical `Scaffold` screen genesis, resilient error recovery, background coroutine offloading, and interactive ZIP export dialog with Snackbar feedback.
-- Full test and build check: `./gradlew check` **BUILD SUCCESSFUL**.
+- `:domain`: 100% verified, fully typed, compile-safe with all 24 M3 component definitions, named slots anatomy, genesis subtrees (`createDefaultSubtree`), dedicated `modifier` package (20 visual modifiers across 7 categories), and comprehensive unit tests.
+- `:adapter:compose-codegen`: 100% verified, modular component codegen registry (`Map<ComponentKind, ComponentCodegen>`), slot resolution with children fallback, 20 visual modifiers via `ModifierCodeResolver`, KotlinPoet `%M`/`%T` symbols, identifier sanitization, and unit tests.
+- `:adapter:json-persistence`: 100% verified, modular DTO/Mappers architecture (`ProjectDto`, `ScreenDto`, `DesignNodeDto`, `ModifierNodeDto`) supporting named slots, 20 visual modifiers, round-trip invariance tests, and corrupt file quarantine.
+- `:adapter:compose-renderer`: 100% verified, modular component renderer registry (`Map<ComponentKind, NodeRenderer>`), slot resolution with children fallback, 20 visual modifiers via `ModifierResolver`, `ThemeCodeResolver`, and `EmptyContainerPlaceholder`.
+- `:desktopApp`: Fully migrated to Dumb Atomic Design with Multi-Screen Artboard Canvas, 2-column Parts drawer with all 24 M3 components & categories, exhaustive visual modifier cards (20 modifiers), atomic genesis subtree drops via `ComponentCatalog[kind].createDefaultSubtree`, Studio NavRail, canonical `Scaffold` screen genesis, resilient error recovery, background coroutine offloading, and interactive ZIP export dialog with Snackbar feedback.
+- Full test and build check: `./gradlew check` **BUILD SUCCESSFUL** across all 5 modules.
 
 
 

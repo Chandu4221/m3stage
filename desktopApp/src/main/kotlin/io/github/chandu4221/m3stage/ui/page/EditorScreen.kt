@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.ui
+package io.github.chandu4221.m3stage.ui.page
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
