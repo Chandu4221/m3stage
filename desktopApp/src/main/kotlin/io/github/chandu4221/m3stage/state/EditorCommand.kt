@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.state
 
 import io.github.chandu4221.m3stage.model.*
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.mutation.*
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyValue

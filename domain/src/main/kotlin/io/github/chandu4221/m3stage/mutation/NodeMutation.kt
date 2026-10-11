@@ -1,7 +1,7 @@
 package io.github.chandu4221.m3stage.mutation
 
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.ModifierSpec
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey

@@ -1,7 +1,8 @@
 package io.github.chandu4221.m3stage.model
 
 import io.github.chandu4221.m3stage.component.ComponentKind
-import io.github.chandu4221.m3stage.component.SlotId
+import io.github.chandu4221.m3stage.component.slot.SlotId
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey
 import io.github.chandu4221.m3stage.property.PropertyValue

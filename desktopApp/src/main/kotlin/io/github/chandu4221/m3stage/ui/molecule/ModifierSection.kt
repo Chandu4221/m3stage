@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.model.ModifierSpec
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.theme.M3ColorToken

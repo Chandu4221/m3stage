@@ -1,6 +1,6 @@
 package io.github.chandu4221.m3stage.property
 
-sealed interface PropertyDescriptor {
+sealed interface PropertySpec {
     val key: PropertyKey<*>
     val displayName: String
     val group: PropertyGroup
@@ -10,14 +10,14 @@ sealed interface PropertyDescriptor {
         override val displayName: String,
         val defaultValue: PropertyValue.StringValue,
         override val group: PropertyGroup = PropertyGroup.Content
-    ) : PropertyDescriptor
+    ) : PropertySpec
 
     data class Switch(
         override val key: PropertyKey.BooleanKey,
         override val displayName: String,
         val defaultValue: PropertyValue.BooleanValue,
         override val group: PropertyGroup = PropertyGroup.Behavior
-    ) : PropertyDescriptor
+    ) : PropertySpec
 
     data class DpSlider(
         override val key: PropertyKey.DpKey,
@@ -26,7 +26,7 @@ sealed interface PropertyDescriptor {
         val min: Float = 0f,
         val max: Float = 128f,
         override val group: PropertyGroup = PropertyGroup.Layout
-    ) : PropertyDescriptor
+    ) : PropertySpec
 
     data class EnumDropdown(
         override val key: PropertyKey.EnumKey,
@@ -34,26 +34,26 @@ sealed interface PropertyDescriptor {
         val options: List<String>,
         val defaultValue: PropertyValue.EnumValue,
         override val group: PropertyGroup = PropertyGroup.Layout
-    ) : PropertyDescriptor
+    ) : PropertySpec
 
     data class ColorPicker(
         override val key: PropertyKey.ColorKey,
         override val displayName: String,
         val defaultValue: PropertyValue.ColorValue,
         override val group: PropertyGroup = PropertyGroup.Appearance
-    ) : PropertyDescriptor
+    ) : PropertySpec
 
     data class TypographyPicker(
         override val key: PropertyKey.TypographyKey,
         override val displayName: String,
         val defaultValue: PropertyValue.TypographyValue,
         override val group: PropertyGroup = PropertyGroup.Typography
-    ) : PropertyDescriptor
+    ) : PropertySpec
 
     data class ShapePicker(
         override val key: PropertyKey.ShapeKey,
         override val displayName: String,
         val defaultValue: PropertyValue.ShapeValue,
         override val group: PropertyGroup = PropertyGroup.Appearance
-    ) : PropertyDescriptor
+    ) : PropertySpec
 }

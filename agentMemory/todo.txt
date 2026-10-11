@@ -53,8 +53,8 @@ Exit gate M2 "Usable": a user can build a realistic multi-screen UI with only th
 
 Exit gate M3 "Solid": refactors are safe because tests catch regressions; large projects stay responsive.
 
-- [ ] TODO-28 (16): Resolve `children` vs `slots`. Choose one model (recommended: named slots for Scaffold/TopAppBar, children elsewhere, enforced in queries/mutations/validation/renderer/codegen) or delete slots.
-- [ ] TODO-29 (17): `NodeFactory` in `:domain` for default anatomy (Scaffold, Button+Text, Card). Remove the three duplicate genesis implementations.
+- [ ] TODO-28 (16): Resolve `children` vs `slots` via M3 Anatomy. Named slots with typed rules (`SlotDefinition`) for Scaffold/TopAppBar/Button in `component/slot/` and `component/definition/`, arbitrary container children elsewhere.
+- [ ] TODO-29 (17): High-cohesion component anatomy (`createDefaultSubtree` in each `XDefinition`). Component definitions own their default structure and properties; eliminates duplicate genesis in EditorStore/ProjectSessionDelegate.
 - [ ] TODO-30 (18): Typed options. Carry domain option enums through `PropertyValue` (no `EnumValue(name: String)` + string `when` tables); one mapping per target (preview, codegen).
 - [ ] TODO-31 (19): Performance. Structural sharing in tree mutations (return same instance when unchanged); stable/immutable annotations; benchmark 20 screens x 500 nodes; avoid re-rendering inactive artboards when off-screen; cursor-anchored zoom.
 - [ ] TODO-32 (20): Decouple concerns. Move bezel details (corner radius, notch) out of `DevicePreset`; stop exposing mutable flows in `EditorContext`; replace `SharedFlow` events with a buffered `Channel` or replay so events are never dropped; inject dispatchers.

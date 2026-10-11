@@ -1,322 +1,74 @@
 package io.github.chandu4221.m3stage.component
 
-import io.github.chandu4221.m3stage.property.*
-import io.github.chandu4221.m3stage.theme.M3ColorToken
-import io.github.chandu4221.m3stage.theme.M3ShapeToken
-import io.github.chandu4221.m3stage.theme.M3TypographyToken
+import io.github.chandu4221.m3stage.component.definition.*
 
+/**
+ * Authoritative registry and catalog of all supported [ComponentDefinition]s in M3Stage.
+ * Aggregates individual definitions and provides O(1) non-nullable lookups by [ComponentKind].
+ */
 object ComponentCatalog {
 
-    // =========================================================================
-    // METAMODEL PROPERTY KEYS
-    // =========================================================================
+    val TextProps = TextDefinition
+    val ButtonProps = ButtonDefinition
 
-    object TextProps {
-        val TextContent = PropertyKey.StringKey(PropertyId("text.content"))
-        val Typography = PropertyKey.TypographyKey(PropertyId("text.typography"))
-        val Color = PropertyKey.ColorKey(PropertyId("text.color"))
-        val Overflow = PropertyKey.EnumKey(PropertyId("text.overflow"))
-    }
+    val IconButtonProps = IconButtonDefinition
 
-    object ButtonProps {
-        val Enabled = PropertyKey.BooleanKey(PropertyId("button.enabled"))
-        val ContainerColor = PropertyKey.ColorKey(PropertyId("button.containerColor"))
-        val ContentColor = PropertyKey.ColorKey(PropertyId("button.contentColor"))
-    }
+    val FloatingActionButtonProps = FloatingActionButtonDefinition
 
-    object ColumnProps {
-        val Spacing = PropertyKey.DpKey(PropertyId("column.spacing"))
-        val HorizontalAlignment = PropertyKey.EnumKey(PropertyId("column.horizontalAlignment"))
-        val VerticalArrangement = PropertyKey.EnumKey(PropertyId("column.verticalArrangement"))
-    }
+    val OutlinedButtonProps = OutlinedButtonDefinition
 
-    object RowProps {
-        val Spacing = PropertyKey.DpKey(PropertyId("row.spacing"))
-        val HorizontalArrangement = PropertyKey.EnumKey(PropertyId("row.horizontalArrangement"))
-        val VerticalAlignment = PropertyKey.EnumKey(PropertyId("row.verticalAlignment"))
-    }
+    val TextButtonProps = TextButtonDefinition
+    val ColumnProps = ColumnDefinition
+    val RowProps = RowDefinition
+    val BoxProps = BoxDefinition
+    val CardProps = CardDefinition
+    val IconProps = IconDefinition
+    val ImageProps = ImageDefinition
+    val TextFieldProps = TextFieldDefinition
+    val ScaffoldProps = ScaffoldDefinition
+    val TopAppBarProps = TopAppBarDefinition
 
-    object BoxProps {
-        val ContentAlignment = PropertyKey.EnumKey(PropertyId("box.contentAlignment"))
-    }
+    val SpacerProps = SpacerDefinition
 
-    object CardProps {
-        val Elevation = PropertyKey.DpKey(PropertyId("card.elevation"))
-        val ContainerColor = PropertyKey.ColorKey(PropertyId("card.containerColor"))
-        val Shape = PropertyKey.ShapeKey(PropertyId("card.shape"))
-    }
+    val HorizontalDividerProps = HorizontalDividerDefinition
 
-    object IconProps {
-        val IconName = PropertyKey.StringKey(PropertyId("icon.name"))
-        val Tint = PropertyKey.ColorKey(PropertyId("icon.tint"))
-    }
+    val SwitchProps = SwitchDefinition
 
-    object ImageProps {
-        val ContentDescription = PropertyKey.StringKey(PropertyId("image.contentDescription"))
-    }
+    val CheckboxProps = CheckboxDefinition
 
-    object TextFieldProps {
-        val Value = PropertyKey.StringKey(PropertyId("textField.value"))
-        val Label = PropertyKey.StringKey(PropertyId("textField.label"))
-        val Placeholder = PropertyKey.StringKey(PropertyId("textField.placeholder"))
-        val SingleLine = PropertyKey.BooleanKey(PropertyId("textField.singleLine"))
-    }
+    val RadioButtonProps = RadioButtonDefinition
 
-    object ScaffoldProps {
-        val ContainerColor = PropertyKey.ColorKey(PropertyId("scaffold.containerColor"))
-    }
+    val SliderProps = SliderDefinition
 
-    object TopAppBarProps {
-        val Title = PropertyKey.StringKey(PropertyId("topAppBar.title"))
-        val ContainerColor = PropertyKey.ColorKey(PropertyId("topAppBar.containerColor"))
-        val TitleContentColor = PropertyKey.ColorKey(PropertyId("topAppBar.titleContentColor"))
-    }
+    val NavigationBarProps = NavigationBarDefinition
+    val BadgeProps = BadgeDefinition
+    val OutlinedTextFieldProps = OutlinedTextFieldDefinition
 
-    // =========================================================================
-    // COMPONENT DEFINITIONS
-    // =========================================================================
-
-    val Text = ComponentDefinition(
-        kind = ComponentKind.Text,
-        descriptors = listOf(
-            PropertyDescriptor.Text(
-                key = TextProps.TextContent,
-                displayName = "Text Content",
-                defaultValue = PropertyValue.StringValue("Sample Text")
-            ),
-            PropertyDescriptor.TypographyPicker(
-                key = TextProps.Typography,
-                displayName = "Typography",
-                defaultValue = PropertyValue.TypographyValue.Token(M3TypographyToken.BodyMedium)
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = TextProps.Color,
-                displayName = "Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnSurface)
-            ),
-            PropertyDescriptor.EnumDropdown(
-                key = TextProps.Overflow,
-                displayName = "Text Overflow",
-                options = TextOverflowOption.entries.map { it.name },
-                defaultValue = PropertyValue.EnumValue(TextOverflowOption.Clip.name)
-            )
-        )
-    )
-
-    val Button = ComponentDefinition(
-        kind = ComponentKind.Button,
-        descriptors = listOf(
-            PropertyDescriptor.Switch(
-                key = ButtonProps.Enabled,
-                displayName = "Enabled",
-                defaultValue = PropertyValue.BooleanValue(true)
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = ButtonProps.ContainerColor,
-                displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Primary)
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = ButtonProps.ContentColor,
-                displayName = "Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnPrimary)
-            )
-        ),
-        // Atomic Design: Button is a molecule that only accepts Text and Icon atoms
-        allowedChildren = setOf(ComponentKind.Text, ComponentKind.Icon)
-    )
-
-    val Column = ComponentDefinition(
-        kind = ComponentKind.Column,
-        descriptors = listOf(
-            PropertyDescriptor.DpSlider(
-                key = ColumnProps.Spacing,
-                displayName = "Item Spacing (dp)",
-                defaultValue = PropertyValue.DpValue(0f),
-                max = 64f
-            ),
-            PropertyDescriptor.EnumDropdown(
-                key = ColumnProps.HorizontalAlignment,
-                displayName = "Horizontal Alignment",
-                options = HorizontalAlignmentOption.entries.map { it.name },
-                defaultValue = PropertyValue.EnumValue(HorizontalAlignmentOption.Start.name)
-            ),
-            PropertyDescriptor.EnumDropdown(
-                key = ColumnProps.VerticalArrangement,
-                displayName = "Vertical Arrangement",
-                options = VerticalArrangementOption.entries.map { it.name },
-                defaultValue = PropertyValue.EnumValue(VerticalArrangementOption.Top.name)
-            )
-        )
-    )
-
-    val Row = ComponentDefinition(
-        kind = ComponentKind.Row,
-        descriptors = listOf(
-            PropertyDescriptor.DpSlider(
-                key = RowProps.Spacing,
-                displayName = "Item Spacing (dp)",
-                defaultValue = PropertyValue.DpValue(0f),
-                max = 64f
-            ),
-            PropertyDescriptor.EnumDropdown(
-                key = RowProps.HorizontalArrangement,
-                displayName = "Horizontal Arrangement",
-                options = HorizontalArrangementOption.entries.map { it.name },
-                defaultValue = PropertyValue.EnumValue(HorizontalArrangementOption.Start.name)
-            ),
-            PropertyDescriptor.EnumDropdown(
-                key = RowProps.VerticalAlignment,
-                displayName = "Vertical Alignment",
-                options = VerticalAlignmentOption.entries.map { it.name },
-                defaultValue = PropertyValue.EnumValue(VerticalAlignmentOption.CenterVertically.name)
-            )
-        )
-    )
-
-    val Box = ComponentDefinition(
-        kind = ComponentKind.Box,
-        descriptors = listOf(
-            PropertyDescriptor.EnumDropdown(
-                key = BoxProps.ContentAlignment,
-                displayName = "Content Alignment",
-                options = ContentAlignmentOption.entries.map { it.name },
-                defaultValue = PropertyValue.EnumValue(ContentAlignmentOption.Center.name)
-            )
-        )
-    )
-
-    val Card = ComponentDefinition(
-        kind = ComponentKind.Card,
-        descriptors = listOf(
-            PropertyDescriptor.DpSlider(
-                key = CardProps.Elevation,
-                displayName = "Elevation (dp)",
-                defaultValue = PropertyValue.DpValue(1f),
-                max = 12f
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = CardProps.ContainerColor,
-                displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Surface)
-            ),
-            PropertyDescriptor.ShapePicker(
-                key = CardProps.Shape,
-                displayName = "Shape",
-                defaultValue = PropertyValue.ShapeValue.Token(M3ShapeToken.Medium)
-            )
-        )
-    )
-
-    val Icon = ComponentDefinition(
-        kind = ComponentKind.Icon,
-        descriptors = listOf(
-            PropertyDescriptor.Text(
-                key = IconProps.IconName,
-                displayName = "Icon Name",
-                defaultValue = PropertyValue.StringValue("Star")
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = IconProps.Tint,
-                displayName = "Tint Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Primary)
-            )
-        )
-    )
-
-    val Image = ComponentDefinition(
-        kind = ComponentKind.Image,
-        descriptors = listOf(
-            PropertyDescriptor.Text(
-                key = ImageProps.ContentDescription,
-                displayName = "Content Description",
-                defaultValue = PropertyValue.StringValue("Image")
-            )
-        )
-    )
-
-    val TextField = ComponentDefinition(
-        kind = ComponentKind.TextField,
-        descriptors = listOf(
-            PropertyDescriptor.Text(
-                key = TextFieldProps.Label,
-                displayName = "Label",
-                defaultValue = PropertyValue.StringValue("Label")
-            ),
-            PropertyDescriptor.Text(
-                key = TextFieldProps.Placeholder,
-                displayName = "Placeholder",
-                defaultValue = PropertyValue.StringValue("Enter text...")
-            ),
-            PropertyDescriptor.Text(
-                key = TextFieldProps.Value,
-                displayName = "Value",
-                defaultValue = PropertyValue.StringValue("")
-            ),
-            PropertyDescriptor.Switch(
-                key = TextFieldProps.SingleLine,
-                displayName = "Single Line",
-                defaultValue = PropertyValue.BooleanValue(true)
-            )
-        )
-    )
-
-    val Scaffold = ComponentDefinition(
-        kind = ComponentKind.Scaffold,
-        descriptors = listOf(
-            PropertyDescriptor.ColorPicker(
-                key = ScaffoldProps.ContainerColor,
-                displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Background)
-            )
-        ),
-        allowedChildren = setOf(
-            ComponentKind.TopAppBar,
-            ComponentKind.Column,
-            ComponentKind.Row,
-            ComponentKind.Box,
-            ComponentKind.Card
-        )
-    )
-
-    val TopAppBar = ComponentDefinition(
-        kind = ComponentKind.TopAppBar,
-        descriptors = listOf(
-            PropertyDescriptor.Text(
-                key = TopAppBarProps.Title,
-                displayName = "Title",
-                defaultValue = PropertyValue.StringValue("Title")
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = TopAppBarProps.ContainerColor,
-                displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Surface)
-            ),
-            PropertyDescriptor.ColorPicker(
-                key = TopAppBarProps.TitleContentColor,
-                displayName = "Title Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnSurface)
-            )
-        ),
-        allowedChildren = setOf(ComponentKind.Text, ComponentKind.Icon, ComponentKind.Button)
-    )
-
-    // =========================================================================
-    // REGISTRY & LOOKUPS
-    // =========================================================================
-    
     val all: List<ComponentDefinition> = listOf(
-        Text,
-        Icon,
-        Image,
-        Button,
-        TextField,
-        Column,
-        Row,
-        Box,
-        Card,
-        Scaffold,
-        TopAppBar
+        TextDefinition.definition,
+        IconDefinition.definition,
+        ImageDefinition.definition,
+        ButtonDefinition.definition,
+        IconButtonDefinition.definition,
+        FloatingActionButtonDefinition.definition,
+        OutlinedButtonDefinition.definition,
+        TextButtonDefinition.definition,
+        TextFieldDefinition.definition,
+        ColumnDefinition.definition,
+        RowDefinition.definition,
+        BoxDefinition.definition,
+        CardDefinition.definition,
+        ScaffoldDefinition.definition,
+        TopAppBarDefinition.definition,
+        SpacerDefinition.definition,
+        HorizontalDividerDefinition.definition,
+        SwitchDefinition.definition,
+        CheckboxDefinition.definition,
+        RadioButtonDefinition.definition,
+        SliderDefinition.definition,
+        NavigationBarDefinition.definition,
+        BadgeDefinition.definition,
+        OutlinedTextFieldDefinition.definition,
     )
 
     private val byKind: Map<ComponentKind, ComponentDefinition> = all.associateBy { it.kind }
@@ -333,7 +85,7 @@ object ComponentCatalog {
     fun find(kind: ComponentKind): ComponentDefinition? = byKind[kind]
 
     /**
-     * Grouped by UI palette category for easy palette rendering.
+     * Grouped by Material 3 category for palette presentation.
      */
     val groupedByCategory: Map<ComponentCategory, List<ComponentDefinition>> =
         all.groupBy { it.category }

@@ -29,13 +29,27 @@ Base package: `io.github.chandu4221.m3stage`
 
 ```
 domain/src/main/kotlin/io/github/chandu4221/m3stage/
-├── model/         # Document & AST Entities (Project, Screen, DesignNode, ModifierNode, NodeId)
-├── component/     # Metamodel, Catalog & Classpath (ComponentKind, ComponentCategory, ComposeModule, ComponentDefinition, ComponentCatalog)
-├── property/      # Property Engine & UI Descriptors (PropertyKey, PropertyValue, PropertyDescriptor, PropertyGroup, LayoutOptions)
+├── component/     # Metamodel, Catalog & Anatomy
+│   ├── ComponentCategory.kt       # Official M3 categories (Actions, Navigation, Containment, etc.)
+│   ├── ComponentKind.kt           # Exhaustive enum of all supported components
+│   ├── ComponentDefinition.kt     # Schema: properties, slots, anatomy, default subtree
+│   ├── ComponentRegistry.kt       # Lightweight O(1) registry & aggregator
+│   ├── slot/                      # Slot modeling & anatomy rules
+│   │   ├── SlotId.kt              # Strongly-typed SlotId
+│   │   └── SlotDefinition.kt      # Slot rules, allowed kinds, max children
+│   └── definition/                # Dedicated definition per component (High Cohesion!)
+│       ├── ButtonDefinition.kt    # Button keys, properties, and default anatomy
+│       ├── CardDefinition.kt      # Card keys, properties, slots
+│       ├── TextDefinition.kt      # Text keys & properties
+│       ├── ScaffoldDefinition.kt  # Scaffold keys, slots, anatomy
+│       ├── TopAppBarDefinition.kt # TopAppBar keys, slots, anatomy
+│       └── ...                    # Each component owns its contract
+├── property/      # Property Engine & UI Descriptors (PropertyKey, PropertyValue, PropertySpec, PropertyGroup, LayoutOptions)
+├── model/         # Document & AST Entities (Project, Screen, DesignNode, ModifierSpec, ModifierCategory, NodeId)
 ├── theme/         # M3 Design Tokens (M3ColorToken, M3TypographyToken, M3ShapeToken)
 ├── mutation/      # Pure Immutable Tree Updates (NodeMutations, ProjectMutations)
 ├── query/         # Read-only Tree Traversal & Search (NodeQueries, ProjectQueries)
-├── validation/    # Domain Invariants (ProjectValidation)
+├── validation/    # Domain Invariants & Acceptance Rules (ProjectValidation)
 └── port/          # Driven Ports / SPI (CodeGenerator, ProjectRepository, IdGenerator)
 ```
 
@@ -47,22 +61,22 @@ domain/src/main/kotlin/io/github/chandu4221/m3stage/
 - `M3ColorToken.kt`: Full 36-role Material 3 ColorScheme tokens matching official Material Theme Builder (Primary, Secondary, Tertiary, Surfaces, modern Surface Containers, Error, Outline, Scrim).
 - `M3TypographyToken.kt`: 15 canonical M3 Typography scale roles (Display, Headline, Title, Body, Label).
 - `M3ShapeToken.kt`: 7 canonical M3 Shape scale roles (None, ExtraSmall, Small, Medium, Large, ExtraLarge, Full).
-- Connected into `model/PropValue.kt`.
 
 ### [x] Level 2: `property/` (Completed)
 - `PropertyId.kt` / `PropertyKey.kt`: Strongly-typed phantom keys (`PropertyId`, `PropertyKey<V>`).
 - `PropertyValue.kt`: Sum type representation of stored values (`StringValue`, `DpValue`, `ColorValue.Token`, `TypographyValue.Token`, `ShapeValue.Token`, etc.).
 - `LayoutOptions.kt`: Explicit domain enums for Dropdowns (`HorizontalArrangementOption`, `VerticalArrangementOption`, `HorizontalAlignmentOption`, `VerticalAlignmentOption`, `ContentAlignmentOption`, `TextOverflowOption`).
 - `PropertyGroup.kt`: Inspector groups in PascalCase (`Content`, `Layout`, `Appearance`, `Typography`, `Behavior`).
-- `PropertyDescriptor.kt`: Inspector UI descriptors (`Text`, `Switch`, `DpSlider`, `EnumDropdown`, `ColorPicker`, `TypographyPicker`, `ShapePicker`).
+- `PropertySpec.kt`: Inspector UI descriptors (`Text`, `Switch`, `DpSlider`, `EnumDropdown`, `ColorPicker`, `TypographyPicker`, `ShapePicker`).
 
-### [x] Level 3: `component/` (Completed)
-- `ComposePackage.kt`: Classpath roots (`Material3`, `FoundationLayout`, `Foundation`, `Ui`).
-- `ComponentCategory.kt`: Palette categories in PascalCase (`Layouts`, `Surfaces`, `Inputs`, `Display`, `Navigation`).
-- `ComponentKind.kt`: Exhaustive enum of all supported components (`Text`, `Icon`, `Image`, `Button`, `TextField`, `Column`, `Row`, `Box`, `Scaffold`, `Card`, `TopAppBar`).
-- `SlotDefinition.kt`: Anatomy & named slot rules (`SlotId`, `isRequired`, `maxChildren`, `allowedKinds`).
-- `ComponentDefinition.kt`: Schema descriptor with default properties factory and Atomic child constraints (`allowedChildren`).
-- `ComponentCatalog.kt`: Non-nullable $O(1)$ registry with typed keys (`TextProps`, `ButtonProps`, `ColumnProps`, etc.).
+### [~] Level 3: `component/` & M3 Anatomy (Next Up)
+- `ComposePackage.kt`: Classpath package roots (`Material3`, `FoundationLayout`, `Foundation`, `Ui`).
+- `ModifierCategory.kt`: Android Compose visual categories (`Padding`, `Size`, `Position`, `Drawing`, `Transformation`).
+- `ModifierSpec.kt`: Cleaned visual-only modifier pipeline (removed `Clickable` and logic-attaching modifiers).
+- [Target] `ComponentCategory.kt`: Re-align with official M3 categories (`Actions`, `Communication`, `Containment`, `Navigation`, `Selection`, `TextInputs`, `Layouts`).
+- [Target] Deconstruct `ComponentCatalog.kt` into dedicated per-component definition files in `component/definition/` (`ButtonDefinition`, `CardDefinition`, etc.).
+- [Target] `ComponentDefinition.kt`: Rename `descriptors` -> `properties`, integrate official `slots`, and introduce `createDefaultSubtree(idGen)` for default anatomy creation.
+- [Target] `ComponentRegistry.kt`: Lightweight $O(1)$ aggregator replacing the monolithic catalog.
 
 ### [x] Level 4: `model/` (Completed)
 - `Identifiers.kt`: Cleaned up to solely hold document aggregate identity types (`ProjectId`, `ScreenId`, `NodeId`).

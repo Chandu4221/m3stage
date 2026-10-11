@@ -7,43 +7,89 @@ enum class ComponentKind(
     val module: ComposePackage,
     val isContainer: Boolean
 ) {
-    // --- DISPLAY ---
+    // --- COMMUNICATION ---
     Text(
         id = "Text",
         displayName = "Text",
-        category = ComponentCategory.Display,
+        category = ComponentCategory.Communication,
         module = ComposePackage.Material3,
         isContainer = false
     ),
     Icon(
         id = "Icon",
         displayName = "Icon",
-        category = ComponentCategory.Display,
+        category = ComponentCategory.Communication,
         module = ComposePackage.Material3,
         isContainer = false
     ),
     Image(
         id = "Image",
         displayName = "Image",
-        category = ComponentCategory.Display,
+        category = ComponentCategory.Communication,
         module = ComposePackage.Foundation,
         isContainer = false
     ),
 
-    // --- INPUTS ---
-    Button(
-        id = "Button",
-        displayName = "Button",
-        category = ComponentCategory.Inputs,
+    Badge(
+        id = "Badge",
+        displayName = "Badge",
+        category = ComponentCategory.Communication,
         module = ComposePackage.Material3,
         isContainer = true
     ),
+
+    // --- ACTIONS ---
+    Button(
+        id = "Button",
+        displayName = "Button",
+        category = ComponentCategory.Actions,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+
+    IconButton(
+        id = "IconButton",
+        displayName = "IconButton",
+        category = ComponentCategory.Actions,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+    FloatingActionButton(
+        id = "FloatingActionButton",
+        displayName = "FAB",
+        category = ComponentCategory.Actions,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+    OutlinedButton(
+        id = "OutlinedButton",
+        displayName = "OutlinedButton",
+        category = ComponentCategory.Actions,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+    TextButton(
+        id = "TextButton",
+        displayName = "TextButton",
+        category = ComponentCategory.Actions,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+
+    // --- TEXT INPUTS ---
     TextField(
         id = "TextField",
         displayName = "TextField",
-        category = ComponentCategory.Inputs,
+        category = ComponentCategory.TextInputs,
         module = ComposePackage.Material3,
         isContainer = false
+    ),
+    OutlinedTextField(
+        id = "OutlinedTextField",
+        displayName = "OutlinedTextField",
+        category = ComponentCategory.TextInputs,
+        module = ComposePackage.Material3,
+        isContainer = true
     ),
 
     // --- LAYOUTS ---
@@ -68,19 +114,20 @@ enum class ComponentKind(
         module = ComposePackage.FoundationLayout,
         isContainer = true
     ),
+
+    // --- CONTAINMENT ---
     Scaffold(
         id = "Scaffold",
         displayName = "Scaffold",
-        category = ComponentCategory.Layouts,
+        category = ComponentCategory.Containment,
         module = ComposePackage.Material3,
         isContainer = true
     ),
 
-    // --- SURFACES ---
     Card(
         id = "Card",
         displayName = "Card",
-        category = ComponentCategory.Surfaces,
+        category = ComponentCategory.Containment,
         module = ComposePackage.Material3,
         isContainer = true
     ),
@@ -92,5 +139,58 @@ enum class ComponentKind(
         category = ComponentCategory.Navigation,
         module = ComposePackage.Material3,
         isContainer = true
-    )
+    ),
+
+    NavigationBar(
+        id = "NavigationBar",
+        displayName = "NavigationBar",
+        category = ComponentCategory.Navigation,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+
+    Spacer(
+        id = "Spacer",
+        displayName = "Spacer",
+        category = ComponentCategory.Layouts,
+        module = ComposePackage.FoundationLayout,
+        isContainer = false
+    ),
+    HorizontalDivider(
+        id = "HorizontalDivider",
+        displayName = "Divider",
+        category = ComponentCategory.Containment,
+        module = ComposePackage.Material3,
+        isContainer = false
+    ),
+
+    // --- SELECTION ---
+    Switch(
+        id = "Switch",
+        displayName = "Switch",
+        category = ComponentCategory.Selection,
+        module = ComposePackage.Material3,
+        isContainer = false
+    ),
+    Checkbox(
+        id = "Checkbox",
+        displayName = "Checkbox",
+        category = ComponentCategory.Selection,
+        module = ComposePackage.Material3,
+        isContainer = false
+    ),
+    RadioButton(
+        id = "RadioButton",
+        displayName = "RadioButton",
+        category = ComponentCategory.Selection,
+        module = ComposePackage.Material3,
+        isContainer = false
+    ),
+    Slider(
+        id = "Slider",
+        displayName = "Slider",
+        category = ComponentCategory.Selection,
+        module = ComposePackage.Material3,
+        isContainer = false
+    ),
 }

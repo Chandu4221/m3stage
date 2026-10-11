@@ -1,7 +1,7 @@
 package io.github.chandu4221.m3stage.adapter.codegen
 
 import com.squareup.kotlinpoet.CodeBlock
-import io.github.chandu4221.m3stage.model.ModifierSpec
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 
 object ModifierCodeResolver {
 

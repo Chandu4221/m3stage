@@ -10,7 +10,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import io.github.chandu4221.m3stage.model.ModifierSpec
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 
 /**
  * Resolves a list of domain [ModifierSpec]s into a Compose [Modifier] chain.

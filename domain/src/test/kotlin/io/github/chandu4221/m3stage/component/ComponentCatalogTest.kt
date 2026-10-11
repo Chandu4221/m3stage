@@ -24,10 +24,10 @@ class ComponentCatalogTest {
     fun testAllDefinitionsCreateValidDefaultProps() {
         ComponentCatalog.all.forEach { def ->
             val defaultProps = def.createDefaultProps()
-            def.descriptors.forEach { descriptor ->
+            def.properties.forEach { propSpec ->
                 assertNotNull(
-                    defaultProps[descriptor.key.id],
-                    "Default props for ${def.kind} should contain key ${descriptor.key.id.value}"
+                    defaultProps[propSpec.key.id],
+                    "Default props for ${def.kind} should contain key ${propSpec.key.id.value}"
                 )
             }
         }

@@ -1,4 +1,4 @@
-package io.github.chandu4221.m3stage.model
+package io.github.chandu4221.m3stage.modifier
 
 import io.github.chandu4221.m3stage.property.PropertyValue
 
@@ -60,8 +60,28 @@ sealed interface ModifierSpec {
         override val category: ModifierCategory get() = ModifierCategory.Size
     }
 
+    data class Weight(val weight: Float = 1f, val fill: Boolean = true) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Size
+    }
+
+    data class AspectRatio(val ratio: Float = 1f) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Size
+    }
+
     // =========================================================================
-    // 3. DRAWING & APPEARANCE (Drawing, Border, Graphics)
+    // 3. POSITION & ORDER
+    // =========================================================================
+
+    data class Offset(val x: Float = 0f, val y: Float = 0f) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Position
+    }
+
+    data class ZIndex(val zIndex: Float = 1f) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Position
+    }
+
+    // =========================================================================
+    // 4. DRAWING & BORDER
     // =========================================================================
 
     data class Background(
@@ -79,12 +99,6 @@ sealed interface ModifierSpec {
         override val category: ModifierCategory get() = ModifierCategory.Drawing
     }
 
-    data class Clip(
-        val shape: PropertyValue.ShapeValue
-    ) : ModifierSpec {
-        override val category: ModifierCategory get() = ModifierCategory.Drawing
-    }
-
     data class Shadow(
         val elevation: Float = 4f,
         val shape: PropertyValue.ShapeValue = PropertyValue.ShapeValue.UniformDp(0f),
@@ -93,20 +107,39 @@ sealed interface ModifierSpec {
         override val category: ModifierCategory get() = ModifierCategory.Drawing
     }
 
-    data class Alpha(
-        val alpha: Float = 1f
-    ) : ModifierSpec {
-        override val category: ModifierCategory get() = ModifierCategory.Drawing
+    // =========================================================================
+    // 5. GRAPHICS LAYER
+    // =========================================================================
+
+    data class Clip(val shape: PropertyValue.ShapeValue) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Graphics
+    }
+
+    data class Alpha(val alpha: Float = 1f) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Graphics
     }
 
     // =========================================================================
-    // 4. POSITION & ALIGNMENT
+    // 6. TRANSFORMATIONS
     // =========================================================================
 
-    data class Offset(
-        val x: Float = 0f,
-        val y: Float = 0f
-    ) : ModifierSpec {
-        override val category: ModifierCategory get() = ModifierCategory.Position
+    data class Rotate(val degrees: Float = 0f) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Transformations
+    }
+
+    data class Scale(val scale: Float = 1f) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Transformations
+    }
+
+    // =========================================================================
+    // 7. SCROLL
+    // =========================================================================
+
+    data class VerticalScroll(val enabled: Boolean = true) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Scroll
+    }
+
+    data class HorizontalScroll(val enabled: Boolean = true) : ModifierSpec {
+        override val category: ModifierCategory get() = ModifierCategory.Scroll
     }
 }
