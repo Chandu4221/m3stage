@@ -156,8 +156,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderTreeItem(
 
     if (isExpanded) {
         // 1. Render named slots children first
+        val slotChildIds = mutableSetOf<NodeId>()
         for ((slotId, slotChildren) in node.slots) {
             for (child in slotChildren) {
+                slotChildIds.add(child.id)
                 renderTreeItem(
                     node = child,
                     depth = depth + 1,
@@ -174,21 +176,23 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderTreeItem(
             }
         }
 
-        // 2. Render general raw children
+        // 2. Render general raw children (excluding any already rendered in slots)
         for (child in node.children) {
-            renderTreeItem(
-                node = child,
-                depth = depth + 1,
-                slotBadge = null,
-                selectedNodeId = selectedNodeId,
-                lockedNodeIds = lockedNodeIds,
-                expandedNodeIds = expandedNodeIds,
-                onToggleExpand = onToggleExpand,
-                onSelectNode = onSelectNode,
-                onToggleVisibility = onToggleVisibility,
-                onToggleLock = onToggleLock,
-                onDeleteNode = onDeleteNode
-            )
+            if (child.id !in slotChildIds) {
+                renderTreeItem(
+                    node = child,
+                    depth = depth + 1,
+                    slotBadge = null,
+                    selectedNodeId = selectedNodeId,
+                    lockedNodeIds = lockedNodeIds,
+                    expandedNodeIds = expandedNodeIds,
+                    onToggleExpand = onToggleExpand,
+                    onSelectNode = onSelectNode,
+                    onToggleVisibility = onToggleVisibility,
+                    onToggleLock = onToggleLock,
+                    onDeleteNode = onDeleteNode
+                )
+            }
         }
     }
 }
