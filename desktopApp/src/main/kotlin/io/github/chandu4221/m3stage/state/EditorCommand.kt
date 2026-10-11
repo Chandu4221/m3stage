@@ -25,11 +25,12 @@ sealed interface EditorCommand {
 data class AddNodeCommand(
     val screenId: ScreenId,
     val parentId: NodeId,
-    val newNode: DesignNode
+    val newNode: DesignNode,
+    val slotId: io.github.chandu4221.m3stage.component.slot.SlotId? = null
 ) : EditorCommand {
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
-        val newRoot = screen.root.addNode(parentId, newNode)
+        val newRoot = screen.root.addNode(parentId, newNode, slotId)
         return project.updateScreenRoot(screenId, newRoot)
     }
 

@@ -59,6 +59,10 @@ fun EditorScreen(store: EditorStore) {
                     snackbarHostState.showSnackbar("Failed to load project: ${event.reason}")
                 }
 
+                is EditorEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+
                 else -> {}
             }
         }

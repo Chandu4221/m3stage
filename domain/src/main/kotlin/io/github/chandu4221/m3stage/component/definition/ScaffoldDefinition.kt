@@ -27,14 +27,14 @@ object ScaffoldDefinition {
         id = SlotId("bottomBar"),
         displayName = "Bottom Bar",
         maxChildren = 1,
-        allowedKinds = setOf(ComponentKind.Row, ComponentKind.Box)
+        allowedKinds = setOf(ComponentKind.NavigationBar, ComponentKind.Row, ComponentKind.Box)
     )
 
     val FloatingActionButtonSlot = SlotDefinition(
         id = SlotId("floatingActionButton"),
         displayName = "Floating Action Button",
         maxChildren = 1,
-        allowedKinds = setOf(ComponentKind.Button, ComponentKind.Icon)
+        allowedKinds = setOf(ComponentKind.FloatingActionButton, ComponentKind.Button, ComponentKind.Icon)
     )
 
     val ContentSlot = SlotDefinition(
@@ -58,6 +58,8 @@ object ScaffoldDefinition {
         slots = listOf(TopBarSlot, BottomBarSlot, FloatingActionButtonSlot, ContentSlot),
         allowedChildren = setOf(
             ComponentKind.TopAppBar,
+            ComponentKind.NavigationBar,
+            ComponentKind.FloatingActionButton,
             ComponentKind.Column,
             ComponentKind.Row,
             ComponentKind.Box,

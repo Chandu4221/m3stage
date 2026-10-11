@@ -14,9 +14,18 @@ class HistoryDelegate(private val context: EditorContext) : HistoryState {
 
     override fun execute(command: EditorCommand) {
         val current = context.projectFlow.value ?: return
-        val newProject = command.execute(current)
+        val newProject = try {
+            command.execute(current)
+        } catch (e: Exception) {
+            context.eventFlow.tryEmit(EditorEvent.ShowError(e.message ?: "Invalid operation"))
+            return
+        }
 
-        if (ProjectValidation.validate(newProject).isNotEmpty()) return
+        val errors = ProjectValidation.validate(newProject)
+        if (errors.isNotEmpty()) {
+            context.eventFlow.tryEmit(EditorEvent.ShowError(errors.first()))
+            return
+        }
 
         context.projectFlow.value = newProject
         _undoStack.value = _undoStack.value + command

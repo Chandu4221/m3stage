@@ -67,17 +67,37 @@ class EditorStore(
         val screenId = activeScreenId.value ?: return
         val currentProject = project.value ?: return
         val activeScreen = currentProject.findScreen(screenId) ?: return
+        val targetNode = activeScreen.root.findNode(parentId) ?: return
 
-        // If target parent is a Scaffold and adding content (not TopAppBar), route into its child Column if present
-        val targetNode = activeScreen.root.findNode(parentId)
-        val resolvedParentId = if (targetNode?.kind == ComponentKind.Scaffold && kind != ComponentKind.TopAppBar) {
-            targetNode.allDirectChildren.firstOrNull { it.kind == ComponentKind.Column }?.id ?: parentId
-        } else {
-            parentId
+        var targetParentId = parentId
+        var targetSlotId: io.github.chandu4221.m3stage.component.slot.SlotId? = null
+
+        if (targetNode.kind == ComponentKind.Scaffold) {
+            when (kind) {
+                ComponentKind.TopAppBar -> {
+                    targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.TopBarSlot.id
+                }
+                ComponentKind.NavigationBar -> {
+                    targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.BottomBarSlot.id
+                }
+                ComponentKind.FloatingActionButton -> {
+                    targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.FloatingActionButtonSlot.id
+                }
+                else -> {
+                    // Route into the Scaffold's content column if available, else into ContentSlot
+                    val contentColumn = targetNode.allDirectChildren.firstOrNull { it.kind == ComponentKind.Column }
+                    if (contentColumn != null) {
+                        targetParentId = contentColumn.id
+                        targetSlotId = null
+                    } else {
+                        targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.ContentSlot.id
+                    }
+                }
+            }
         }
 
         val newNode = ComponentCatalog[kind].createDefaultSubtree(context.idGenerator)
-        execute(AddNodeCommand(screenId, resolvedParentId, newNode))
+        execute(AddNodeCommand(screenId, targetParentId, newNode, targetSlotId))
     }
 
     // --- Bridge: Toggle Visibility ---
