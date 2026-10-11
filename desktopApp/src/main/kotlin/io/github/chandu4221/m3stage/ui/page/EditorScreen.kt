@@ -116,10 +116,12 @@ fun EditorScreen(store: EditorStore) {
             },
             onExportCode = { showExportDialog = true },
             zoomPercentage = zoomPercentage,
-            // Inspector
+            // Inspector & Tree Actions
             selectedNode = selectedNode,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
             onToggleNodeLock = { nodeId -> store.toggleLock(nodeId) },
+            onToggleVisibility = { nodeId -> store.toggleVisibility(nodeId) },
+            onDeleteNode = { nodeId -> store.removeNode(nodeId) },
 
             // Viewport & Gestures
             viewportState = viewportState,

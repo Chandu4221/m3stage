@@ -97,6 +97,21 @@ class EditorStore(
         )
     }
 
+    // --- Bridge: Remove Node ---
+    fun removeNode(nodeId: NodeId) {
+        val screenId = activeScreenId.value ?: return
+        val currentProject = project.value ?: return
+        val screen = currentProject.findScreen(screenId) ?: return
+
+        // Prevent deleting the screen's root node
+        if (screen.root.id == nodeId) return
+
+        execute(RemoveNodeCommand(screenId, nodeId))
+        if (selectedNodeId.value == nodeId) {
+            selectNode(null)
+        }
+    }
+
     // --- Bridge: Add New Screen ---
     fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
         val idGen = context.idGenerator

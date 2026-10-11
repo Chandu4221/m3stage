@@ -16,6 +16,7 @@ import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.organism.InspectorPanel
 import io.github.chandu4221.m3stage.ui.organism.FloatingCanvasStudio
+import io.github.chandu4221.m3stage.ui.organism.LayersTreeDrawer
 import io.github.chandu4221.m3stage.ui.organism.PartsDrawer
 import io.github.chandu4221.m3stage.ui.organism.StudioNavRail
 import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
@@ -54,6 +55,8 @@ fun EditorShellTemplate(
     selectedNode: DesignNode?,
     isNodeLocked: Boolean,
     onToggleNodeLock: (NodeId) -> Unit,
+    onToggleVisibility: (NodeId) -> Unit = {},
+    onDeleteNode: (NodeId) -> Unit = {},
     modifier: Modifier = Modifier,
     viewportState: io.github.chandu4221.m3stage.state.CanvasViewportState,
     onPointerToolChange: (io.github.chandu4221.m3stage.state.CanvasPointerTool) -> Unit,
@@ -74,11 +77,27 @@ fun EditorShellTemplate(
         )
 
         // 2. Expandable Drawer
-        PartsDrawer(
-            searchQuery = searchQuery,
-            onSearchQueryChange = onSearchQueryChange,
-            onComponentSelected = onComponentSelected
-        )
+        when (activeRailTab) {
+            StudioRailTab.Layers -> {
+                val activeScreen = screens.firstOrNull { it.id == activeScreenId }
+                LayersTreeDrawer(
+                    activeScreen = activeScreen,
+                    selectedNodeId = selectedNodeId,
+                    lockedNodeIds = lockedNodeIds,
+                    onSelectNode = onNodeClick,
+                    onToggleVisibility = onToggleVisibility,
+                    onToggleLock = onToggleNodeLock,
+                    onDeleteNode = onDeleteNode
+                )
+            }
+            else -> {
+                PartsDrawer(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onComponentSelected = onComponentSelected
+                )
+            }
+        }
 
         // 3. Central Canvas
         Box(
