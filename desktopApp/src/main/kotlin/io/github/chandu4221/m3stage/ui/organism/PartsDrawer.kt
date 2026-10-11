@@ -1,26 +1,18 @@
 package io.github.chandu4221.m3stage.ui.organism
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentCategory
@@ -30,129 +22,114 @@ import io.github.chandu4221.m3stage.ui.atom.SearchTextField
 import io.github.chandu4221.m3stage.ui.molecule.ComponentTile
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
-/**
- * Dumb Organism: 2-column "Parts" component catalog drawer.
- * Accepts search query and emitted callbacks, zero store awareness.
- */
 @Composable
 fun PartsDrawer(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    activeCategory: ComponentCategory? = null,
+    onCategorySelected: (ComponentCategory?) -> Unit = {}
 ) {
-    val expandedCategories = remember {
-        mutableStateMapOf<ComponentCategory, Boolean>().apply {
-            ComponentCategory.entries.forEach { put(it, true) }
-        }
-    }
-
     Surface(
-        modifier = modifier
-            .width(280.dp)
-            .fillMaxHeight(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        modifier = modifier.width(280.dp).fillMaxHeight(),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Header
-            Text(
-                text = "Parts",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
-            )
-
-            // Search Bar
-            SearchTextField(
-                query = searchQuery,
-                onQueryChange = onSearchQueryChange,
-                placeholderText = "Search parts..."
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Scrollable 2-Column Categories
+            // Header: Title & Search
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                ComponentCatalog.groupedByCategory.forEach { (category, definitions) ->
-                    val filteredDefs = if (searchQuery.isBlank()) definitions else {
-                        definitions.filter { it.displayName.contains(searchQuery, ignoreCase = true) }
-                    }
+                Text(
+                    text = "Components",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                SearchTextField(
+                    query = searchQuery,
+                    onQueryChange = onSearchQueryChange,
+                    placeholderText = "Filter parts...",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-                    if (filteredDefs.isNotEmpty()) {
-                        PartsCategorySection(
-                            category = category,
-                            isExpanded = expandedCategories[category] ?: true,
-                            onToggle = { expandedCategories[category] = !(expandedCategories[category] ?: true) },
-                            definitions = filteredDefs,
-                            onComponentSelected = onComponentSelected
-                        )
-                    }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Category Filter Row
+            ScrollableTabRow(
+                selectedTabIndex = if (activeCategory == null) 0 else ComponentCategory.entries.indexOf(activeCategory) + 1,
+                edgePadding = 12.dp,
+                divider = {},
+                containerColor = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Tab(
+                    selected = activeCategory == null,
+                    onClick = { onCategorySelected(null) },
+                    text = { Text("All") }
+                )
+                ComponentCategory.entries.forEach { category ->
+                    Tab(
+                        selected = activeCategory == category,
+                        onClick = { onCategorySelected(category) },
+                        text = { Text(category.displayName) }
+                    )
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun PartsCategorySection(
-    category: ComponentCategory,
-    isExpanded: Boolean,
-    onToggle: () -> Unit,
-    definitions: List<ComponentDefinition>,
-    onComponentSelected: (ComponentKind) -> Unit
-) {
-    Column {
-        // Section Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics { role = Role.Button }
-                .clickable(onClick = onToggle)
-                .padding(vertical = 6.dp, horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = category.displayName,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
-        }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        // 2-Column Grid Tiles
-        AnimatedVisibility(visible = isExpanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                definitions.chunked(2).forEach { rowDefs ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rowDefs.forEach { def ->
-                            ComponentTile(
-                                displayName = def.displayName,
-                                icon = resolveComponentIcon(def.kind),
-                                onClick = { onComponentSelected(def.kind) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        if (rowDefs.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
+            // Filtered Items List
+            val allComponents: List<ComponentDefinition> = remember { ComponentCatalog.all }
+            val filteredComponents = remember(searchQuery, activeCategory) {
+                allComponents.filter { def ->
+                    val matchesSearch = searchQuery.isBlank() ||
+                        def.displayName.contains(searchQuery, ignoreCase = true) ||
+                        def.category.displayName.contains(searchQuery, ignoreCase = true)
+                    val matchesCategory = activeCategory == null || def.category == activeCategory
+                    matchesSearch && matchesCategory
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val grouped = filteredComponents.groupBy { it.category }
+                grouped.forEach { (category, defs) ->
+                    item {
+                        Text(
+                            text = category.displayName.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+
+                    // Render grid pairs per row
+                    val chunked = defs.chunked(2)
+                    items(chunked) { rowDefs ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            rowDefs.forEach { def ->
+                                ComponentTile(
+                                    displayName = def.displayName,
+                                    icon = resolveComponentIcon(def.kind),
+                                    onClick = { onComponentSelected(def.kind) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (rowDefs.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -162,17 +139,43 @@ private fun PartsCategorySection(
 }
 
 private fun resolveComponentIcon(kind: ComponentKind): ImageVector = when (kind) {
+    // Communication
     ComponentKind.Text -> Icons.Default.TextFields
     ComponentKind.Icon -> Icons.Default.Star
     ComponentKind.Image -> Icons.Default.Image
+    ComponentKind.Badge -> Icons.Default.Notifications
+
+    // Actions
     ComponentKind.Button -> Icons.Default.SmartButton
+    ComponentKind.IconButton -> Icons.Default.TouchApp
+    ComponentKind.FloatingActionButton -> Icons.Default.AddCircle
+    ComponentKind.OutlinedButton -> Icons.Default.CropPortrait
+    ComponentKind.TextButton -> Icons.Default.Subject
+
+    // Text Inputs
     ComponentKind.TextField -> Icons.Default.EditNote
+    ComponentKind.OutlinedTextField -> Icons.Default.Edit
+
+    // Layouts
     ComponentKind.Column -> Icons.Default.ViewColumn
     ComponentKind.Row -> Icons.Default.TableRows
     ComponentKind.Box -> Icons.Default.CheckBoxOutlineBlank
-    ComponentKind.Card -> Icons.Default.CropSquare
+    ComponentKind.Spacer -> Icons.Default.SpaceBar
+
+    // Containment
     ComponentKind.Scaffold -> Icons.Default.Web
+    ComponentKind.Card -> Icons.Default.CropSquare
+    ComponentKind.HorizontalDivider -> Icons.Default.HorizontalRule
+
+    // Navigation
     ComponentKind.TopAppBar -> Icons.AutoMirrored.Filled.MenuOpen
+    ComponentKind.NavigationBar -> Icons.Default.Navigation
+
+    // Selection
+    ComponentKind.Switch -> Icons.Default.ToggleOn
+    ComponentKind.Checkbox -> Icons.Default.CheckBox
+    ComponentKind.RadioButton -> Icons.Default.RadioButtonChecked
+    ComponentKind.Slider -> Icons.Default.LinearScale
 }
 
 @Preview

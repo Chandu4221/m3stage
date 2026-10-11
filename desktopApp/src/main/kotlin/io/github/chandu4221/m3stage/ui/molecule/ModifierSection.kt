@@ -85,6 +85,7 @@ fun ModifierSection(
                         expanded = showAddMenu,
                         onDismissRequest = { showAddMenu = false }
                     ) {
+                        // 1. Padding
                         DropdownMenuItem(
                             text = { Text("Padding") },
                             onClick = {
@@ -92,6 +93,7 @@ fun ModifierSection(
                                 showAddMenu = false
                             }
                         )
+                        // 2. Size
                         DropdownMenuItem(
                             text = { Text("Fill Max Width") },
                             onClick = {
@@ -135,6 +137,36 @@ fun ModifierSection(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("Weight") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.Weight(1f, fill = true))
+                                showAddMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Aspect Ratio") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.AspectRatio(1f))
+                                showAddMenu = false
+                            }
+                        )
+                        // 3. Position & Order
+                        DropdownMenuItem(
+                            text = { Text("Offset") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.Offset(0f, 0f))
+                                showAddMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Z-Index") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.ZIndex(1f))
+                                showAddMenu = false
+                            }
+                        )
+                        // 4. Drawing & Border
+                        DropdownMenuItem(
                             text = { Text("Background") },
                             onClick = {
                                 store.addModifier(
@@ -159,16 +191,6 @@ fun ModifierSection(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Clip") },
-                            onClick = {
-                                store.addModifier(
-                                    node.id,
-                                    ModifierSpec.Clip(PropertyValue.ShapeValue.UniformDp(8f))
-                                )
-                                showAddMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
                             text = { Text("Shadow") },
                             onClick = {
                                 store.addModifier(
@@ -181,6 +203,17 @@ fun ModifierSection(
                                 showAddMenu = false
                             }
                         )
+                        // 5. Graphics Layer
+                        DropdownMenuItem(
+                            text = { Text("Clip") },
+                            onClick = {
+                                store.addModifier(
+                                    node.id,
+                                    ModifierSpec.Clip(PropertyValue.ShapeValue.UniformDp(8f))
+                                )
+                                showAddMenu = false
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text("Alpha (Opacity)") },
                             onClick = {
@@ -188,11 +221,33 @@ fun ModifierSection(
                                 showAddMenu = false
                             }
                         )
-                      
+                        // 6. Transformations
                         DropdownMenuItem(
-                            text = { Text("Offset") },
+                            text = { Text("Rotate") },
                             onClick = {
-                                store.addModifier(node.id, ModifierSpec.Offset(0f, 0f))
+                                store.addModifier(node.id, ModifierSpec.Rotate(0f))
+                                showAddMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Scale") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.Scale(1f))
+                                showAddMenu = false
+                            }
+                        )
+                        // 7. Scroll
+                        DropdownMenuItem(
+                            text = { Text("Vertical Scroll") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.VerticalScroll(true))
+                                showAddMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Horizontal Scroll") },
+                            onClick = {
+                                store.addModifier(node.id, ModifierSpec.HorizontalScroll(true))
                                 showAddMenu = false
                             }
                         )
@@ -200,36 +255,29 @@ fun ModifierSection(
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Modifier Cards List
             if (node.modifiers.isEmpty()) {
                 Text(
-                    text = "No modifiers added yet. Click + to customize size, padding, borders, etc.",
+                    text = "No visual modifiers attached.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                Spacer(modifier = Modifier.height(8.dp))
-                node.modifiers.forEachIndexed { index, modNode ->
-                    ModifierItemCard(
-                        mod = modNode,
-                        index = index,
-                        totalCount = node.modifiers.size,
+                node.modifiers.forEachIndexed { index, mod ->
+                    ModifierCard(
+                        modifier = mod,
                         isLocked = isLocked,
                         onUpdate = { updatedMod ->
                             store.updateModifier(node.id, index, updatedMod)
                         },
                         onRemove = {
                             store.removeModifier(node.id, index)
-                        },
-                        onMoveUp = {
-                            if (index > 0) store.reorderModifier(node.id, index, index - 1)
-                        },
-                        onMoveDown = {
-                            if (index < node.modifiers.size - 1) store.reorderModifier(node.id, index, index + 1)
                         }
                     )
                     if (index < node.modifiers.size - 1) {
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
@@ -238,203 +286,231 @@ fun ModifierSection(
 }
 
 @Composable
-private fun ModifierItemCard(
-    mod: ModifierSpec,
-    index: Int,
-    totalCount: Int,
+private fun ModifierCard(
+    modifier: ModifierSpec,
     isLocked: Boolean,
     onUpdate: (ModifierSpec) -> Unit,
-    onRemove: () -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit
+    onRemove: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        shape = MaterialTheme.shapes.small
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            // Header Row: Mod Name + Move/Delete Actions
+        Column(modifier = Modifier.padding(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${index + 1}. ${getModifierTitle(mod)}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    text = getModifierTitle(modifier),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Move Up
-                    IconButton(
-                        onClick = onMoveUp,
-                        enabled = !isLocked && index > 0,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowUp,
-                            contentDescription = "Move Up",
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    // Move Down
-                    IconButton(
-                        onClick = onMoveDown,
-                        enabled = !isLocked && index < totalCount - 1,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Move Down",
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    // Delete
-                    IconButton(
-                        onClick = onRemove,
-                        enabled = !isLocked,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Remove Modifier",
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                IconButton(
+                    onClick = onRemove,
+                    enabled = !isLocked,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Remove Modifier",
+                        tint = if (!isLocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.38f
+                        ),
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             // Inline Property Editor based on Modifier Type
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp)
-            ) {
-                when (mod) {
-                    is ModifierSpec.Padding -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            NumberField(label = "Start", value = mod.start, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(start = it))
-                            }
-                            NumberField(label = "Top", value = mod.top, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(top = it))
-                            }
-                            NumberField(label = "End", value = mod.end, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(end = it))
-                            }
-                            NumberField(label = "Bottom", value = mod.bottom, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(bottom = it))
-                            }
+            when (modifier) {
+                // 1. Padding
+                is ModifierSpec.Padding -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        NumberField(label = "Start", value = modifier.start, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(start = it))
+                        }
+                        NumberField(label = "Top", value = modifier.top, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(top = it))
+                        }
+                        NumberField(label = "End", value = modifier.end, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(end = it))
+                        }
+                        NumberField(label = "Bottom", value = modifier.bottom, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(bottom = it))
                         }
                     }
+                }
 
-                    is ModifierSpec.FillMaxWidth -> {
-                        SliderField(label = "Fraction", value = mod.fraction) {
-                            onUpdate(mod.copy(fraction = it))
+                // 2. Size
+                is ModifierSpec.FillMaxWidth -> {
+                    SliderField(label = "Fraction", value = modifier.fraction) {
+                        onUpdate(modifier.copy(fraction = it))
+                    }
+                }
+
+                is ModifierSpec.FillMaxHeight -> {
+                    SliderField(label = "Fraction", value = modifier.fraction) {
+                        onUpdate(modifier.copy(fraction = it))
+                    }
+                }
+
+                is ModifierSpec.FillMaxSize -> {
+                    SliderField(label = "Fraction", value = modifier.fraction) {
+                        onUpdate(modifier.copy(fraction = it))
+                    }
+                }
+
+                is ModifierSpec.Size -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        NumberField(label = "Width (dp)", value = modifier.width, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(width = it))
+                        }
+                        NumberField(label = "Height (dp)", value = modifier.height, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(height = it))
                         }
                     }
+                }
 
-                    is ModifierSpec.FillMaxHeight -> {
-                        SliderField(label = "Fraction", value = mod.fraction) {
-                            onUpdate(mod.copy(fraction = it))
+                is ModifierSpec.Width -> {
+                    NumberField(label = "Width (dp)", value = modifier.width) {
+                        onUpdate(modifier.copy(width = it))
+                    }
+                }
+
+                is ModifierSpec.Height -> {
+                    NumberField(label = "Height (dp)", value = modifier.height) {
+                        onUpdate(modifier.copy(height = it))
+                    }
+                }
+
+                is ModifierSpec.WrapContentSize -> {
+                    Text(
+                        text = "Allows content to measure at its desired size.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                is ModifierSpec.Weight -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        NumberField(label = "Weight", value = modifier.weight, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(weight = it))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = modifier.fill, onCheckedChange = { onUpdate(modifier.copy(fill = it)) })
+                            Text("Fill", style = MaterialTheme.typography.bodySmall)
                         }
                     }
+                }
 
-                    is ModifierSpec.FillMaxSize -> {
-                        SliderField(label = "Fraction", value = mod.fraction) {
-                            onUpdate(mod.copy(fraction = it))
+                is ModifierSpec.AspectRatio -> {
+                    NumberField(label = "Aspect Ratio", value = modifier.ratio) {
+                        onUpdate(modifier.copy(ratio = it))
+                    }
+                }
+
+                // 3. Position & Order
+                is ModifierSpec.Offset -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        NumberField(label = "X (dp)", value = modifier.x, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(x = it))
+                        }
+                        NumberField(label = "Y (dp)", value = modifier.y, modifier = Modifier.weight(1f)) {
+                            onUpdate(modifier.copy(y = it))
                         }
                     }
+                }
 
-                    is ModifierSpec.Size -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            NumberField(label = "Width (dp)", value = mod.width, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(width = it))
-                            }
-                            NumberField(label = "Height (dp)", value = mod.height, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(height = it))
-                            }
-                        }
+                is ModifierSpec.ZIndex -> {
+                    NumberField(label = "Z-Index", value = modifier.zIndex) {
+                        onUpdate(modifier.copy(zIndex = it))
                     }
+                }
 
-                    is ModifierSpec.Width -> {
-                        NumberField(label = "Width (dp)", value = mod.width) {
-                            onUpdate(mod.copy(width = it))
-                        }
+                // 4. Drawing & Border
+                is ModifierSpec.Background -> {
+                    Text(
+                        text = "Color: ${modifier.color}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                is ModifierSpec.Border -> {
+                    NumberField(label = "Border Width (dp)", value = modifier.width) {
+                        onUpdate(modifier.copy(width = it))
                     }
+                }
 
-                    is ModifierSpec.Height -> {
-                        NumberField(label = "Height (dp)", value = mod.height) {
-                            onUpdate(mod.copy(height = it))
-                        }
+                is ModifierSpec.Shadow -> {
+                    NumberField(label = "Elevation (dp)", value = modifier.elevation) {
+                        onUpdate(modifier.copy(elevation = it))
                     }
+                }
 
-                    is ModifierSpec.WrapContentSize -> {
-                        Text(
-                            text = "Allows content to measure at its desired size.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                // 5. Graphics Layer
+                is ModifierSpec.Clip -> {
+                    Text(
+                        text = "Shape: ${modifier.shape}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                is ModifierSpec.Alpha -> {
+                    SliderField(label = "Alpha", value = modifier.alpha) {
+                        onUpdate(modifier.copy(alpha = it))
                     }
+                }
 
-                    is ModifierSpec.Alpha -> {
-                        SliderField(label = "Alpha", value = mod.alpha) {
-                            onUpdate(mod.copy(alpha = it))
-                        }
+                // 6. Transformations
+                is ModifierSpec.Rotate -> {
+                    Slider(
+                        value = modifier.degrees,
+                        onValueChange = { onUpdate(modifier.copy(degrees = it)) },
+                        valueRange = -180f..180f
+                    )
+                    Text("${modifier.degrees.toInt()}°", style = MaterialTheme.typography.bodySmall)
+                }
+
+                is ModifierSpec.Scale -> {
+                    SliderField(label = "Scale", value = modifier.scale) {
+                        onUpdate(modifier.copy(scale = it))
                     }
+                }
 
-                    is ModifierSpec.Offset -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            NumberField(label = "X (dp)", value = mod.x, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(x = it))
-                            }
-                            NumberField(label = "Y (dp)", value = mod.y, modifier = Modifier.weight(1f)) {
-                                onUpdate(mod.copy(y = it))
-                            }
-                        }
+                // 7. Scroll
+                is ModifierSpec.VerticalScroll -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = modifier.enabled, onCheckedChange = { onUpdate(modifier.copy(enabled = it)) })
+                        Text("Enable Vertical Scroll", style = MaterialTheme.typography.bodySmall)
                     }
+                }
 
-                    is ModifierSpec.Background -> {
-                        Text(
-                            text = "Color: ${mod.color}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    is ModifierSpec.Border -> {
-                        NumberField(label = "Border Width (dp)", value = mod.width) {
-                            onUpdate(mod.copy(width = it))
-                        }
-                    }
-
-                    is ModifierSpec.Clip -> {
-                        Text(
-                            text = "Shape: ${mod.shape}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    is ModifierSpec.Shadow -> {
-                        NumberField(label = "Elevation (dp)", value = mod.elevation) {
-                            onUpdate(mod.copy(elevation = it))
-                        }
+                is ModifierSpec.HorizontalScroll -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = modifier.enabled, onCheckedChange = { onUpdate(modifier.copy(enabled = it)) })
+                        Text("Enable Horizontal Scroll", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -488,7 +564,10 @@ private fun SliderField(
 }
 
 private fun getModifierTitle(mod: ModifierSpec): String = when (mod) {
+    // 1. Padding
     is ModifierSpec.Padding -> "Padding"
+
+    // 2. Size
     is ModifierSpec.FillMaxWidth -> "Fill Max Width"
     is ModifierSpec.FillMaxHeight -> "Fill Max Height"
     is ModifierSpec.FillMaxSize -> "Fill Max Size"
@@ -496,10 +575,27 @@ private fun getModifierTitle(mod: ModifierSpec): String = when (mod) {
     is ModifierSpec.Width -> "Width"
     is ModifierSpec.Height -> "Height"
     is ModifierSpec.WrapContentSize -> "Wrap Content Size"
+    is ModifierSpec.Weight -> "Weight"
+    is ModifierSpec.AspectRatio -> "Aspect Ratio"
+
+    // 3. Position & Order
+    is ModifierSpec.Offset -> "Offset"
+    is ModifierSpec.ZIndex -> "Z-Index"
+
+    // 4. Drawing & Border
     is ModifierSpec.Background -> "Background"
     is ModifierSpec.Border -> "Border"
-    is ModifierSpec.Clip -> "Clip"
     is ModifierSpec.Shadow -> "Shadow"
+
+    // 5. Graphics Layer
+    is ModifierSpec.Clip -> "Clip"
     is ModifierSpec.Alpha -> "Alpha"
-    is ModifierSpec.Offset -> "Offset"
+
+    // 6. Transformations
+    is ModifierSpec.Rotate -> "Rotate"
+    is ModifierSpec.Scale -> "Scale"
+
+    // 7. Scroll
+    is ModifierSpec.VerticalScroll -> "Vertical Scroll"
+    is ModifierSpec.HorizontalScroll -> "Horizontal Scroll"
 }

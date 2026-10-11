@@ -60,13 +60,7 @@ class EditorStore(
     override fun loadProject() = sessionDelegate.loadProject()
     override fun saveProject() = sessionDelegate.saveProject()
     override fun createNewProject() = sessionDelegate.createNewProject()
-
     override fun exportCode(customPackageName: String?) = sessionDelegate.exportCode(customPackageName)
-
-    override fun close() {
-        storeScope.cancel()
-        sessionDelegate.close()
-    }
 
     // --- Bridge: Add Node ---
     fun addNodeToActiveScreen(parentId: NodeId, kind: ComponentKind) {
@@ -74,37 +68,15 @@ class EditorStore(
         val currentProject = project.value ?: return
         val activeScreen = currentProject.findScreen(screenId) ?: return
 
-        fun buildNode(targetKind: ComponentKind): DesignNode {
-            val def = ComponentCatalog[targetKind]
-            val defaultChildren = when (targetKind) {
-                ComponentKind.Button -> listOf(buildNode(ComponentKind.Text))
-                ComponentKind.Scaffold -> listOf(
-                    buildNode(ComponentKind.TopAppBar),
-                    buildNode(ComponentKind.Column)
-                )
-
-                else -> emptyList()
-            }
-
-            return DesignNode(
-                id = context.idGenerator.nextNodeId(),
-                kind = def.kind,
-                props = def.createDefaultProps(),
-                modifiers = emptyList(),
-                children = defaultChildren,
-                isVisible = true
-            )
-        }
-
         // If target parent is a Scaffold and adding content (not TopAppBar), route into its child Column if present
         val targetNode = activeScreen.root.findNode(parentId)
         val resolvedParentId = if (targetNode?.kind == ComponentKind.Scaffold && kind != ComponentKind.TopAppBar) {
-            targetNode.children.firstOrNull { it.kind == ComponentKind.Column }?.id ?: parentId
+            targetNode.allDirectChildren.firstOrNull { it.kind == ComponentKind.Column }?.id ?: parentId
         } else {
             parentId
         }
 
-        val newNode = buildNode(kind)
+        val newNode = ComponentCatalog[kind].createDefaultSubtree(context.idGenerator)
         execute(AddNodeCommand(screenId, resolvedParentId, newNode))
     }
 
@@ -125,39 +97,17 @@ class EditorStore(
         )
     }
 
-
     // --- Bridge: Add New Screen ---
     fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
         val idGen = context.idGenerator
-        val scaffoldDef = ComponentCatalog[ComponentKind.Scaffold]
-        val topBarDef = ComponentCatalog[ComponentKind.TopAppBar]
-        val columnDef = ComponentCatalog[ComponentKind.Column]
-
-        val topBarNode = DesignNode(
-            id = idGen.nextNodeId(),
-            kind = ComponentKind.TopAppBar,
-            props = topBarDef.createDefaultProps(),
-            children = emptyList()
-        )
-        val contentColumnNode = DesignNode(
-            id = idGen.nextNodeId(),
-            kind = ComponentKind.Column,
-            props = columnDef.createDefaultProps(),
-            children = emptyList()
-        )
-
+        val rootNode = ComponentCatalog[ComponentKind.Scaffold].createDefaultSubtree(idGen)
         val screenId = idGen.nextScreenId()
         val newScreen = Screen(
             id = screenId,
             name = name,
             route = route,
             device = device,
-            root = DesignNode(
-                id = idGen.nextNodeId(),
-                kind = ComponentKind.Scaffold,
-                props = scaffoldDef.createDefaultProps(),
-                children = listOf(topBarNode, contentColumnNode)
-            )
+            root = rootNode
         )
         execute(AddScreenCommand(newScreen))
         setActiveScreen(screenId)
@@ -199,13 +149,19 @@ class EditorStore(
         execute(RemoveModifierCommand(screenId, nodeId, index))
     }
 
-    fun updateModifier(nodeId: NodeId, index: Int, modifier: ModifierSpec) {
+    fun updateModifier(nodeId: NodeId, index: Int, newModifier: ModifierSpec) {
         val screenId = activeScreenId.value ?: return
-        execute(UpdateModifierCommand(screenId, nodeId, index, modifier))
+        execute(
+            UpdateModifierCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                index = index,
+                newModifier = newModifier
+            )
+        )
     }
 
-    fun reorderModifier(nodeId: NodeId, fromIndex: Int, toIndex: Int) {
-        val screenId = activeScreenId.value ?: return
-        execute(ReorderModifierCommand(screenId, nodeId, fromIndex, toIndex))
+    override fun close() {
+        storeScope.cancel()
     }
 }
