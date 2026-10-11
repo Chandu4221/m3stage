@@ -1,11 +1,12 @@
 package io.github.chandu4221.m3stage.validation
 
+import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
 
 /**
- * Validates project invariants.
- * Returns a list of error messages. If empty, the project is valid.
+ * Validates project and AST invariants.
+ * Returns a list of human-readable error messages. If empty, the project is valid.
  */
 object ProjectValidation {
 
@@ -18,18 +19,55 @@ object ProjectValidation {
 
         val seenNodeIds = mutableSetOf<String>()
 
-        fun checkDuplicates(node: DesignNode, path: String) {
+        fun validateSubtree(node: DesignNode, path: String) {
+            // 1. Node ID Uniqueness
             if (!seenNodeIds.add(node.id.value)) {
                 errors.add("Duplicate Node ID detected: '${node.id.value}' at $path")
             }
 
+            val def = ComponentCatalog.find(node.kind)
+            if (def == null) {
+                errors.add("Unregistered component kind '${node.kind}' at $path")
+                return
+            }
+
+            // 2. Non-container rule
+            if (!def.isContainer && node.allDirectChildren.isNotEmpty()) {
+                errors.add("Component '${node.kind.displayName}' at $path is a leaf node and cannot contain children.")
+            }
+
+            // 3. Raw children atomic validation
             node.children.forEach { child ->
-                checkDuplicates(child, "$path -> ${child.kind.id}")
+                if (!def.canAcceptChild(child.kind)) {
+                    errors.add("Component '${node.kind.displayName}' at $path cannot accept child of kind '${child.kind.displayName}'.")
+                }
+            }
+
+            // 4. Slot validation (allowed kinds and max children)
+            node.slots.forEach { (slotId, slotChildren) ->
+                val slotDef = def.findSlot(slotId)
+                if (slotDef == null) {
+                    errors.add("Unknown slot '${slotId.value}' on component '${node.kind.displayName}' at $path.")
+                } else {
+                    if (slotDef.maxChildren != null && slotChildren.size > slotDef.maxChildren) {
+                        errors.add("Slot '${slotDef.displayName}' on '${node.kind.displayName}' at $path exceeds maximum capacity of ${slotDef.maxChildren} (found ${slotChildren.size}).")
+                    }
+                    slotChildren.forEach { child ->
+                        if (!slotDef.canAccept(child.kind)) {
+                            errors.add("Slot '${slotDef.displayName}' on '${node.kind.displayName}' at $path cannot accept child of kind '${child.kind.displayName}'.")
+                        }
+                    }
+                }
+            }
+
+            // 5. Recursively validate all descendants
+            node.allDirectChildren.forEach { child ->
+                validateSubtree(child, "$path -> ${child.kind.displayName}")
             }
         }
 
         project.screens.forEach { screen ->
-            checkDuplicates(screen.root, "Screen '${screen.name}'")
+            validateSubtree(screen.root, "Screen '${screen.name}'")
         }
 
         return errors

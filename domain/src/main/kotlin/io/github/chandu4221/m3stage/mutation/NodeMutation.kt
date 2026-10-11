@@ -1,35 +1,51 @@
 package io.github.chandu4221.m3stage.mutation
 
+import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.DesignNode
-import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.model.NodeId
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey
 import io.github.chandu4221.m3stage.property.PropertyValue
-import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.isDescendantOf
 
 /**
- * Adds a child node to the end of the specified parent's children list.
+ * Adds a child node to a parent node, either into a named [slotId] or into raw [children].
+ * Validates domain containment rules via [canAcceptChild].
  * Returns a new immutable tree root.
  */
-fun DesignNode.addNode(parentId: NodeId, child: DesignNode): DesignNode {
+fun DesignNode.addNode(parentId: NodeId, child: DesignNode, slotId: SlotId? = null): DesignNode {
     if (this.id == parentId) {
-        return copy(children = children + child)
+        val def = ComponentCatalog.find(this.kind)
+        if (def != null && !def.canAcceptChild(child.kind, slotId)) {
+            val target = slotId?.value ?: "general children"
+            throw IllegalArgumentException(
+                "Parent '${this.kind.displayName}' cannot accept child of kind '${child.kind.displayName}' in $target."
+            )
+        }
+
+        return if (slotId != null) {
+            val existingSlotChildren = slots[slotId] ?: emptyList()
+            copy(slots = slots + (slotId to (existingSlotChildren + child)))
+        } else {
+            copy(children = children + child)
+        }
     }
-    return copy(children = children.map { it.addNode(parentId, child) })
+
+    return mapDescendants { it.addNode(parentId, child, slotId) }
 }
 
 /**
- * Removes a node by ID from anywhere in the tree.
+ * Removes a node by ID from anywhere in the tree (whether in raw children or in a slot).
  * Returns a new immutable tree root.
  */
 fun DesignNode.removeNode(nodeId: NodeId): DesignNode {
-    return copy(
-        children = children
-            .filter { it.id != nodeId }
-            .map { it.removeNode(nodeId) }
-    )
+    val updatedChildren = children.filter { it.id != nodeId }.map { it.removeNode(nodeId) }
+    val updatedSlots = slots.mapValues { (_, slotNodes) ->
+        slotNodes.filter { it.id != nodeId }.map { it.removeNode(nodeId) }
+    }
+    return copy(children = updatedChildren, slots = updatedSlots)
 }
 
 /**
@@ -40,7 +56,7 @@ fun <V : PropertyValue> DesignNode.updateProp(nodeId: NodeId, key: PropertyKey<V
     if (this.id == nodeId) {
         return copy(props = props + (key.id to value))
     }
-    return copy(children = children.map { it.updateProp(nodeId, key, value) })
+    return mapDescendants { it.updateProp(nodeId, key, value) }
 }
 
 /**
@@ -51,7 +67,7 @@ fun DesignNode.updatePropById(nodeId: NodeId, propId: PropertyId, value: Propert
     if (this.id == nodeId) {
         return copy(props = props + (propId to value))
     }
-    return copy(children = children.map { it.updatePropById(nodeId, propId, value) })
+    return mapDescendants { it.updatePropById(nodeId, propId, value) }
 }
 
 /**
@@ -62,76 +78,86 @@ fun DesignNode.removeProp(nodeId: NodeId, propId: PropertyId): DesignNode {
     if (this.id == nodeId) {
         return copy(props = props - propId)
     }
-    return copy(children = children.map { it.removeProp(nodeId, propId) })
-}
-
-/**
- * Helper: Inserts a node at a specific index within a parent.
- */
-private fun DesignNode.insertNode(parentId: NodeId, child: DesignNode, index: Int): DesignNode {
-    if (this.id == parentId) {
-        val mutableChildren = children.toMutableList()
-        val safeIndex = index.coerceIn(0, mutableChildren.size)
-        mutableChildren.add(safeIndex, child)
-        return copy(children = mutableChildren.toList())
-    }
-    return copy(children = children.map { it.insertNode(parentId, child, index) })
+    return mapDescendants { it.removeProp(nodeId, propId) }
 }
 
 /**
  * Moves a node to a new parent at a specific index.
  * Enforces domain invariants (no cycles, valid IDs).
- * Throws IllegalArgumentException if the move is invalid.
  */
-fun DesignNode.moveNode(nodeId: NodeId, newParentId: NodeId, index: Int): DesignNode {
-    // 1. Prevent moving a node into itself
+fun DesignNode.moveNode(nodeId: NodeId, newParentId: NodeId, index: Int, targetSlotId: SlotId? = null): DesignNode {
     if (nodeId == newParentId) {
         throw IllegalArgumentException("Cannot move a node into itself.")
     }
 
-    // 2. Prevent circular references (Domain Invariant)
     if (this.isDescendantOf(nodeId = newParentId, ancestorId = nodeId)) {
         throw IllegalArgumentException("Cannot drop a node into its own descendant.")
     }
 
-    // 3. Validate existence
     val nodeToMove = this.findNode(nodeId)
         ?: throw IllegalArgumentException("Node to move ($nodeId) not found.")
 
-    if (this.findNode(newParentId) == null) {
-        throw IllegalArgumentException("Target parent ($newParentId) not found.")
+    val targetParent = this.findNode(newParentId)
+        ?: throw IllegalArgumentException("Target parent ($newParentId) not found.")
+
+    val def = ComponentCatalog.find(targetParent.kind)
+    if (def != null && !def.canAcceptChild(nodeToMove.kind, targetSlotId)) {
+        throw IllegalArgumentException(
+            "Target '${targetParent.kind.displayName}' cannot accept '${nodeToMove.kind.displayName}'."
+        )
     }
 
-    // 4. Execute move: Remove then Insert
     val treeAfterRemoval = this.removeNode(nodeId)
-    return treeAfterRemoval.insertNode(newParentId, nodeToMove, index)
+    return treeAfterRemoval.insertNode(newParentId, nodeToMove, index, targetSlotId)
 }
 
 /**
- * Updates the visibility of a specific node.
- * Returns a new immutable tree root.
+ * Inserts a node at a specific index within a parent (in children or in a slot).
+ */
+private fun DesignNode.insertNode(
+    parentId: NodeId,
+    child: DesignNode,
+    index: Int,
+    slotId: SlotId? = null
+): DesignNode {
+    if (this.id == parentId) {
+        return if (slotId != null) {
+            val currentList = (slots[slotId] ?: emptyList()).toMutableList()
+            val safeIndex = index.coerceIn(0, currentList.size)
+            currentList.add(safeIndex, child)
+            copy(slots = slots + (slotId to currentList.toList()))
+        } else {
+            val mutableChildren = children.toMutableList()
+            val safeIndex = index.coerceIn(0, mutableChildren.size)
+            mutableChildren.add(safeIndex, child)
+            copy(children = mutableChildren.toList())
+        }
+    }
+    return mapDescendants { it.insertNode(parentId, child, index, slotId) }
+}
+
+/**
+ * Updates the visibility of a specific node anywhere in the tree.
  */
 fun DesignNode.updateVisibility(nodeId: NodeId, isVisible: Boolean): DesignNode {
     if (this.id == nodeId) {
         return copy(isVisible = isVisible)
     }
-    return copy(children = children.map { it.updateVisibility(nodeId, isVisible) })
+    return mapDescendants { it.updateVisibility(nodeId, isVisible) }
 }
 
 /**
  * Appends a modifier to the node's modifier chain.
- * Returns a new immutable tree root.
  */
 fun DesignNode.addModifier(nodeId: NodeId, modifier: ModifierSpec): DesignNode {
     if (this.id == nodeId) {
         return copy(modifiers = modifiers + modifier)
     }
-    return copy(children = children.map { it.addModifier(nodeId, modifier) })
+    return mapDescendants { it.addModifier(nodeId, modifier) }
 }
 
 /**
  * Removes a modifier at a specific index in the node's modifier chain.
- * Returns a new immutable tree root.
  */
 fun DesignNode.removeModifier(nodeId: NodeId, index: Int): DesignNode {
     if (this.id == nodeId) {
@@ -140,12 +166,11 @@ fun DesignNode.removeModifier(nodeId: NodeId, index: Int): DesignNode {
         mutable.removeAt(index)
         return copy(modifiers = mutable.toList())
     }
-    return copy(children = children.map { it.removeModifier(nodeId, index) })
+    return mapDescendants { it.removeModifier(nodeId, index) }
 }
 
 /**
  * Updates a modifier at a specific index in the node's modifier chain.
- * Returns a new immutable tree root.
  */
 fun DesignNode.updateModifier(nodeId: NodeId, index: Int, modifier: ModifierSpec): DesignNode {
     if (this.id == nodeId) {
@@ -154,13 +179,11 @@ fun DesignNode.updateModifier(nodeId: NodeId, index: Int, modifier: ModifierSpec
         mutable[index] = modifier
         return copy(modifiers = mutable.toList())
     }
-    return copy(children = children.map { it.updateModifier(nodeId, index, modifier) })
+    return mapDescendants { it.updateModifier(nodeId, index, modifier) }
 }
 
 /**
  * Reorders a modifier in the chain from one position to another.
- * Modifier order matters in Compose (e.g. padding before background vs background before padding).
- * Returns a new immutable tree root.
  */
 fun DesignNode.reorderModifier(nodeId: NodeId, fromIndex: Int, toIndex: Int): DesignNode {
     if (this.id == nodeId) {
@@ -172,16 +195,24 @@ fun DesignNode.reorderModifier(nodeId: NodeId, fromIndex: Int, toIndex: Int): De
         mutable.add(toIndex, item)
         return copy(modifiers = mutable.toList())
     }
-    return copy(children = children.map { it.reorderModifier(nodeId, fromIndex, toIndex) })
+    return mapDescendants { it.reorderModifier(nodeId, fromIndex, toIndex) }
 }
 
 /**
  * Sets the entire modifier list for a node.
- * Returns a new immutable tree root.
  */
 fun DesignNode.setModifiers(nodeId: NodeId, newModifiers: List<ModifierSpec>): DesignNode {
     if (this.id == nodeId) {
         return copy(modifiers = newModifiers)
     }
-    return copy(children = children.map { it.setModifiers(nodeId, newModifiers) })
+    return mapDescendants { it.setModifiers(nodeId, newModifiers) }
+}
+
+/**
+ * Internal helper: Recursively maps both [children] and [slots] with identical transformation logic.
+ */
+private inline fun DesignNode.mapDescendants(transform: (DesignNode) -> DesignNode): DesignNode {
+    val mappedChildren = children.map(transform)
+    val mappedSlots = slots.mapValues { (_, slotChildren) -> slotChildren.map(transform) }
+    return copy(children = mappedChildren, slots = mappedSlots)
 }

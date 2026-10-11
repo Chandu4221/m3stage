@@ -3,36 +3,48 @@ package io.github.chandu4221.m3stage.query
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 
-// Core lookup
+/**
+ * Searches this node's subtree for a node with the specified [id].
+ * Traverses both raw children and named slots.
+ */
 fun DesignNode.findNode(id: NodeId): DesignNode? {
-    // check if "id" is this node
-    if (id == this.id) return this
-    // check recursively
-    return children.firstNotNullOfOrNull { it.findNode(id) }
+    if (this.id == id) return this
+    for (child in allDirectChildren) {
+        val found = child.findNode(id)
+        if (found != null) return found
+    }
+    return null
 }
 
+/**
+ * Finds the parent node of [id] anywhere within this tree.
+ * Traverses both raw children and named slots.
+ */
 fun DesignNode.findParent(id: NodeId): DesignNode? {
-    // Traversing from the RootNode as there is no way to determine the parent.
-    // checking each node its children has the id
-    // "If the target ID is inside MY children list, then I AM the parent."
-    if (children.any { it.id == id }) {
+    if (allDirectChildren.any { it.id == id }) {
         return this
     }
-    // "If it's not my direct child, let my children check if it's THEIR direct child."
-    return children.firstNotNullOfOrNull { it.findParent(id) }
+    for (child in allDirectChildren) {
+        val parent = child.findParent(id)
+        if (parent != null) return parent
+    }
+    return null
 }
 
-fun DesignNode.containsNode(id: NodeId): Boolean {
-    return findNode(id) != null
-}
+/**
+ * Checks if a node with [id] exists in this subtree.
+ */
+fun DesignNode.containsNode(id: NodeId): Boolean = findNode(id) != null
 
-// Path and ancestry
+/**
+ * Computes the path of [NodeId]s from this root down to the target [id].
+ */
 fun DesignNode.pathIdsTo(id: NodeId): List<NodeId>? {
     if (this.id == id) {
         return listOf(this.id)
     }
 
-    for (child in children) {
+    for (child in allDirectChildren) {
         val childPath = child.pathIdsTo(id)
         if (childPath != null) {
             return listOf(this.id) + childPath
@@ -42,68 +54,48 @@ fun DesignNode.pathIdsTo(id: NodeId): List<NodeId>? {
     return null
 }
 
-//fun DesignNode.pathNodesTo(id: NodeId): List<DesignNode>? {}
-
-//fun DesignNode.ancestorsOf(id: NodeId): List<DesignNode> {}
-
-//fun DesignNode.depthOf(id: NodeId): Int? {}
-
-//fun DesignNode.isRoot(id: NodeId): Boolean {}
-
-// Position queries
+/**
+ * Finds the index of a child node within its immediate parent.
+ * Checks raw children first, then slots.
+ */
 fun DesignNode.findIndexInParent(id: NodeId): Int? {
-    // Root has no parent, so no index
-    if (this.id == id) {
-        return null
+    if (this.id == id) return null
+
+    val indexInChildren = children.indexOfFirst { it.id == id }
+    if (indexInChildren != -1) return indexInChildren
+
+    for ((_, slotChildren) in slots) {
+        val indexInSlot = slotChildren.indexOfFirst { it.id == id }
+        if (indexInSlot != -1) return indexInSlot
     }
 
-    // Check if target is a direct child
-    val index = children.indexOfFirst { it.id == id }
-    if (index != -1) {
-        return index
-    }
-
-    // Recurse into children
-    for (child in children) {
+    for (child in allDirectChildren) {
         val result = child.findIndexInParent(id)
-        if (result != null) {
-            return result
-        }
+        if (result != null) return result
     }
     return null
 }
 
+/**
+ * Checks if [nodeId] is a descendant of [ancestorId].
+ */
 fun DesignNode.isDescendantOf(nodeId: NodeId, ancestorId: NodeId): Boolean {
-    if (nodeId == ancestorId) {
-        return false
-    }
-    // Find the ancestor node
+    if (nodeId == ancestorId) return false
     val ancestor = findNode(ancestorId) ?: return false
-
-    // Check if nodeId exists within the ancestor's subtree
     return ancestor.containsNode(nodeId)
 }
 
-// Tree traversal
-//fun DesignNode.flatten(): List<DesignNode> {}
-
-//fun DesignNode.countNodes(): Int {}
-
-// Type-based queries
-//fun DesignNode.findFirstByType(type: ComponentType): DesignNode?{}
-
-//fun DesignNode.findAllByType(type: ComponentType): List<DesignNode>{}
-
-// Filtering
-//fun DesignNode.filterNodes(predicate: (DesignNode) -> Boolean): List<DesignNode>{}
-
-// Sibling queries
-//fun DesignNode.nextSibling(id: NodeId): DesignNode?{}
-
-//fun DesignNode.previousSibling(id: NodeId): DesignNode?{}
-
-// Leaf/container checks
-//fun DesignNode.isLeaf(id: NodeId): Boolean{}
-
-//fun DesignNode.hasChildren(id: NodeId): Boolean{}
-
+/**
+ * Flattens the entire tree into a list of all nodes.
+ */
+fun DesignNode.flatten(): List<DesignNode> {
+    val result = mutableListOf<DesignNode>()
+    fun collect(node: DesignNode) {
+        result.add(node)
+        for (child in node.allDirectChildren) {
+            collect(child)
+        }
+    }
+    collect(this)
+    return result
+}

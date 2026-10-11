@@ -1,5 +1,8 @@
 package io.github.chandu4221.m3stage.model
 
+/**
+ * Root document entity representing an entire M3Stage project.
+ */
 data class Project(
     val id: ProjectId,
     val name: String,
@@ -12,22 +15,55 @@ data class Project(
     init {
         require(name.isNotBlank()) { "Project name cannot be blank" }
         require(isValidPackageName(basePackage)) {
-            "Base package is invalid"
+            "Base package '$basePackage' is invalid. Must follow standard Java/Kotlin package naming rules."
         }
 
+        // 1. Screen ID Uniqueness
         val uniqueScreenIds = screens.map { it.id }.distinct()
         require(uniqueScreenIds.size == screens.size) {
-            "Screen ids must be unique"
+            "Screen IDs must be unique across the project."
         }
+
+        // 2. Screen Name Uniqueness (prevents codegen file collision)
+        val uniqueScreenNames = screens.map { it.name.lowercase() }.distinct()
+        require(uniqueScreenNames.size == screens.size) {
+            "Screen names must be unique (case-insensitive) across the project."
+        }
+
+        // 3. Navigation Route Uniqueness (prevents runtime navigation collision)
+        val uniqueRoutes = screens.map { it.route }.distinct()
+        require(uniqueRoutes.size == screens.size) {
+            "Screen routes must be unique across the project."
+        }
+    }
+
+    /**
+     * Looks up a screen by its [ScreenId].
+     */
+    fun findScreen(screenId: ScreenId): Screen? =
+        screens.firstOrNull { it.id == screenId }
+
+    /**
+     * Looks up a screen by its navigation [route].
+     */
+    fun findScreenByRoute(route: String): Screen? =
+        screens.firstOrNull { it.route == route }
+
+    /**
+     * Searches across all screens for a node with [nodeId],
+     * returning the enclosing [Screen] alongside the found [DesignNode].
+     */
+    fun findNode(nodeId: NodeId): Pair<Screen, DesignNode>? {
+        for (screen in screens) {
+            val node = screen.findNode(nodeId)
+            if (node != null) return screen to node
+        }
+        return null
     }
 }
 
 private fun isValidPackageName(value: String): Boolean {
     if (value.isBlank()) return false
-
-    val packageRegex = Regex(
-        "^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*$"
-    )
-
+    val packageRegex = Regex("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*$")
     return packageRegex.matches(value)
 }
