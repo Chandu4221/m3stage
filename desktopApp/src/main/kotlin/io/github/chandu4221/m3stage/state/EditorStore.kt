@@ -62,12 +62,32 @@ class EditorStore(
     override fun createNewProject() = sessionDelegate.createNewProject()
     override fun exportCode(customPackageName: String?) = sessionDelegate.exportCode(customPackageName)
 
+    fun notifyUser(message: String) {
+        context.eventFlow.tryEmit(EditorEvent.ShowError(message))
+    }
+
     // --- Bridge: Add Node ---
     fun addNodeToActiveScreen(parentId: NodeId, kind: ComponentKind) {
-        val screenId = activeScreenId.value ?: return
-        val currentProject = project.value ?: return
-        val activeScreen = currentProject.findScreen(screenId) ?: return
-        val targetNode = activeScreen.root.findNode(parentId) ?: return
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot add node: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot add node: no project open.")
+            return
+        }
+        val activeScreen = currentProject.findScreen(screenId)
+        if (activeScreen == null) {
+            notifyUser("Cannot add node: active screen not found.")
+            return
+        }
+        val targetNode = activeScreen.root.findNode(parentId)
+        if (targetNode == null) {
+            notifyUser("Cannot add node: target parent not found in active screen.")
+            return
+        }
 
         var targetParentId = parentId
         var targetSlotId: io.github.chandu4221.m3stage.component.slot.SlotId? = null
@@ -102,10 +122,26 @@ class EditorStore(
 
     // --- Bridge: Toggle Visibility ---
     fun toggleVisibility(nodeId: NodeId) {
-        val screenId = activeScreenId.value ?: return
-        val currentProject = project.value ?: return
-        val screen = currentProject.findScreen(screenId) ?: return
-        val node = screen.root.findNode(nodeId) ?: return
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot toggle visibility: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot toggle visibility: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot toggle visibility: active screen not found.")
+            return
+        }
+        val node = screen.root.findNode(nodeId)
+        if (node == null) {
+            notifyUser("Cannot toggle visibility: node not found.")
+            return
+        }
 
         execute(
             UpdateVisibilityCommand(
@@ -119,12 +155,27 @@ class EditorStore(
 
     // --- Bridge: Remove Node ---
     fun removeNode(nodeId: NodeId) {
-        val screenId = activeScreenId.value ?: return
-        val currentProject = project.value ?: return
-        val screen = currentProject.findScreen(screenId) ?: return
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot remove node: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot remove node: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot remove node: active screen not found.")
+            return
+        }
 
         // Prevent deleting the screen's root node
-        if (screen.root.id == nodeId) return
+        if (screen.root.id == nodeId) {
+            notifyUser("Cannot delete root node '${screen.root.kind.displayName}'.")
+            return
+        }
 
         execute(RemoveNodeCommand(screenId, nodeId))
         if (selectedNodeId.value == nodeId) {
@@ -150,7 +201,11 @@ class EditorStore(
 
     // --- Bridge: Update Project Theme ---
     fun updateSeedColor(newSeed: Long) {
-        val current = project.value ?: return
+        val current = project.value
+        if (current == null) {
+            notifyUser("Cannot update theme: no project open.")
+            return
+        }
         execute(
             UpdateThemeCommand(
                 oldSeedColor = current.seedColor,
@@ -162,7 +217,11 @@ class EditorStore(
     }
 
     fun toggleDarkMode() {
-        val current = project.value ?: return
+        val current = project.value
+        if (current == null) {
+            notifyUser("Cannot toggle dark mode: no project open.")
+            return
+        }
         execute(
             UpdateThemeCommand(
                 oldSeedColor = current.seedColor,
@@ -175,17 +234,29 @@ class EditorStore(
 
     // --- Bridge: Modifier Operations ---
     fun addModifier(nodeId: NodeId, modifier: ModifierSpec) {
-        val screenId = activeScreenId.value ?: return
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot add modifier: no active screen selected.")
+            return
+        }
         execute(AddModifierCommand(screenId, nodeId, modifier))
     }
 
     fun removeModifier(nodeId: NodeId, index: Int) {
-        val screenId = activeScreenId.value ?: return
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot remove modifier: no active screen selected.")
+            return
+        }
         execute(RemoveModifierCommand(screenId, nodeId, index))
     }
 
     fun updateModifier(nodeId: NodeId, index: Int, newModifier: ModifierSpec) {
-        val screenId = activeScreenId.value ?: return
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot update modifier: no active screen selected.")
+            return
+        }
         execute(
             UpdateModifierCommand(
                 screenId = screenId,

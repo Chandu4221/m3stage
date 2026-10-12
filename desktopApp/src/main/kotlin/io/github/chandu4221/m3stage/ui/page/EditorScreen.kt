@@ -93,9 +93,12 @@ fun EditorScreen(store: EditorStore) {
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
             onComponentSelected = { kind ->
-                val targetParentId = selectedNodeId
-                    ?: activeScreen?.root?.id
-                    ?: return@EditorShellTemplate
+                val active = activeScreen
+                if (active == null) {
+                    store.notifyUser("No active screen. Create or select a screen first.")
+                    return@EditorShellTemplate
+                }
+                val targetParentId = selectedNodeId ?: active.root.id
                 store.addNodeToActiveScreen(targetParentId, kind)
             },
 
