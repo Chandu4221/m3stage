@@ -264,3 +264,35 @@ data class ReorderModifierCommand(
         return project.updateScreenRoot(screenId, newRoot)
     }
 }
+
+/**
+ * Duplicates a node with its subtree.
+ * Assigns fresh IDs to every node in the copy, inserting it after the original.
+ */
+data class DuplicateNodeCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val duplicatedSubtree: DesignNode
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val parent = screen.root.findParent(nodeId) ?: return project
+
+        // Find whether original is in a slot or in raw children
+        val slotEntry = parent.slots.entries.firstOrNull { (_, slotNodes) -> slotNodes.any { it.id == nodeId } }
+        val newRoot = if (slotEntry != null) {
+            val originalIndex = slotEntry.value.indexOfFirst { it.id == nodeId }
+            screen.root.insertNode(parent.id, duplicatedSubtree, originalIndex + 1, slotEntry.key)
+        } else {
+            val originalIndex = parent.children.indexOfFirst { it.id == nodeId }
+            screen.root.insertNode(parent.id, duplicatedSubtree, originalIndex + 1, null)
+        }
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.removeNode(duplicatedSubtree.id)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}

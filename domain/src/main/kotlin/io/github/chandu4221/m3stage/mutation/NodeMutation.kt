@@ -114,7 +114,7 @@ fun DesignNode.moveNode(nodeId: NodeId, newParentId: NodeId, index: Int, targetS
 /**
  * Inserts a node at a specific index within a parent (in children or in a slot).
  */
-private fun DesignNode.insertNode(
+fun DesignNode.insertNode(
     parentId: NodeId,
     child: DesignNode,
     index: Int,

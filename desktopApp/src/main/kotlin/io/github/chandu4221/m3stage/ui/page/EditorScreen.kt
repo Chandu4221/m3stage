@@ -10,10 +10,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.query.canPlace
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
+import io.github.chandu4221.m3stage.query.flatten
 import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.state.EditorEvent
 import io.github.chandu4221.m3stage.state.EditorStore
@@ -100,7 +105,77 @@ fun EditorScreen(store: EditorStore) {
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+
+                // 1. Undo / Redo
+                if (keyEvent.isCtrlPressed && keyEvent.isShiftPressed && keyEvent.key == Key.Z) {
+                    if (undoStack.isNotEmpty() || redoStack.isNotEmpty()) {
+                        store.redo()
+                        return@onPreviewKeyEvent true
+                    }
+                } else if (keyEvent.isCtrlPressed && keyEvent.key == Key.Z) {
+                    if (undoStack.isNotEmpty()) {
+                        store.undo()
+                        return@onPreviewKeyEvent true
+                    }
+                }
+
+                // 2. Duplicate: Ctrl+D
+                if (keyEvent.isCtrlPressed && keyEvent.key == Key.D) {
+                    val currentSelected = selectedNodeId
+                    if (currentSelected != null) {
+                        store.duplicateNode(currentSelected)
+                        return@onPreviewKeyEvent true
+                    }
+                }
+
+                // 3. Escape: deselect
+                if (keyEvent.key == Key.Escape) {
+                    store.selectNode(null)
+                    return@onPreviewKeyEvent true
+                }
+
+                // 4. Delete / Backspace: remove node
+                if (keyEvent.key == Key.Delete || keyEvent.key == Key.Backspace) {
+                    val currentSelected = selectedNodeId
+                    if (currentSelected != null) {
+                        store.removeNode(currentSelected)
+                        return@onPreviewKeyEvent true
+                    }
+                }
+
+                // 5. Arrow Up / Down in Layers tree
+                if (keyEvent.key == Key.DirectionUp || keyEvent.key == Key.DirectionDown) {
+                    val screen = activeScreen
+                    if (screen != null) {
+                        val allNodes = screen.root.flatten().filter { it.isVisible }
+                        if (allNodes.isNotEmpty()) {
+                            val currentIndex = allNodes.indexOfFirst { it.id == selectedNodeId }
+                            val newIndex = if (keyEvent.key == Key.DirectionUp) {
+                                if (currentIndex <= 0) allNodes.lastIndex else currentIndex - 1
+                            } else {
+                                if (currentIndex == -1 || currentIndex >= allNodes.lastIndex) 0 else currentIndex + 1
+                            }
+                            store.selectNode(allNodes[newIndex].id)
+                            return@onPreviewKeyEvent true
+                        }
+                    }
+                }
+
+                false
+            }
+    ) {
         EditorShellTemplate(
             project = project,
             // Rail

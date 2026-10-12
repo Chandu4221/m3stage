@@ -196,6 +196,48 @@ class EditorStore(
         }
     }
 
+    // --- Bridge: Duplicate Node ---
+    fun duplicateNode(nodeId: NodeId) {
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot duplicate node: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot duplicate node: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot duplicate node: active screen not found.")
+            return
+        }
+
+        // Prevent duplicating the screen's root node
+        if (screen.root.id == nodeId) {
+            notifyUser("Cannot duplicate root node '${screen.root.kind.displayName}'.")
+            return
+        }
+
+        val originalNode = screen.root.findNode(nodeId)
+        if (originalNode == null) {
+            notifyUser("Cannot duplicate node: node not found.")
+            return
+        }
+
+        fun reIdSubtree(node: DesignNode): DesignNode {
+            val freshId = context.idGenerator.nextNodeId()
+            val freshChildren = node.children.map { reIdSubtree(it) }
+            val freshSlots = node.slots.mapValues { (_, slotChildren) -> slotChildren.map { reIdSubtree(it) } }
+            return node.copy(id = freshId, children = freshChildren, slots = freshSlots)
+        }
+
+        val freshSubtree = reIdSubtree(originalNode)
+        execute(DuplicateNodeCommand(screenId, nodeId, freshSubtree))
+        selectNode(freshSubtree.id)
+    }
+
     // --- Bridge: Add New Screen ---
     fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
         val idGen = context.idGenerator
