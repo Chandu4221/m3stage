@@ -24,6 +24,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
+
 /**
  * Dumb Molecule: 2-column square/rounded tile for component libraries (Parts drawer).
  * Displays a centered vector icon above a clear label.
@@ -34,13 +37,25 @@ fun ComponentTile(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onDragStart: () -> Unit = {},
+    onDragEnd: () -> Unit = {}
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(84.dp)
             .semantics { role = Role.Button }
+            .pointerInput(enabled) {
+                if (enabled) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { onDragStart() },
+                        onDragEnd = { onDragEnd() },
+                        onDragCancel = { onDragEnd() },
+                        onDrag = { change, _ -> change.consume() }
+                    )
+                }
+            }
             .clickable(enabled = enabled, onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = if (enabled) 1f else 0.4f),

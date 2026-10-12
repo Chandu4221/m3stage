@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isCtrlPressed
+import io.github.chandu4221.m3stage.component.ComponentKind
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
@@ -57,6 +58,8 @@ fun CanvasPanel(
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
+    draggedComponentKind: ComponentKind? = null,
+    onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     // --- INFINITE TRANSFORMABLE STUDIO WORKBENCH ---
@@ -125,7 +128,9 @@ fun CanvasPanel(
                         onMoveRight = { onReorderScreens(index, index + 1) },
                         onRename = { newName -> onRenameScreen(screen.id, newName) },
                         onDuplicate = { onDuplicateScreen(screen.id) },
-                        onDelete = { onDeleteScreen(screen.id) }
+                        onDelete = { onDeleteScreen(screen.id) },
+                        draggedComponentKind = draggedComponentKind,
+                        onDropOnScreen = onDropOnScreen
                     )
                 }
             }
@@ -149,7 +154,9 @@ private fun ScreenArtboard(
     onMoveRight: () -> Unit = {},
     onRename: (String) -> Unit = {},
     onDuplicate: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    draggedComponentKind: ComponentKind? = null,
+    onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> }
 ) {
     var activeDevice by remember(screen.id) {
         mutableStateOf(screen.resolveDevice(projectDefaultDevice))
@@ -388,7 +395,32 @@ private fun ScreenArtboard(
 
         // --- HARDWARE FRAME & LIVE COMPOSE RENDERER ---
         Box(
-            modifier = Modifier.clickable(onClick = onActivate)
+            modifier = Modifier
+                .clickable(onClick = {
+                    if (draggedComponentKind != null) {
+                        onDropOnScreen(screen.id, draggedComponentKind)
+                    } else {
+                        onActivate()
+                    }
+                })
+                .then(
+                    if (draggedComponentKind != null) {
+                        Modifier.drawBehind {
+                            val strokeWidth = 3.dp.toPx()
+                            drawRoundRect(
+                                color = androidx.compose.ui.graphics.Color(0xFF388E3C), // Drop target green highlight
+                                size = size,
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx()),
+                                style = Stroke(
+                                    width = strokeWidth,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 12f), 0f)
+                                )
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             DeviceFrame(
                 preset = activeDevice,

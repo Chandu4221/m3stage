@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
@@ -65,6 +66,8 @@ fun FloatingCanvasStudio(
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     isCodePreviewOpen: Boolean = false,
     onToggleCodePreview: () -> Unit = {},
+    draggedComponentKind: ComponentKind? = null,
+    onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -90,7 +93,9 @@ fun FloatingCanvasStudio(
                     onRenameScreen = onRenameScreen,
                     onDeleteScreen = onDeleteScreen,
                     onDuplicateScreen = onDuplicateScreen,
-                    onReorderScreens = onReorderScreens
+                    onReorderScreens = onReorderScreens,
+                    draggedComponentKind = draggedComponentKind,
+                    onDropOnScreen = onDropOnScreen
                 )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

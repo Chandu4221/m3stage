@@ -69,6 +69,9 @@ fun EditorScreen(store: EditorStore) {
     var codePreviewContent by remember { mutableStateOf("") }
     var isGeneratingCode by remember { mutableStateOf(false) }
 
+    // Drag-and-drop palette state (T3.6)
+    var draggedComponentKind by remember { mutableStateOf<ComponentKind?>(null) }
+
     val activeScreenFileName = remember(activeScreen) {
         if (activeScreen != null) {
             "${io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer.toPascalCase(activeScreen.name)}.kt"
@@ -187,8 +190,12 @@ fun EditorScreen(store: EditorStore) {
                     return@onPreviewKeyEvent true
                 }
 
-                // 3. Escape: deselect
+                // 3. Escape: cancel drag if dragging, else deselect
                 if (keyEvent.key == Key.Escape) {
+                    if (draggedComponentKind != null) {
+                        draggedComponentKind = null
+                        return@onPreviewKeyEvent true
+                    }
                     store.selectNode(null)
                     return@onPreviewKeyEvent true
                 }
@@ -249,6 +256,19 @@ fun EditorScreen(store: EditorStore) {
                 }
             },
             disallowedKinds = disallowedKinds,
+            draggedComponentKind = draggedComponentKind,
+            onComponentDragStart = { kind -> draggedComponentKind = kind },
+            onComponentDragEnd = { draggedComponentKind = null },
+            onDropOnScreen = { screenId, kind ->
+                store.setActiveScreen(screenId)
+                val targetScreen = project?.screens?.firstOrNull { it.id == screenId }
+                if (targetScreen != null) {
+                    val targetNode = (selectedNodeId?.let { targetScreen.root.findNode(it) }) ?: targetScreen.root
+                    val ancestor = targetNode.findNearestAcceptingAncestor(targetScreen.root, kind) ?: targetScreen.root
+                    store.addNodeToActiveScreen(ancestor.id, kind)
+                }
+                draggedComponentKind = null
+            },
 
             // Floating Canvas
             screens = project?.screens ?: emptyList(),

@@ -35,6 +35,10 @@ fun EditorShellTemplate(
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
     disallowedKinds: Set<ComponentKind> = emptySet(),
+    draggedComponentKind: ComponentKind? = null,
+    onComponentDragStart: (ComponentKind) -> Unit = {},
+    onComponentDragEnd: () -> Unit = {},
+    onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     // Canvas state
     screens: List<Screen>,
     activeScreenId: ScreenId?,
@@ -108,7 +112,9 @@ fun EditorShellTemplate(
                     searchQuery = searchQuery,
                     onSearchQueryChange = onSearchQueryChange,
                     onComponentSelected = onComponentSelected,
-                    disallowedKinds = disallowedKinds
+                    disallowedKinds = disallowedKinds,
+                    onComponentDragStart = onComponentDragStart,
+                    onComponentDragEnd = onComponentDragEnd
                 )
             }
         }
@@ -148,7 +154,9 @@ fun EditorShellTemplate(
                 onDuplicateScreen = onDuplicateScreen,
                 onReorderScreens = onReorderScreens,
                 isCodePreviewOpen = isCodePreviewOpen,
-                onToggleCodePreview = onToggleCodePreview
+                onToggleCodePreview = onToggleCodePreview,
+                draggedComponentKind = draggedComponentKind,
+                onDropOnScreen = onDropOnScreen
             )
 
             if (isCodePreviewOpen) {
