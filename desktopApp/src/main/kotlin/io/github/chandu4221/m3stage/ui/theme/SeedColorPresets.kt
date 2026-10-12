@@ -14,7 +14,7 @@ object SeedColorPresets {
     val SapphireBlue = SeedColorPreset("Sapphire Blue", 0xFF0061A4L)
     val CoralRed = SeedColorPreset("Coral Red", 0xFFB3261EL)
     val SunsetOrange = SeedColorPreset("Sunset Amber", 0xFF825500L)
-    val RosePink = SeedColorPreset("Rose Pink", 0xFF984061L)
+    val RosePink = SeedColorPreset("Rose Pink", 0xFFE03A80L)
     val OceanTeal = SeedColorPreset("Ocean Teal", 0xFF006874L)
     val SlateMono = SeedColorPreset("Slate Monochrome", 0xFF4E5E6DL)
 

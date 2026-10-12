@@ -4,10 +4,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import com.materialkolor.rememberDynamicColorScheme
 import io.github.chandu4221.m3stage.adapter.UuidIdGenerator
 import io.github.chandu4221.m3stage.adapter.codegen.ComposeCodeGenerator
 import io.github.chandu4221.m3stage.adapter.persistence.JsonProjectRepository

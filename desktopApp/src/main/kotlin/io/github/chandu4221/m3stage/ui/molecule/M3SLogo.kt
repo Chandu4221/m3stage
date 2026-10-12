@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.ui.atom.M3SIcon
@@ -25,9 +26,12 @@ fun M3SLogo() {
                 .background(color = MaterialTheme.colorScheme.primary),
             tint = MaterialTheme.colorScheme.onPrimary,
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column {
-            Text("M3Stage", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                "M3Stage", style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
             Text("Visual Builder", style = MaterialTheme.typography.labelLarge)
         }
     }
