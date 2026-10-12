@@ -62,6 +62,7 @@ object TopAppBarDefinition {
         ),
         slots = listOf(NavigationIconSlot, TitleSlot, ActionsSlot),
         allowedChildren = setOf(ComponentKind.Text, ComponentKind.Icon, ComponentKind.Button),
+        slotOnly = true,
         defaultSubtreeFactory = { self, idGen ->
             val titleNode = DesignNode(
                 id = idGen.nextNodeId(),

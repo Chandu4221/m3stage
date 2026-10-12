@@ -20,6 +20,7 @@ object NavigationBarDefinition {
                 defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.SurfaceContainer)
             )
         ),
-        allowedChildren = setOf(ComponentKind.IconButton, ComponentKind.Icon, ComponentKind.Text)
+        allowedChildren = setOf(ComponentKind.IconButton, ComponentKind.Icon, ComponentKind.Text),
+        slotOnly = true
     )
 }

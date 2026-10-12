@@ -38,7 +38,10 @@ object ProjectValidation {
 
             // 3. Raw children atomic validation
             node.children.forEach { child ->
-                if (!def.canAcceptChild(child.kind)) {
+                val childDef = ComponentCatalog.find(child.kind)
+                if (childDef?.slotOnly == true) {
+                    errors.add("Component '${child.kind.displayName}' at $path/${child.kind.displayName} is slot-only and cannot be placed directly in children.")
+                } else if (!def.canAcceptChild(child.kind)) {
                     errors.add("Component '${node.kind.displayName}' at $path cannot accept child of kind '${child.kind.displayName}'.")
                 }
             }
