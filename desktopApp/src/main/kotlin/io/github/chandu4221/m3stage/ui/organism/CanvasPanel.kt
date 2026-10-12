@@ -26,16 +26,23 @@ import androidx.compose.ui.input.pointer.isCtrlPressed
 import io.github.chandu4221.m3stage.component.ComponentKind
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.DesignRenderer
+import io.github.chandu4221.m3stage.adapter.renderer.selection.NodeBoundsRegistry
+import io.github.chandu4221.m3stage.adapter.renderer.selection.SelectionChrome
+import io.github.chandu4221.m3stage.adapter.renderer.selection.selectionPointerInput
+import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.ui.device.DeviceFrame
@@ -48,7 +55,7 @@ fun CanvasPanel(
     activeScreenId: ScreenId?,
     onSelectScreen: (ScreenId) -> Unit,
     selectedNodeId: NodeId?,
-    onNodeClick: (NodeId) -> Unit,
+    onNodeClick: (NodeId?) -> Unit,
     viewportState: CanvasViewportState,
     onPanDelta: (Offset) -> Unit,
     onWheelZoom: (Float) -> Unit,
@@ -132,7 +139,8 @@ fun CanvasPanel(
                         onDuplicate = { onDuplicateScreen(screen.id) },
                         onDelete = { onDeleteScreen(screen.id) },
                         draggedComponentKind = draggedComponentKind,
-                        onDropOnScreen = onDropOnScreen
+                        onDropOnScreen = onDropOnScreen,
+                        zoomProvider = { viewportStateProvider().zoom }
                     )
                 }
             }
@@ -147,7 +155,7 @@ private fun ScreenArtboard(
     isActive: Boolean,
     onActivate: () -> Unit,
     selectedNodeId: NodeId?,
-    onNodeClick: (NodeId) -> Unit,
+    onNodeClick: (NodeId?) -> Unit,
     lockedNodeIds: Set<NodeId>,
     projectDefaultDevice: DevicePreset,
     canMoveLeft: Boolean = false,
@@ -158,7 +166,8 @@ private fun ScreenArtboard(
     onDuplicate: () -> Unit = {},
     onDelete: () -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
-    onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> }
+    onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
+    zoomProvider: () -> Float = { 1f }
 ) {
     var activeDevice by remember(screen.id) {
         mutableStateOf(screen.resolveDevice(projectDefaultDevice))
@@ -396,6 +405,16 @@ private fun ScreenArtboard(
         }
 
         // --- HARDWARE FRAME & LIVE COMPOSE RENDERER ---
+        val registry = remember(screen.id) { NodeBoundsRegistry() }
+        val treeInfo = remember(screen.root) { screen.root.toTreeInfo() }
+        val anchorState = remember(screen.id) { mutableStateOf<NodeId?>(null) }
+        var hoveredNodeId by remember(screen.id) { mutableStateOf<NodeId?>(null) }
+        var artboardOrigin by remember { mutableStateOf(Offset.Zero) }
+
+        val selectedNode = remember(selectedNodeId, screen.root) {
+            selectedNodeId?.let { screen.root.findNode(it) }
+        }
+
         Box(
             modifier = Modifier
                 .clickable(
@@ -433,12 +452,44 @@ private fun ScreenArtboard(
                 orientation = orientation,
                 showFrame = showFrame
             ) {
-                DesignRenderer.Render(
-                    node = screen.root,
-                    selectedNodeId = selectedNodeId,
-                    onNodeClick = onNodeClick,
-                    lockedNodeIds = lockedNodeIds
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { coords ->
+                            if (coords.isAttached) {
+                                artboardOrigin = coords.positionInRoot()
+                            }
+                        }
+                        .selectionPointerInput(
+                            registry = registry,
+                            treeInfo = treeInfo,
+                            screenRootId = screen.root.id,
+                            anchorState = anchorState,
+                            onSelectNode = { target ->
+                                onActivate()
+                                onNodeClick(target)
+                            },
+                            onHoverChange = { hoveredNodeId = it }
+                        )
+                ) {
+                    DesignRenderer.Render(
+                        node = screen.root,
+                        selectedNodeId = selectedNodeId,
+                        onNodeClick = onNodeClick,
+                        lockedNodeIds = lockedNodeIds,
+                        registry = registry,
+                        artboardOrigin = { artboardOrigin }
+                    )
+
+                    SelectionChrome(
+                        registry = registry,
+                        hoveredNodeId = hoveredNodeId,
+                        selectedNodeId = selectedNodeId,
+                        selectedNode = selectedNode,
+                        zoomProvider = zoomProvider,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

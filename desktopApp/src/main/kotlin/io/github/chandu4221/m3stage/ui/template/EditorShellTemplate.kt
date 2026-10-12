@@ -44,7 +44,7 @@ fun EditorShellTemplate(
     activeScreenId: ScreenId?,
     onSelectScreen: (ScreenId) -> Unit,
     selectedNodeId: NodeId?,
-    onNodeClick: (NodeId) -> Unit,
+    onNodeClick: (NodeId?) -> Unit,
     lockedNodeIds: Set<NodeId>,
     canUndo: Boolean,
     canRedo: Boolean,
