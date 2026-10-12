@@ -1,5 +1,9 @@
 package io.github.chandu4221.m3stage.adapter.renderer
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,16 +44,26 @@ object DesignRenderer {
         onNodeClick: (NodeId) -> Unit,
         lockedNodeIds: Set<NodeId>
     ) {
+        var hoveredNodeId by remember { mutableStateOf<NodeId?>(null) }
+
         @Composable
         fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null) {
             if (!currentNode.isVisible) return
 
             val isSelected = currentNode.id == selectedNodeId
             val isLocked = currentNode.id in lockedNodeIds
+            val isHovered = currentNode.id == hoveredNodeId
 
             SelectionOverlay(
                 isSelected = isSelected,
                 isLocked = isLocked,
+                isHovered = isHovered,
+                onHover = { hoveredNodeId = currentNode.id },
+                onExit = {
+                    if (hoveredNodeId == currentNode.id) {
+                        hoveredNodeId = null
+                    }
+                },
                 onClick = { onNodeClick(currentNode.id) }
             ) {
                 val renderer = ComponentRendererRegistry[currentNode.kind]
