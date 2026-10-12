@@ -158,4 +158,82 @@ class SerializationRoundTripTest {
         // 5. Invariant Assertion
         assertEquals(originalProject, roundTrippedProject, "Round-tripped project must match original project exactly")
     }
+
+    @Test
+    fun testEveryModifierTypeRoundTripsLosslessly() {
+        val allModifiers = listOf(
+            // 1. Padding
+            ModifierSpec.Padding(start = 1f, top = 2f, end = 3f, bottom = 4f),
+            // 2. Size
+            ModifierSpec.FillMaxWidth(fraction = 0.8f),
+            ModifierSpec.FillMaxHeight(fraction = 0.9f),
+            ModifierSpec.FillMaxSize(fraction = 0.95f),
+            ModifierSpec.Size(width = 120f, height = 48f),
+            ModifierSpec.Width(width = 200f),
+            ModifierSpec.Height(height = 56f),
+            ModifierSpec.WrapContentSize(unbounded = true),
+            ModifierSpec.Weight(weight = 2.5f, fill = false),
+            ModifierSpec.AspectRatio(ratio = 1.77f),
+            // 3. Position & Order
+            ModifierSpec.Offset(x = 8f, y = 16f),
+            ModifierSpec.ZIndex(zIndex = 5f),
+            // 4. Drawing & Border
+            ModifierSpec.Background(
+                color = PropertyValue.ColorValue.Custom(0xFF123456L),
+                shape = PropertyValue.ShapeValue.Token(M3ShapeToken.Medium)
+            ),
+            ModifierSpec.Border(
+                width = 2f,
+                color = PropertyValue.ColorValue.Token(M3ColorToken.Outline),
+                shape = PropertyValue.ShapeValue.CornerDp(topStart = 4f, topEnd = 8f, bottomEnd = 12f, bottomStart = 16f)
+            ),
+            ModifierSpec.Shadow(
+                elevation = 8f,
+                shape = PropertyValue.ShapeValue.UniformDp(10f),
+                clip = true
+            ),
+            // 5. Graphics Layer
+            ModifierSpec.Clip(shape = PropertyValue.ShapeValue.Token(M3ShapeToken.Large)),
+            ModifierSpec.Alpha(alpha = 0.75f),
+            // 6. Transformations
+            ModifierSpec.Rotate(degrees = 180f),
+            ModifierSpec.Scale(scale = 1.5f),
+            // 7. Scroll
+            ModifierSpec.VerticalScroll(enabled = true),
+            ModifierSpec.HorizontalScroll(enabled = false)
+        )
+
+        val invisibleChild = DesignNode(
+            id = NodeId("invisible-child"),
+            kind = ComponentKind.Text,
+            props = mapOf(TextDefinition.TextContent.id to PropertyValue.StringValue("Hidden")),
+            isVisible = false
+        )
+
+        val occupiedChild = DesignNode(
+            id = NodeId("occupied-child"),
+            kind = ComponentKind.Icon,
+            props = mapOf(IconDefinition.IconName.id to PropertyValue.StringValue("Settings")),
+            isVisible = true
+        )
+
+        val nodeWithAllModifiers = DesignNode(
+            id = NodeId("full-spec-node"),
+            kind = ComponentKind.Box,
+            modifiers = allModifiers,
+            children = listOf(invisibleChild),
+            slots = mapOf(
+                io.github.chandu4221.m3stage.component.slot.SlotId("emptySlot") to emptyList(),
+                io.github.chandu4221.m3stage.component.slot.SlotId("occupiedSlot") to listOf(occupiedChild)
+            ),
+            isVisible = true
+        )
+
+        val dto = nodeWithAllModifiers.toDto()
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<io.github.chandu4221.m3stage.adapter.persistence.dto.DesignNodeDto>(jsonString)
+        val decodedNode = decodedDto.toDomain()
+
+        assertEquals(nodeWithAllModifiers, decodedNode, "DesignNode with all 21 modifiers and slots must round-trip losslessly")
+    }
 }

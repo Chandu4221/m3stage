@@ -17,12 +17,16 @@ fun DesignNode.toDto(): DesignNodeDto = DesignNodeDto(
     isVisible = this.isVisible
 )
 
-fun DesignNodeDto.toDomain(): DesignNode = DesignNode(
-    id = NodeId(this.id),
-    kind = ComponentKind.entries.firstOrNull { it.id == this.type } ?: ComponentKind.Box,
-    props = this.props.map { (key, value) -> PropertyId(key) to value.toDomain() }.toMap(),
-    modifiers = this.modifiers.map { it.toDomain() },
-    children = this.children.map { it.toDomain() },
-    slots = this.slots.map { (slotKey, nodes) -> SlotId(slotKey) to nodes.map { it.toDomain() } }.toMap(),
-    isVisible = this.isVisible
-)
+fun DesignNodeDto.toDomain(): DesignNode {
+    val kind = ComponentKind.entries.firstOrNull { it.id == this.type }
+        ?: throw io.github.chandu4221.m3stage.adapter.persistence.UnknownComponentKindException(this.type)
+    return DesignNode(
+        id = NodeId(this.id),
+        kind = kind,
+        props = this.props.map { (key, value) -> PropertyId(key) to value.toDomain() }.toMap(),
+        modifiers = this.modifiers.map { it.toDomain() },
+        children = this.children.map { it.toDomain() },
+        slots = this.slots.map { (slotKey, nodes) -> SlotId(slotKey) to nodes.map { it.toDomain() } }.toMap(),
+        isVisible = this.isVisible
+    )
+}
