@@ -20,6 +20,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import io.github.chandu4221.m3stage.adapter.renderer.registry.ComponentRendererRegistry
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.resolveModifiers
+import io.github.chandu4221.m3stage.adapter.renderer.selection.NodeBoundsRegistry
+import io.github.chandu4221.m3stage.adapter.renderer.selection.nodeBoundsReporter
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 
@@ -40,14 +42,16 @@ object DesignRenderer {
         selectedNodeId: NodeId?,
         onNodeClick: (NodeId) -> Unit,
         lockedNodeIds: Set<NodeId> = emptySet(),
-        scheme: ColorScheme? = null
+        scheme: ColorScheme? = null,
+        registry: NodeBoundsRegistry? = null,
+        artboardOrigin: () -> Offset = { Offset.Zero }
     ) {
         val content = @Composable {
             androidx.compose.runtime.CompositionLocalProvider(
                 androidx.compose.foundation.LocalIndication provides NoIndication,
                 androidx.compose.material3.LocalRippleConfiguration provides null
             ) {
-                RenderInternal(node, selectedNodeId, onNodeClick, lockedNodeIds)
+                RenderInternal(node, selectedNodeId, onNodeClick, lockedNodeIds, registry, artboardOrigin)
             }
         }
 
@@ -66,7 +70,9 @@ object DesignRenderer {
         node: DesignNode,
         selectedNodeId: NodeId?,
         onNodeClick: (NodeId) -> Unit,
-        lockedNodeIds: Set<NodeId>
+        lockedNodeIds: Set<NodeId>,
+        registry: NodeBoundsRegistry?,
+        artboardOrigin: () -> Offset
     ) {
         val hitTracker = remember { CanvasHitTracker() }
         var hoveredNodeId by remember { mutableStateOf<NodeId?>(null) }
@@ -79,22 +85,34 @@ object DesignRenderer {
             val isLocked = currentNode.id in lockedNodeIds
             val isHovered = currentNode.id == hoveredNodeId
 
-            SelectionOverlay(
-                nodeId = currentNode.id,
-                depth = depth,
-                isSelected = isSelected,
-                isLocked = isLocked,
-                isHovered = isHovered,
-                hitTracker = hitTracker
-            ) {
-                val renderer = ComponentRendererRegistry[currentNode.kind]
-                if (renderer != null) {
-                    val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
-                    renderer.Render(currentNode, modifier = elementModifier) { child ->
-                        renderNode(child, currentNode, depth + 1)
+            val baseModifier = if (registry != null) {
+                Modifier.nodeBoundsReporter(
+                    nodeId = currentNode.id,
+                    registry = registry,
+                    artboardOrigin = artboardOrigin
+                )
+            } else {
+                Modifier
+            }
+
+            Box(modifier = baseModifier) {
+                SelectionOverlay(
+                    nodeId = currentNode.id,
+                    depth = depth,
+                    isSelected = isSelected,
+                    isLocked = isLocked,
+                    isHovered = isHovered,
+                    hitTracker = hitTracker
+                ) {
+                    val renderer = ComponentRendererRegistry[currentNode.kind]
+                    if (renderer != null) {
+                        val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
+                        renderer.Render(currentNode, modifier = elementModifier) { child ->
+                            renderNode(child, currentNode, depth + 1)
+                        }
+                    } else {
+                        Text(text = "Unsupported: ${currentNode.kind.displayName}")
                     }
-                } else {
-                    Text(text = "Unsupported: ${currentNode.kind.displayName}")
                 }
             }
         }
