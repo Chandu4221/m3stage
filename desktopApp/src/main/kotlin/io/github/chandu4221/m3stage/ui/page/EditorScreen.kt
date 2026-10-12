@@ -14,6 +14,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
+import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.query.canPlace
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
@@ -190,13 +191,19 @@ fun EditorScreen(store: EditorStore) {
                     return@onPreviewKeyEvent true
                 }
 
-                // 3. Escape: cancel drag if dragging, else deselect
+                // 3. Escape: cancel drag if dragging, else pop anchor / deselect
                 if (keyEvent.key == Key.Escape) {
                     if (draggedComponentKind != null) {
                         draggedComponentKind = null
                         return@onPreviewKeyEvent true
                     }
-                    store.selectNode(null)
+                    val root = activeScreen?.root
+                    if (root != null) {
+                        val treeInfo = root.toTreeInfo()
+                        store.popSelectionAnchor(treeInfo, root.id)
+                    } else {
+                        store.selectNode(null)
+                    }
                     return@onPreviewKeyEvent true
                 }
 
@@ -275,7 +282,17 @@ fun EditorScreen(store: EditorStore) {
             activeScreenId = activeScreenId,
             onSelectScreen = { store.setActiveScreen(it) },
             selectedNodeId = selectedNodeId,
-            onNodeClick = { nodeId -> store.selectNode(nodeId) },
+            onNodeClick = { nodeId ->
+                store.selectNode(nodeId)
+                if (nodeId != null) {
+                    val root = activeScreen?.root
+                    if (root != null) {
+                        val treeInfo = root.toTreeInfo()
+                        val parentId = treeInfo[nodeId]?.parent ?: root.id
+                        store.setDrillAnchor(parentId)
+                    }
+                }
+            },
             lockedNodeIds = lockedNodeIds,
             canUndo = undoStack.isNotEmpty(),
             canRedo = redoStack.isNotEmpty(),

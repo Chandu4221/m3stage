@@ -12,10 +12,13 @@ interface SelectionState {
     val selectedNodeId: State<NodeId?>
     val activeScreenId: State<ScreenId?>
     val lockedNodeIds: State<Set<NodeId>>
+    val drillAnchorNodeId: State<NodeId?>
     fun selectNode(id: NodeId?)
     fun setActiveScreen(id: ScreenId)
     fun toggleLock(id: NodeId)
     fun isNodeLocked(id: NodeId): Boolean
+    fun popSelectionAnchor(treeInfo: Map<NodeId, io.github.chandu4221.m3stage.adapter.renderer.selection.NodeTreeInfo>? = null, screenRootId: NodeId? = null)
+    fun setDrillAnchor(id: NodeId?)
 }
 
 // 2. Transaction & History Manager

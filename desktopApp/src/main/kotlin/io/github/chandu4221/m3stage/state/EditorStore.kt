@@ -44,10 +44,16 @@ class EditorStore(
     override val selectedNodeId = selectionDelegate.selectedNodeId
     override val activeScreenId = selectionDelegate.activeScreenId
     override val lockedNodeIds = selectionDelegate.lockedNodeIds
+    override val drillAnchorNodeId = selectionDelegate.drillAnchorNodeId
     override fun selectNode(id: NodeId?) = selectionDelegate.selectNode(id)
     override fun setActiveScreen(id: ScreenId) = selectionDelegate.setActiveScreen(id)
     override fun toggleLock(id: NodeId) = selectionDelegate.toggleLock(id)
     override fun isNodeLocked(id: NodeId) = selectionDelegate.isNodeLocked(id)
+    override fun setDrillAnchor(id: NodeId?) = selectionDelegate.setDrillAnchor(id)
+    override fun popSelectionAnchor(
+        treeInfo: Map<NodeId, io.github.chandu4221.m3stage.adapter.renderer.selection.NodeTreeInfo>?,
+        screenRootId: NodeId?
+    ) = selectionDelegate.popSelectionAnchor(treeInfo, screenRootId)
 
     // --- HistoryState ---
     override val undoStack = historyDelegate.undoStack
