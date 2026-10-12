@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.query.canPlace
+import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.state.EditorEvent
@@ -41,11 +42,14 @@ fun EditorScreen(store: EditorStore) {
         selectedNodeId?.let { root.findNode(it) }
     }
     val effectiveTargetNode = selectedNode ?: activeScreen?.root
-    val disallowedKinds = remember(effectiveTargetNode) {
-        if (effectiveTargetNode == null) {
+    val disallowedKinds = remember(effectiveTargetNode, activeScreen?.root) {
+        val root = activeScreen?.root
+        if (effectiveTargetNode == null || root == null) {
             emptySet()
         } else {
-            ComponentKind.entries.filterNot { canPlace(effectiveTargetNode, it) }.toSet()
+            ComponentKind.entries.filterNot { kind ->
+                effectiveTargetNode.findNearestAcceptingAncestor(root, kind) != null
+            }.toSet()
         }
     }
 
@@ -114,8 +118,13 @@ fun EditorScreen(store: EditorStore) {
                     store.notifyUser("No active screen. Create or select a screen first.")
                     return@EditorShellTemplate
                 }
-                val targetParentId = selectedNodeId ?: active.root.id
-                store.addNodeToActiveScreen(targetParentId, kind)
+                val startNode = (selectedNodeId?.let { active.root.findNode(it) }) ?: active.root
+                val targetAncestor = startNode.findNearestAcceptingAncestor(active.root, kind)
+                if (targetAncestor != null) {
+                    store.addNodeToActiveScreen(targetAncestor.id, kind)
+                } else {
+                    store.addNodeToActiveScreen(startNode.id, kind)
+                }
             },
             disallowedKinds = disallowedKinds,
 

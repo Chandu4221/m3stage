@@ -99,3 +99,24 @@ fun DesignNode.flatten(): List<DesignNode> {
     collect(this)
     return result
 }
+
+/**
+ * Finds the parent of [nodeId] in this tree. Alias for findParent(nodeId).
+ */
+fun DesignNode.findParentOf(nodeId: NodeId): DesignNode? = findParent(nodeId)
+
+/**
+ * Finds the nearest ancestor of [this] node (including [this] node itself)
+ * that can place [childKind] according to [canPlace].
+ * Searches up the ancestor chain to [root].
+ */
+fun DesignNode.findNearestAcceptingAncestor(root: DesignNode, childKind: io.github.chandu4221.m3stage.component.ComponentKind): DesignNode? {
+    var curr: DesignNode? = this
+    while (curr != null) {
+        if (canPlace(curr, childKind)) {
+            return curr
+        }
+        curr = root.findParent(curr.id)
+    }
+    return null
+}
