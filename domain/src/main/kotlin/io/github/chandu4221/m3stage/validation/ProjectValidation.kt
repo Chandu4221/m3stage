@@ -1,8 +1,10 @@
 package io.github.chandu4221.m3stage.validation
 
 import io.github.chandu4221.m3stage.component.ComponentCatalog
+import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
+import io.github.chandu4221.m3stage.modifier.ModifierScope
 
 /**
  * Validates project and AST invariants.
@@ -19,7 +21,7 @@ object ProjectValidation {
 
         val seenNodeIds = mutableSetOf<String>()
 
-        fun validateSubtree(node: DesignNode, path: String) {
+        fun validateSubtree(node: DesignNode, path: String, parent: DesignNode? = null) {
             // 1. Node ID Uniqueness
             if (!seenNodeIds.add(node.id.value)) {
                 errors.add("Duplicate Node ID detected: '${node.id.value}' at $path")
@@ -73,9 +75,26 @@ object ProjectValidation {
                 }
             }
 
-            // 5. Recursively validate all descendants
+            // 6. Modifier scope-gating validation
+            node.modifiers.forEach { spec ->
+                when (spec.scope) {
+                    ModifierScope.RowColumnParent -> {
+                        if (parent?.kind != ComponentKind.Row && parent?.kind != ComponentKind.Column) {
+                            errors.add("Weight modifier requires a Row or Column parent (found ${parent?.kind})")
+                        }
+                    }
+                    ModifierScope.BoxParent -> {
+                        if (parent?.kind != ComponentKind.Box) {
+                            errors.add("ZIndex modifier requires a Box parent (found ${parent?.kind})")
+                        }
+                    }
+                    ModifierScope.Any -> Unit
+                }
+            }
+
+            // 7. Recursively validate all descendants
             node.allDirectChildren.forEach { child ->
-                validateSubtree(child, "$path -> ${child.kind.displayName}")
+                validateSubtree(child, "$path -> ${child.kind.displayName}", parent = node)
             }
         }
 

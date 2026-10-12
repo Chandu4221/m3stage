@@ -4,6 +4,7 @@ import com.facebook.ktfmt.format.Formatter
 import com.squareup.kotlinpoet.*
 import io.github.chandu4221.m3stage.adapter.codegen.registry.ComponentCodegenRegistry
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ComposeSymbols
+import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
@@ -39,11 +40,22 @@ class ComposeCodeGenerator : CodeGenerator {
 
     private fun exportScreen(screen: Screen, screenIdentifier: String, packageName: String): String {
         val usedClassNames = collectUsedClassNames(screen.root)
+        val parentKindMap = mutableMapOf<io.github.chandu4221.m3stage.model.NodeId, io.github.chandu4221.m3stage.component.ComponentKind>()
+        fun buildParentMap(node: DesignNode) {
+            node.allDirectChildren.forEach { child ->
+                parentKindMap[child.id] = node.kind
+                buildParentMap(child)
+            }
+        }
+        buildParentMap(screen.root)
+
         fun walk(node: DesignNode): CodeBlock {
             if (!node.isVisible) return CodeBlock.builder().build()
             val codegen = ComponentCodegenRegistry.get(node.kind)
                 ?: return CodeBlock.of("// TODO: Unsupported component kind %L\n", node.kind)
-            return codegen.generate(node, ::walk)
+            return ModifierCodeResolver.withParentKind(parentKindMap[node.id]) {
+                codegen.generate(node, ::walk)
+            }
         }
 
         val optInAnnotation = AnnotationSpec.builder(ClassName("kotlin", "OptIn"))
@@ -65,7 +77,7 @@ class ComposeCodeGenerator : CodeGenerator {
             fileSpecBuilder.addImport(className.packageName, className.simpleName)
         }
         // Essential Compose Multiplatform UI & Modifier imports
-        fileSpecBuilder.addImport("androidx.compose.ui", "Modifier")
+        fileSpecBuilder.addImport("androidx.compose.ui", "Modifier", "zIndex")
         fileSpecBuilder.addImport("androidx.compose.ui.unit", "dp")
         fileSpecBuilder.addImport(
             "androidx.compose.foundation.layout",
@@ -77,7 +89,9 @@ class ComposeCodeGenerator : CodeGenerator {
             "width",
             "height",
             "wrapContentSize",
-            "offset"
+            "offset",
+            "weight",
+            "aspectRatio"
         )
         fileSpecBuilder.addImport("androidx.compose.foundation", "background", "border", "verticalScroll", "horizontalScroll", "rememberScrollState")
         fileSpecBuilder.addImport("androidx.compose.ui.draw", "clip", "shadow", "alpha", "rotate", "scale")

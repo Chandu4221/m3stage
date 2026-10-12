@@ -18,7 +18,7 @@ object DesignRenderer {
         lockedNodeIds: Set<NodeId> = emptySet()
     ) {
         @Composable
-        fun renderNode(currentNode: DesignNode) {
+        fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null) {
             if (!currentNode.isVisible) return
 
             val isSelected = currentNode.id == selectedNodeId
@@ -31,14 +31,14 @@ object DesignRenderer {
             ) {
                 val renderer = ComponentRendererRegistry[currentNode.kind]
                 if (renderer != null) {
-                    val elementModifier = Modifier.resolveModifiers(currentNode.modifiers)
-                    renderer.Render(currentNode, modifier = elementModifier) { child -> renderNode(child) }
+                    val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
+                    renderer.Render(currentNode, modifier = elementModifier) { child -> renderNode(child, currentNode) }
                 } else {
                     Text(text = "Unsupported: ${currentNode.kind.displayName}")
                 }
             }
         }
 
-        renderNode(node)
+        renderNode(node, null)
     }
 }

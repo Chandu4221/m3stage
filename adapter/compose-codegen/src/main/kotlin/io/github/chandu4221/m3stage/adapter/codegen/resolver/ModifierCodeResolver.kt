@@ -1,17 +1,69 @@
 package io.github.chandu4221.m3stage.adapter.codegen.resolver
 
 import com.squareup.kotlinpoet.CodeBlock
+import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.modifier.ModifierScope
 import io.github.chandu4221.m3stage.modifier.ModifierSpec
 
 object ModifierCodeResolver {
 
-    fun generateModifierChain(modifiers: List<ModifierSpec>): CodeBlock? {
+    fun ModifierSpec.requiredImport(): String? = when (this) {
+        is ModifierSpec.Padding -> "androidx.compose.foundation.layout"
+        is ModifierSpec.FillMaxWidth -> "androidx.compose.foundation.layout"
+        is ModifierSpec.FillMaxHeight -> "androidx.compose.foundation.layout"
+        is ModifierSpec.FillMaxSize -> "androidx.compose.foundation.layout"
+        is ModifierSpec.Size -> "androidx.compose.foundation.layout"
+        is ModifierSpec.Width -> "androidx.compose.foundation.layout"
+        is ModifierSpec.Height -> "androidx.compose.foundation.layout"
+        is ModifierSpec.WrapContentSize -> "androidx.compose.foundation.layout"
+        is ModifierSpec.Weight -> "androidx.compose.foundation.layout"
+        is ModifierSpec.AspectRatio -> "androidx.compose.foundation.layout"
+        is ModifierSpec.Offset -> "androidx.compose.foundation.layout"
+        is ModifierSpec.ZIndex -> "androidx.compose.ui"
+        is ModifierSpec.Background -> "androidx.compose.foundation"
+        is ModifierSpec.Border -> "androidx.compose.foundation"
+        is ModifierSpec.Shadow -> "androidx.compose.ui.draw"
+        is ModifierSpec.Clip -> "androidx.compose.ui.draw"
+        is ModifierSpec.Alpha -> "androidx.compose.ui.draw"
+        is ModifierSpec.Rotate -> "androidx.compose.ui.draw"
+        is ModifierSpec.Scale -> "androidx.compose.ui.draw"
+        is ModifierSpec.VerticalScroll -> "androidx.compose.foundation"
+        is ModifierSpec.HorizontalScroll -> "androidx.compose.foundation"
+    }
+
+    private val currentParentKind = ThreadLocal<ComponentKind?>()
+
+    fun <T> withParentKind(parentKind: ComponentKind?, block: () -> T): T {
+        val previous = currentParentKind.get()
+        currentParentKind.set(parentKind)
+        try {
+            return block()
+        } finally {
+            currentParentKind.set(previous)
+        }
+    }
+
+    fun generateModifierChain(modifiers: List<ModifierSpec>, parentKind: ComponentKind? = currentParentKind.get()): CodeBlock? {
         if (modifiers.isEmpty()) return null
 
         val builder = CodeBlock.builder()
         builder.add("Modifier")
 
         for (node in modifiers) {
+            when (node.scope) {
+                ModifierScope.RowColumnParent -> {
+                    if (parentKind != ComponentKind.Row && parentKind != ComponentKind.Column) {
+                        continue
+                    }
+                }
+                ModifierScope.BoxParent -> {
+                    if (parentKind != ComponentKind.Box) {
+                        continue
+                    }
+                }
+                ModifierScope.Any -> Unit
+            }
+
             when (node) {
                 // 1. Padding
                 is ModifierSpec.Padding -> {

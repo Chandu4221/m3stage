@@ -16,6 +16,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.modifier.ModifierScope
 import io.github.chandu4221.m3stage.modifier.ModifierSpec
 
 /**
@@ -23,10 +25,24 @@ import io.github.chandu4221.m3stage.modifier.ModifierSpec
  * Follows strict Compose chaining order.
  */
 @Composable
-fun Modifier.resolveModifiers(modifiers: List<ModifierSpec>): Modifier {
+fun Modifier.resolveModifiers(modifiers: List<ModifierSpec>, parentKind: ComponentKind? = null): Modifier {
     var current: Modifier = this
 
     for (node in modifiers) {
+        when (node.scope) {
+            ModifierScope.RowColumnParent -> {
+                if (parentKind != ComponentKind.Row && parentKind != ComponentKind.Column) {
+                    continue
+                }
+            }
+            ModifierScope.BoxParent -> {
+                if (parentKind != ComponentKind.Box) {
+                    continue
+                }
+            }
+            ModifierScope.Any -> Unit
+        }
+
         current = when (node) {
             // 1. Padding
             is ModifierSpec.Padding -> current.padding(

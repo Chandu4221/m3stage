@@ -34,8 +34,7 @@ class ComposeCodeGeneratorTest {
                 TopAppBarDefinition.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Surface)
             ),
             modifiers = listOf(
-                ModifierSpec.FillMaxWidth(1f),
-                ModifierSpec.ZIndex(2f)
+                ModifierSpec.FillMaxWidth(1f)
             ),
             slots = mapOf(
                 TopAppBarDefinition.ActionsSlot.id to listOf(actionIcon)
@@ -65,6 +64,23 @@ class ComposeCodeGeneratorTest {
             )
         )
 
+        val boxChild = DesignNode(
+            id = NodeId("box-child"),
+            kind = ComponentKind.Text,
+            props = mapOf(
+                TextDefinition.TextContent.id to PropertyValue.StringValue("Overlay")
+            ),
+            modifiers = listOf(
+                ModifierSpec.ZIndex(2f)
+            )
+        )
+
+        val overlayBox = DesignNode(
+            id = NodeId("overlay-box"),
+            kind = ComponentKind.Box,
+            children = listOf(boxChild)
+        )
+
         val contentColumn = DesignNode(
             id = NodeId("content-column"),
             kind = ComponentKind.Column,
@@ -75,7 +91,7 @@ class ComposeCodeGeneratorTest {
                 ModifierSpec.Padding.all(16f),
                 ModifierSpec.VerticalScroll(enabled = true)
             ),
-            children = listOf(button)
+            children = listOf(button, overlayBox)
         )
 
         val rootScaffold = DesignNode(
@@ -115,6 +131,7 @@ class ComposeCodeGeneratorTest {
         requireNotNull(homeFile) { "HomeScreen.kt must be generated" }
 
         val code = homeFile.content
+        println("GENERATED CODE:\n$code")
 
         assertTrue(code.contains("fun HomeScreen()"), "Must define Composable function HomeScreen")
         assertTrue(code.contains("Scaffold("), "Must generate Scaffold")

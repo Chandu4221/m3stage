@@ -150,4 +150,113 @@ class ProjectValidationTest {
         val errors = ProjectValidation.validate(project)
         assertTrue(errors.any { it.contains("both children and slot") })
     }
+
+    @Test
+    fun testModifierScopeValidation() {
+        // Weight under Column -> valid
+        val validWeight = Project(
+            id = ProjectId("p1"),
+            name = "Test",
+            basePackage = "com.example",
+            screens = listOf(
+                Screen(
+                    id = ScreenId("s1"),
+                    name = "S1",
+                    route = "/",
+                    root = DesignNode(
+                        id = NodeId("col"),
+                        kind = ComponentKind.Column,
+                        children = listOf(
+                            DesignNode(
+                                id = NodeId("txt"),
+                                kind = ComponentKind.Text,
+                                modifiers = listOf(io.github.chandu4221.m3stage.modifier.ModifierSpec.Weight(1f))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        assertTrue(ProjectValidation.validate(validWeight).isEmpty())
+
+        // Weight under Box -> error
+        val invalidWeight = Project(
+            id = ProjectId("p2"),
+            name = "Test",
+            basePackage = "com.example",
+            screens = listOf(
+                Screen(
+                    id = ScreenId("s2"),
+                    name = "S2",
+                    route = "/",
+                    root = DesignNode(
+                        id = NodeId("box"),
+                        kind = ComponentKind.Box,
+                        children = listOf(
+                            DesignNode(
+                                id = NodeId("txt"),
+                                kind = ComponentKind.Text,
+                                modifiers = listOf(io.github.chandu4221.m3stage.modifier.ModifierSpec.Weight(1f))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        val weightErrors = ProjectValidation.validate(invalidWeight)
+        assertTrue(weightErrors.any { it.contains("Weight modifier requires a Row or Column parent") })
+
+        // ZIndex under Box -> valid
+        val validZIndex = Project(
+            id = ProjectId("p3"),
+            name = "Test",
+            basePackage = "com.example",
+            screens = listOf(
+                Screen(
+                    id = ScreenId("s3"),
+                    name = "S3",
+                    route = "/",
+                    root = DesignNode(
+                        id = NodeId("box"),
+                        kind = ComponentKind.Box,
+                        children = listOf(
+                            DesignNode(
+                                id = NodeId("txt"),
+                                kind = ComponentKind.Text,
+                                modifiers = listOf(io.github.chandu4221.m3stage.modifier.ModifierSpec.ZIndex(2f))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        assertTrue(ProjectValidation.validate(validZIndex).isEmpty())
+
+        // ZIndex under Column -> error
+        val invalidZIndex = Project(
+            id = ProjectId("p4"),
+            name = "Test",
+            basePackage = "com.example",
+            screens = listOf(
+                Screen(
+                    id = ScreenId("s4"),
+                    name = "S4",
+                    route = "/",
+                    root = DesignNode(
+                        id = NodeId("col"),
+                        kind = ComponentKind.Column,
+                        children = listOf(
+                            DesignNode(
+                                id = NodeId("txt"),
+                                kind = ComponentKind.Text,
+                                modifiers = listOf(io.github.chandu4221.m3stage.modifier.ModifierSpec.ZIndex(2f))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        val zIndexErrors = ProjectValidation.validate(invalidZIndex)
+        assertTrue(zIndexErrors.any { it.contains("ZIndex modifier requires a Box parent") })
+    }
 }

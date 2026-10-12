@@ -2,12 +2,19 @@ package io.github.chandu4221.m3stage.modifier
 
 import io.github.chandu4221.m3stage.property.PropertyValue
 
+enum class ModifierScope {
+    Any,
+    BoxParent,
+    RowColumnParent
+}
+
 /**
  * Declarative specification of visual Compose modifiers.
  * Excludes behavioral and logic-attaching modifiers (Clickable, PointerInput, Focus, etc.).
  */
 sealed interface ModifierSpec {
     val category: ModifierCategory
+    val scope: ModifierScope get() = ModifierScope.Any
 
     // =========================================================================
     // 1. PADDING
@@ -62,6 +69,7 @@ sealed interface ModifierSpec {
 
     data class Weight(val weight: Float = 1f, val fill: Boolean = true) : ModifierSpec {
         override val category: ModifierCategory get() = ModifierCategory.Size
+        override val scope: ModifierScope get() = ModifierScope.RowColumnParent
     }
 
     data class AspectRatio(val ratio: Float = 1f) : ModifierSpec {
@@ -78,6 +86,7 @@ sealed interface ModifierSpec {
 
     data class ZIndex(val zIndex: Float = 1f) : ModifierSpec {
         override val category: ModifierCategory get() = ModifierCategory.Position
+        override val scope: ModifierScope get() = ModifierScope.BoxParent
     }
 
     // =========================================================================
