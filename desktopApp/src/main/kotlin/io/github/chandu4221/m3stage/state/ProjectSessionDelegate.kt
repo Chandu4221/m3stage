@@ -7,16 +7,50 @@ import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.validation.ProjectValidation
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
+import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(FlowPreview::class)
 class ProjectSessionDelegate(private val context: EditorContext) : ProjectSession {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    private val _isDirty = MutableStateFlow(false)
+    override val isDirty: StateFlow<Boolean> = _isDirty.asStateFlow()
+
     override val project: StateFlow<Project?> = context.projectFlow.asStateFlow()
     override val events: SharedFlow<EditorEvent> = context.eventFlow.asSharedFlow()
+
+    init {
+        // Debounced autosave observer
+        scope.launch {
+            var isInitial = true
+            context.projectFlow
+                .collect { p ->
+                    if (isInitial) {
+                        isInitial = false
+                    } else if (p != null) {
+                        _isDirty.value = true
+                    }
+                }
+        }
+
+        scope.launch {
+            // Drop initial null/fresh emission from triggering autosave immediately
+            context.projectFlow
+                .debounce(800.milliseconds)
+                .collect { proj ->
+                    if (proj != null && _isDirty.value) {
+                        try {
+                            context.repository.save(proj)
+                            _isDirty.value = false
+                            context.eventFlow.emit(EditorEvent.SaveSuccess)
+                        } catch (e: Exception) {
+                            context.eventFlow.emit(EditorEvent.SaveFailed)
+                        }
+                    }
+                }
+        }
+    }
 
     override fun loadProject() {
         scope.launch {
@@ -26,6 +60,7 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                     val validationErrors = ProjectValidation.validate(loaded)
                     if (validationErrors.isEmpty()) {
                         context.projectFlow.value = loaded
+                        _isDirty.value = false
                         context.eventFlow.emit(EditorEvent.LoadSuccess)
                     } else {
                         context.eventFlow.emit(
@@ -53,6 +88,7 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
         scope.launch {
             try {
                 context.repository.save(current)
+                _isDirty.value = false
                 context.eventFlow.emit(EditorEvent.SaveSuccess)
             } catch (e: Exception) {
                 context.eventFlow.emit(EditorEvent.SaveFailed)

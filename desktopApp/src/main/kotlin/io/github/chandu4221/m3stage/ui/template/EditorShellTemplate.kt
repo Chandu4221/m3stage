@@ -52,6 +52,8 @@ fun EditorShellTemplate(
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
     onZoomFit: () -> Unit,
+    isDirty: Boolean = false,
+    onSaveProject: () -> Unit = {},
     // Inspector state
     selectedNode: DesignNode?,
     isNodeLocked: Boolean,
@@ -127,7 +129,10 @@ fun EditorShellTemplate(
                 onZoomIn = onZoomIn,
                 onZoomOut = onZoomOut,
                 onZoomFit = onZoomFit,
-                onTidy = onTidy
+                onTidy = onTidy,
+                projectName = project?.name,
+                isDirty = isDirty,
+                onSaveProject = onSaveProject
             )
         }
 

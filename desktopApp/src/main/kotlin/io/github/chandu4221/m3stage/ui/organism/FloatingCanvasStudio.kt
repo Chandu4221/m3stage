@@ -1,7 +1,9 @@
 package io.github.chandu4221.m3stage.ui.organism
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
@@ -15,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DevicePreset
@@ -53,6 +56,9 @@ fun FloatingCanvasStudio(
     onZoomOut: () -> Unit,
     onZoomFit: () -> Unit,
     onTidy: () -> Unit,
+    projectName: String? = null,
+    isDirty: Boolean = false,
+    onSaveProject: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -90,6 +96,40 @@ fun FloatingCanvasStudio(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Island 0: Project Name & Unsaved Changes Status
+                projectName?.let { name ->
+                    CapsuleToolbar(
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            // Dirty Indicator Dot / Pill
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(
+                                        color = if (isDirty) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    )
+                            )
+                            Text(
+                                text = if (isDirty) "Unsaved" else "Saved",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isDirty) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
                 // Island 1: Pointer Modes (Select vs. Pan)
                 CapsuleToolbar {
                     ToolIconButton(

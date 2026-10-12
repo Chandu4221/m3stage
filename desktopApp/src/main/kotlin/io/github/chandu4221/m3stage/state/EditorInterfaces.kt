@@ -31,6 +31,7 @@ interface HistoryState {
 interface ProjectSession {
     val project: StateFlow<Project?>
     val events: SharedFlow<EditorEvent>
+    val isDirty: StateFlow<Boolean>
     fun loadProject()
     fun saveProject()
     fun createNewProject()

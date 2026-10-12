@@ -58,6 +58,7 @@ class EditorStore(
     // --- ProjectSession ---
     override val project = sessionDelegate.project
     override val events = sessionDelegate.events
+    override val isDirty = sessionDelegate.isDirty
     override fun loadProject() = sessionDelegate.loadProject()
     override fun saveProject() = sessionDelegate.saveProject()
     override fun createNewProject() = sessionDelegate.createNewProject()

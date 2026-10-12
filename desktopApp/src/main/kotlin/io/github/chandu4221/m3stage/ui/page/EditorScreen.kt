@@ -37,6 +37,7 @@ fun EditorScreen(store: EditorStore) {
     val lockedNodeIds by store.lockedNodeIds
     val undoStack by store.undoStack.collectAsState()
     val redoStack by store.redoStack.collectAsState()
+    val isDirty by store.isDirty.collectAsState()
 
     var activeRailTab by remember { mutableStateOf(StudioRailTab.Parts) }
     var searchQuery by remember { mutableStateOf("") }
@@ -140,6 +141,12 @@ fun EditorScreen(store: EditorStore) {
                     }
                 }
 
+                // 2.5. Save: Ctrl+S
+                if (keyEvent.isCtrlPressed && keyEvent.key == Key.S) {
+                    store.saveProject()
+                    return@onPreviewKeyEvent true
+                }
+
                 // 3. Escape: deselect
                 if (keyEvent.key == Key.Escape) {
                     store.selectNode(null)
@@ -224,6 +231,8 @@ fun EditorScreen(store: EditorStore) {
             },
             onExportCode = { showExportDialog = true },
             zoomPercentage = zoomPercentage,
+            isDirty = isDirty,
+            onSaveProject = { store.saveProject() },
             // Inspector & Tree Actions
             selectedNode = selectedNode,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
