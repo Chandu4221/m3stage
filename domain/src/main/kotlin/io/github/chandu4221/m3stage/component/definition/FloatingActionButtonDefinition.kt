@@ -45,7 +45,7 @@ object FloatingActionButtonDefinition {
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.FloatingActionButton,
                 props = self.createDefaultProps(),
-                children = listOf(iconNode),
+                children = emptyList(),
                 slots = mapOf(IconSlot.id to listOf(iconNode))
             )
         }

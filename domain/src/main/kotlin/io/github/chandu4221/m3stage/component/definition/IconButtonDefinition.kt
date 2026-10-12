@@ -45,7 +45,7 @@ object IconButtonDefinition {
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.IconButton,
                 props = self.createDefaultProps(),
-                children = listOf(iconNode),
+                children = emptyList(),
                 slots = mapOf(IconSlot.id to listOf(iconNode))
             )
         }

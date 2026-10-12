@@ -22,9 +22,9 @@ class ComponentAnatomyTest {
         val buttonNode = buttonDef.createDefaultSubtree(idGen)
 
         assertEquals(ComponentKind.Button, buttonNode.kind)
-        assertTrue(buttonNode.children.isNotEmpty(), "Button should have default label child")
+        assertTrue(buttonNode.allDirectChildren.isNotEmpty(), "Button should have default label child")
 
-        val labelNode = buttonNode.children.first()
+        val labelNode = buttonNode.allDirectChildren.first()
         assertEquals(ComponentKind.Text, labelNode.kind)
         assertEquals("Button", labelNode[ComponentCatalog.TextProps.TextContent]?.value)
 

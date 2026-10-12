@@ -74,7 +74,7 @@ object TopAppBarDefinition {
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.TopAppBar,
                 props = self.createDefaultProps(),
-                children = listOf(titleNode),
+                children = emptyList(),
                 slots = mapOf(TitleSlot.id to listOf(titleNode))
             )
         }

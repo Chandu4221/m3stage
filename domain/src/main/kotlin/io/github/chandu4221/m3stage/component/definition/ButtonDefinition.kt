@@ -76,7 +76,7 @@ object ButtonDefinition {
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.Button,
                 props = self.createDefaultProps(),
-                children = listOf(labelTextNode),
+                children = emptyList(),
                 slots = mapOf(LabelSlot.id to listOf(labelTextNode))
             )
         }
