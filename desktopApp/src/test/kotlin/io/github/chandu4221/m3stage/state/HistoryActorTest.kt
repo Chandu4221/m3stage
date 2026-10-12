@@ -92,4 +92,118 @@ class HistoryActorTest {
 
         history.close()
     }
+
+    @Test
+    fun testUpdateModifierCoalescing() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val screenId = ScreenId("screen-1")
+        val nodeId = NodeId("box-1")
+        val initialRoot = DesignNode(
+            id = nodeId,
+            kind = ComponentKind.Box,
+            modifiers = listOf(io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding.all(0f))
+        )
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "TestProject",
+            basePackage = "com.example.test",
+            screens = listOf(
+                Screen(id = screenId, name = "Main", route = "/", root = initialRoot)
+            )
+        )
+
+        val context = EditorContext(idGen, DummyRepo(), DummyCodeGen())
+        context.projectFlow.value = initialProject
+
+        val history = HistoryDelegate(context, testScope)
+
+        // Rapid updates to the same modifier within 300ms
+        history.execute(
+            UpdateModifierCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                index = 0,
+                newModifier = io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding.all(1f)
+            )
+        )
+        history.execute(
+            UpdateModifierCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                index = 0,
+                newModifier = io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding.all(12f)
+            )
+        )
+        history.execute(
+            UpdateModifierCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                index = 0,
+                newModifier = io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding.all(123f)
+            )
+        )
+
+        testScope.advanceUntilIdle()
+
+        // Should have coalesced to 1 undo entry
+        assertEquals(1, history.undoStack.value.size, "Rapid modifier updates should coalesce into 1 undo entry")
+
+        val currentMod = (context.projectFlow.value!!.screens.first().root.modifiers.first() as io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding).start
+        assertEquals(123f, currentMod)
+
+        // Single undo should restore back to pre-edit value (0f)
+        history.undo()
+        testScope.advanceUntilIdle()
+
+        val undoneMod = (context.projectFlow.value!!.screens.first().root.modifiers.first() as io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding).start
+        assertEquals(0f, undoneMod, "Single undo should restore to pre-edit value")
+        assertEquals(0, history.undoStack.value.size)
+
+        history.close()
+    }
+
+    @Test
+    fun testUndoStackCap100() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val screenId = ScreenId("screen-1")
+        val initialRoot = DesignNode(
+            id = NodeId("root-col"),
+            kind = ComponentKind.Column
+        )
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "TestProject",
+            basePackage = "com.example.test",
+            screens = listOf(
+                Screen(id = screenId, name = "Main", route = "/", root = initialRoot)
+            )
+        )
+
+        val context = EditorContext(idGen, DummyRepo(), DummyCodeGen())
+        context.projectFlow.value = initialProject
+
+        val history = HistoryDelegate(context, testScope)
+
+        // Push 150 commands
+        for (i in 1..150) {
+            val node = DesignNode(
+                id = NodeId("child-$i"),
+                kind = ComponentKind.Button
+            )
+            history.execute(AddNodeCommand(screenId, initialRoot.id, node))
+        }
+
+        testScope.advanceUntilIdle()
+
+        // Stack size must be capped at 100
+        assertEquals(100, history.undoStack.value.size, "Undo stack should be capped at 100")
+
+        history.close()
+    }
 }

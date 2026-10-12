@@ -42,6 +42,8 @@ class HistoryDelegate(
         }
     }
 
+    private var lastCoalescibleKey: Pair<Triple<io.github.chandu4221.m3stage.model.ScreenId, io.github.chandu4221.m3stage.model.NodeId, Int>, Long>? = null
+
     private suspend fun handleExecute(command: EditorCommand) {
         val base = context.projectFlow.value ?: return
         val newProject = try {
@@ -57,8 +59,27 @@ class HistoryDelegate(
             return
         }
 
+        val now = System.currentTimeMillis()
+        val shouldCoalesce = if (command is UpdateModifierCommand) {
+            val key = Triple(command.screenId, command.nodeId, command.index)
+            val last = lastCoalescibleKey
+            if (last != null && last.first == key && (now - last.second) <= 300) {
+                lastCoalescibleKey = Pair(key, now)
+                true
+            } else {
+                lastCoalescibleKey = Pair(key, now)
+                false
+            }
+        } else {
+            lastCoalescibleKey = null
+            false
+        }
+
         context.projectFlow.value = newProject
-        _undoStack.value = _undoStack.value + command
+        if (!shouldCoalesce) {
+            val updatedStack = _undoStack.value + command
+            _undoStack.value = if (updatedStack.size > 100) updatedStack.drop(updatedStack.size - 100) else updatedStack
+        }
         _redoStack.value = emptyList()
     }
 

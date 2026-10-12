@@ -8,7 +8,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.modifier.ModifierSpec
@@ -525,13 +531,50 @@ private fun NumberField(
     modifier: Modifier = Modifier,
     onValueChange: (Float) -> Unit
 ) {
+    val formattedInitial = remember(value) {
+        if (value % 1f == 0f) value.toInt().toString() else value.toString()
+    }
+    var textFieldValue by remember(value) {
+        mutableStateOf(TextFieldValue(formattedInitial, TextRange(formattedInitial.length)))
+    }
+    var isDirty by remember(value) { mutableStateOf(false) }
+
+    fun commit() {
+        if (isDirty) {
+            textFieldValue.text.toFloatOrNull()?.let(onValueChange)
+            isDirty = false
+        }
+    }
+
+    // 150ms idle debounce
+    LaunchedEffect(textFieldValue.text, isDirty) {
+        if (isDirty) {
+            kotlinx.coroutines.delay(150)
+            commit()
+        }
+    }
+
     OutlinedTextField(
-        value = if (value % 1f == 0f) value.toInt().toString() else value.toString(),
-        onValueChange = { str ->
-            str.toFloatOrNull()?.let(onValueChange)
+        value = textFieldValue,
+        onValueChange = { newTfv ->
+            textFieldValue = newTfv
+            isDirty = true
         },
         label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-        modifier = modifier,
+        modifier = modifier
+            .onFocusChanged { focusState ->
+                if (!focusState.isFocused) {
+                    commit()
+                }
+            }
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.key == Key.Enter) {
+                    commit()
+                    true
+                } else {
+                    false
+                }
+            },
         singleLine = true,
         textStyle = MaterialTheme.typography.bodySmall
     )
