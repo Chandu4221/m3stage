@@ -54,6 +54,10 @@ fun EditorShellTemplate(
     onZoomFit: () -> Unit,
     isDirty: Boolean = false,
     onSaveProject: () -> Unit = {},
+    onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
+    onDeleteScreen: (ScreenId) -> Unit = {},
+    onDuplicateScreen: (ScreenId) -> Unit = {},
+    onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     // Inspector state
     selectedNode: DesignNode?,
     isNodeLocked: Boolean,
@@ -132,7 +136,11 @@ fun EditorShellTemplate(
                 onTidy = onTidy,
                 projectName = project?.name,
                 isDirty = isDirty,
-                onSaveProject = onSaveProject
+                onSaveProject = onSaveProject,
+                onRenameScreen = onRenameScreen,
+                onDeleteScreen = onDeleteScreen,
+                onDuplicateScreen = onDuplicateScreen,
+                onReorderScreens = onReorderScreens
             )
         }
 

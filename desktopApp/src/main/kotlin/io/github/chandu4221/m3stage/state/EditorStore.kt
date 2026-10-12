@@ -255,6 +255,111 @@ class EditorStore(
         setActiveScreen(screenId)
     }
 
+    // --- Bridge: Rename Screen ---
+    fun renameScreen(screenId: ScreenId, newName: String) {
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot rename screen: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot rename screen: screen not found.")
+            return
+        }
+        val sanitizedName = newName.trim()
+        if (!sanitizedName.matches(Regex("^[a-zA-Z_][a-zA-Z0-9_]*$"))) {
+            notifyUser("Invalid screen name '$sanitizedName'. Must be a valid identifier (alphanumeric and underscores, starting with letter).")
+            return
+        }
+        if (currentProject.screens.any { it.id != screenId && it.name.equals(sanitizedName, ignoreCase = true) }) {
+            notifyUser("A screen named '$sanitizedName' already exists.")
+            return
+        }
+        execute(RenameScreenCommand(screenId, screen.name, sanitizedName))
+    }
+
+    // --- Bridge: Delete Screen ---
+    fun deleteScreen(screenId: ScreenId) {
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot delete screen: no project open.")
+            return
+        }
+        if (currentProject.screens.size <= 1) {
+            notifyUser("Cannot delete screen: project must have at least one screen.")
+            return
+        }
+        val screenIndex = currentProject.screens.indexOfFirst { it.id == screenId }
+        if (screenIndex == -1) {
+            notifyUser("Cannot delete screen: screen not found.")
+            return
+        }
+        val screen = currentProject.screens[screenIndex]
+        execute(DeleteScreenCommand(screen, screenIndex))
+
+        // If the deleted screen was active, switch active screen to remaining adjacent screen
+        if (activeScreenId.value == screenId) {
+            val remainingScreens = currentProject.screens.filter { it.id != screenId }
+            val nextActiveIndex = screenIndex.coerceAtMost(remainingScreens.lastIndex)
+            remainingScreens.getOrNull(nextActiveIndex)?.let { setActiveScreen(it.id) }
+        }
+    }
+
+    // --- Bridge: Duplicate Screen ---
+    fun duplicateScreen(screenId: ScreenId) {
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot duplicate screen: no project open.")
+            return
+        }
+        val originalScreen = currentProject.findScreen(screenId)
+        if (originalScreen == null) {
+            notifyUser("Cannot duplicate screen: screen not found.")
+            return
+        }
+
+        fun reIdSubtree(node: DesignNode): DesignNode {
+            val freshId = context.idGenerator.nextNodeId()
+            val freshChildren = node.children.map { reIdSubtree(it) }
+            val freshSlots = node.slots.mapValues { (_, slotChildren) -> slotChildren.map { reIdSubtree(it) } }
+            return node.copy(id = freshId, children = freshChildren, slots = freshSlots)
+        }
+
+        // Generate unique name e.g. Home_Copy, Home_Copy_2
+        var candidateName = "${originalScreen.name}_Copy"
+        var counter = 2
+        while (currentProject.screens.any { it.name.equals(candidateName, ignoreCase = true) }) {
+            candidateName = "${originalScreen.name}_Copy_$counter"
+            counter++
+        }
+
+        // Generate unique route e.g. /home-copy
+        var candidateRoute = "/${candidateName.lowercase().replace('_', '-')}"
+        var routeCounter = 2
+        while (currentProject.screens.any { it.route.equals(candidateRoute, ignoreCase = true) }) {
+            candidateRoute = "/${candidateName.lowercase().replace('_', '-')}-$routeCounter"
+            routeCounter++
+        }
+
+        val freshScreenId = context.idGenerator.nextScreenId()
+        val duplicatedRoot = reIdSubtree(originalScreen.root)
+        val duplicatedScreen = Screen(
+            id = freshScreenId,
+            name = candidateName,
+            route = candidateRoute,
+            root = duplicatedRoot,
+            device = originalScreen.device
+        )
+        execute(DuplicateScreenCommand(duplicatedScreen))
+        setActiveScreen(freshScreenId)
+    }
+
+    // --- Bridge: Reorder Screens ---
+    fun reorderScreens(fromIndex: Int, toIndex: Int) {
+        execute(ReorderScreensCommand(fromIndex, toIndex))
+    }
+
     // --- Bridge: Update Project Theme ---
     fun updateSeedColor(newSeed: Long) {
         val current = project.value

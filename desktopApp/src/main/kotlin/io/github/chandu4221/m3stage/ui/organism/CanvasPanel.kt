@@ -7,10 +7,9 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CropLandscape
-import androidx.compose.material.icons.filled.CropPortrait
-import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,6 +53,10 @@ fun CanvasPanel(
     onWheelZoom: (Float) -> Unit,
     lockedNodeIds: Set<NodeId> = emptySet(),
     projectDefaultDevice: DevicePreset = DevicePreset.Default,
+    onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
+    onDeleteScreen: (ScreenId) -> Unit = {},
+    onDuplicateScreen: (ScreenId) -> Unit = {},
+    onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     // --- INFINITE TRANSFORMABLE STUDIO WORKBENCH ---
@@ -103,7 +106,7 @@ fun CanvasPanel(
                 horizontalArrangement = Arrangement.spacedBy(48.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                screens.forEach { screen ->
+                screens.forEachIndexed { index, screen ->
                     val isActive = screen.id == activeScreenId
                     ScreenArtboard(
                         screen = screen,
@@ -115,7 +118,14 @@ fun CanvasPanel(
                             onNodeClick(nodeId)
                         },
                         lockedNodeIds = lockedNodeIds,
-                        projectDefaultDevice = projectDefaultDevice
+                        projectDefaultDevice = projectDefaultDevice,
+                        canMoveLeft = index > 0,
+                        canMoveRight = index < screens.lastIndex,
+                        onMoveLeft = { onReorderScreens(index, index - 1) },
+                        onMoveRight = { onReorderScreens(index, index + 1) },
+                        onRename = { newName -> onRenameScreen(screen.id, newName) },
+                        onDuplicate = { onDuplicateScreen(screen.id) },
+                        onDelete = { onDeleteScreen(screen.id) }
                     )
                 }
             }
@@ -132,7 +142,14 @@ private fun ScreenArtboard(
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId) -> Unit,
     lockedNodeIds: Set<NodeId>,
-    projectDefaultDevice: DevicePreset
+    projectDefaultDevice: DevicePreset,
+    canMoveLeft: Boolean = false,
+    canMoveRight: Boolean = false,
+    onMoveLeft: () -> Unit = {},
+    onMoveRight: () -> Unit = {},
+    onRename: (String) -> Unit = {},
+    onDuplicate: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     var activeDevice by remember(screen.id) {
         mutableStateOf(screen.resolveDevice(projectDefaultDevice))
@@ -259,6 +276,111 @@ private fun ScreenArtboard(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                }
+
+                VerticalDivider(modifier = Modifier.height(18.dp))
+
+                // Screen Actions Menu Button (Rename, Duplicate, Move, Delete)
+                var actionsMenuExpanded by remember { mutableStateOf(false) }
+                var showRenameDialog by remember { mutableStateOf(false) }
+
+                Box {
+                    IconButton(
+                        onClick = {
+                            onActivate()
+                            actionsMenuExpanded = true
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Screen actions",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = actionsMenuExpanded,
+                        onDismissRequest = { actionsMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Rename Screen") },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            onClick = {
+                                actionsMenuExpanded = false
+                                showRenameDialog = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Duplicate Screen") },
+                            leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            onClick = {
+                                actionsMenuExpanded = false
+                                onDuplicate()
+                            }
+                        )
+                        if (canMoveLeft) {
+                            DropdownMenuItem(
+                                text = { Text("Move Left") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                                onClick = {
+                                    actionsMenuExpanded = false
+                                    onMoveLeft()
+                                }
+                            )
+                        }
+                        if (canMoveRight) {
+                            DropdownMenuItem(
+                                text = { Text("Move Right") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                                onClick = {
+                                    actionsMenuExpanded = false
+                                    onMoveRight()
+                                }
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Delete Screen", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp)) },
+                            onClick = {
+                                actionsMenuExpanded = false
+                                onDelete()
+                            }
+                        )
+                    }
+                }
+
+                if (showRenameDialog) {
+                    var newNameText by remember { mutableStateOf(screen.name) }
+                    AlertDialog(
+                        onDismissRequest = { showRenameDialog = false },
+                        title = { Text("Rename Screen") },
+                        text = {
+                            OutlinedTextField(
+                                value = newNameText,
+                                onValueChange = { newNameText = it },
+                                label = { Text("Screen Name") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showRenameDialog = false
+                                    onRename(newNameText)
+                                }
+                            ) {
+                                Text("Rename")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showRenameDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
                     )
                 }
             }

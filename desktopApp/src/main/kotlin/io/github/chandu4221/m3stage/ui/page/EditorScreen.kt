@@ -233,6 +233,10 @@ fun EditorScreen(store: EditorStore) {
             zoomPercentage = zoomPercentage,
             isDirty = isDirty,
             onSaveProject = { store.saveProject() },
+            onRenameScreen = { screenId, newName -> store.renameScreen(screenId, newName) },
+            onDeleteScreen = { screenId -> store.deleteScreen(screenId) },
+            onDuplicateScreen = { screenId -> store.duplicateScreen(screenId) },
+            onReorderScreens = { from, to -> store.reorderScreens(from, to) },
             // Inspector & Tree Actions
             selectedNode = selectedNode,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,

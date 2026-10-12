@@ -140,6 +140,89 @@ data class AddScreenCommand(
 }
 
 /**
+ * Renames a screen. Undo restores previous name.
+ */
+data class RenameScreenCommand(
+    val screenId: ScreenId,
+    val oldName: String,
+    val newName: String
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val updatedScreens = project.screens.map { screen ->
+            if (screen.id == screenId) screen.copy(name = newName) else screen
+        }
+        return project.copy(screens = updatedScreens)
+    }
+
+    override fun undo(project: Project): Project {
+        val updatedScreens = project.screens.map { screen ->
+            if (screen.id == screenId) screen.copy(name = oldName) else screen
+        }
+        return project.copy(screens = updatedScreens)
+    }
+}
+
+/**
+ * Deletes a screen at oldIndex. Undo re-inserts it at oldIndex.
+ */
+data class DeleteScreenCommand(
+    val screen: Screen,
+    val oldIndex: Int
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        require(project.screens.size > 1) { "Cannot delete the last screen in project." }
+        val updatedScreens = project.screens.filter { it.id != screen.id }
+        return project.copy(screens = updatedScreens)
+    }
+
+    override fun undo(project: Project): Project {
+        val mutable = project.screens.toMutableList()
+        val safeIndex = oldIndex.coerceIn(0, mutable.size)
+        mutable.add(safeIndex, screen)
+        return project.copy(screens = mutable)
+    }
+}
+
+/**
+ * Duplicates a screen with a fresh screen ID and fresh node IDs. Undo removes it.
+ */
+data class DuplicateScreenCommand(
+    val newScreen: Screen
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        return project.copy(screens = project.screens + newScreen)
+    }
+
+    override fun undo(project: Project): Project {
+        return project.copy(screens = project.screens.filter { it.id != newScreen.id })
+    }
+}
+
+/**
+ * Reorders screens by moving screen from fromIndex to toIndex. Undo moves back.
+ */
+data class ReorderScreensCommand(
+    val fromIndex: Int,
+    val toIndex: Int
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        if (fromIndex !in project.screens.indices || toIndex !in project.screens.indices) return project
+        val mutable = project.screens.toMutableList()
+        val item = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, item)
+        return project.copy(screens = mutable)
+    }
+
+    override fun undo(project: Project): Project {
+        if (fromIndex !in project.screens.indices || toIndex !in project.screens.indices) return project
+        val mutable = project.screens.toMutableList()
+        val item = mutable.removeAt(toIndex)
+        mutable.add(fromIndex, item)
+        return project.copy(screens = mutable)
+    }
+}
+
+/**
  * Updates the project's seed color and dark mode theme. Undo restores the previous theme.
  */
 data class UpdateThemeCommand(

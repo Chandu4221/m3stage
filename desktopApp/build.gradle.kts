@@ -25,6 +25,14 @@ dependencies {
     implementation(project(":adapter:json-persistence"))
     implementation(project(":adapter:compose-codegen"))
     implementation(project(":adapter:compose-renderer"))
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+}
+
+tasks.test {
+    useJUnit()
 }
 
 compose.desktop {

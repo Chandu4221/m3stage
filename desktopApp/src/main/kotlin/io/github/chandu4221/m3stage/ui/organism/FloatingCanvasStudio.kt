@@ -59,6 +59,10 @@ fun FloatingCanvasStudio(
     projectName: String? = null,
     isDirty: Boolean = false,
     onSaveProject: () -> Unit = {},
+    onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
+    onDeleteScreen: (ScreenId) -> Unit = {},
+    onDuplicateScreen: (ScreenId) -> Unit = {},
+    onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -80,7 +84,11 @@ fun FloatingCanvasStudio(
                     onPanDelta = onPanDelta,
                     onWheelZoom = onWheelZoom,
                     lockedNodeIds = lockedNodeIds,
-                    projectDefaultDevice = DevicePreset.Default
+                    projectDefaultDevice = DevicePreset.Default,
+                    onRenameScreen = onRenameScreen,
+                    onDeleteScreen = onDeleteScreen,
+                    onDuplicateScreen = onDuplicateScreen,
+                    onReorderScreens = onReorderScreens
                 )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
