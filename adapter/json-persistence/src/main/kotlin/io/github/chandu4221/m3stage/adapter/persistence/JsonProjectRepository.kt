@@ -36,6 +36,11 @@ class JsonProjectRepository(
             val jsonString = file.readText()
             try {
                 val dto = json.decodeFromString<ProjectDto>(jsonString)
+                if (dto.schemaVersion > io.github.chandu4221.m3stage.adapter.persistence.dto.CURRENT_SCHEMA_VERSION) {
+                    throw IllegalArgumentException(
+                        "Project was created with a newer M3Stage version (schema ${dto.schemaVersion} > ${io.github.chandu4221.m3stage.adapter.persistence.dto.CURRENT_SCHEMA_VERSION})"
+                    )
+                }
                 dto.toDomain()
             } catch (e: Exception) {
                 // Safeguard: Create a backup of the corrupted file before returning to prevent accidental overwrite

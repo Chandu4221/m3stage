@@ -78,4 +78,57 @@ class JsonProjectRepositoryTest {
         // Clean up
         tempDir.deleteRecursively()
     }
+
+    @Test
+    fun testMissingSchemaVersionDefaultsToCurrentVersion(): Unit = runBlocking {
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "m3stage_test_default_schema_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+        val legacyFile = File(tempDir, "project.json")
+        legacyFile.writeText(
+            """
+            {
+                "id": "proj-legacy",
+                "name": "Legacy Project",
+                "basePackage": "com.test",
+                "screens": []
+            }
+            """.trimIndent()
+        )
+
+        val repository = JsonProjectRepository(legacyFile)
+        val project = repository.load()
+        assertNotNull(project)
+
+        tempDir.deleteRecursively()
+    }
+
+    @Test
+    fun testFutureSchemaVersionThrowsCorruptProjectException(): Unit = runBlocking {
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "m3stage_test_future_schema_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+        val futureFile = File(tempDir, "project.json")
+        futureFile.writeText(
+            """
+            {
+                "id": "proj-future",
+                "name": "Future Project",
+                "basePackage": "com.test",
+                "schemaVersion": 99,
+                "screens": []
+            }
+            """.trimIndent()
+        )
+
+        val repository = JsonProjectRepository(futureFile)
+        val exception = assertFailsWith<CorruptProjectException> {
+            repository.load()
+        }
+
+        assertTrue(exception.cause is IllegalArgumentException)
+        assertTrue(exception.cause?.message?.contains("newer M3Stage version") == true)
+        assertNotNull(exception.backupFile)
+        assertTrue(exception.backupFile.exists())
+
+        tempDir.deleteRecursively()
+    }
 }
