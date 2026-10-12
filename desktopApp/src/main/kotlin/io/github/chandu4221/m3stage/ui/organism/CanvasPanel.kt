@@ -52,6 +52,7 @@ fun CanvasPanel(
     viewportState: CanvasViewportState,
     onPanDelta: (Offset) -> Unit,
     onWheelZoom: (Float) -> Unit,
+    viewportStateProvider: () -> CanvasViewportState = { viewportState },
     lockedNodeIds: Set<NodeId> = emptySet(),
     projectDefaultDevice: DevicePreset = DevicePreset.Default,
     onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
@@ -98,10 +99,11 @@ fun CanvasPanel(
             modifier = Modifier
                 .wrapContentSize(unbounded = true)
                 .graphicsLayer {
-                    scaleX = viewportState.zoom
-                    scaleY = viewportState.zoom
-                    translationX = viewportState.panOffset.x
-                    translationY = viewportState.panOffset.y
+                    val currentViewport = viewportStateProvider()
+                    translationX = currentViewport.panOffset.x
+                    translationY = currentViewport.panOffset.y
+                    scaleX = currentViewport.zoom
+                    scaleY = currentViewport.zoom
                 }
                 .padding(vertical = 56.dp, horizontal = 72.dp)
         ) {
