@@ -1,29 +1,59 @@
 package io.github.chandu4221.m3stage.state
 
 import io.github.chandu4221.m3stage.validation.ProjectValidation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class HistoryDelegate(private val context: EditorContext) : HistoryState {
+sealed interface HistoryOp {
+    data class Execute(val command: EditorCommand) : HistoryOp
+    object Undo : HistoryOp
+    object Redo : HistoryOp
+}
+
+class HistoryDelegate(
+    private val context: EditorContext,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+) : HistoryState, AutoCloseable {
+
     private val _undoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
     override val undoStack: StateFlow<List<EditorCommand>> = _undoStack.asStateFlow()
 
     private val _redoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
     override val redoStack: StateFlow<List<EditorCommand>> = _redoStack.asStateFlow()
 
-    override fun execute(command: EditorCommand) {
-        val current = context.projectFlow.value ?: return
+    private val commandQueue = Channel<HistoryOp>(Channel.UNLIMITED)
+
+    init {
+        scope.launch {
+            for (op in commandQueue) {
+                when (op) {
+                    is HistoryOp.Execute -> handleExecute(op.command)
+                    is HistoryOp.Undo -> handleUndo()
+                    is HistoryOp.Redo -> handleRedo()
+                }
+            }
+        }
+    }
+
+    private suspend fun handleExecute(command: EditorCommand) {
+        val base = context.projectFlow.value ?: return
         val newProject = try {
-            command.execute(current)
+            command.execute(base)
         } catch (e: Exception) {
-            context.eventFlow.tryEmit(EditorEvent.ShowError(e.message ?: "Invalid operation"))
+            context.eventFlow.emit(EditorEvent.ShowError(e.message ?: "Invalid operation"))
             return
         }
 
         val errors = ProjectValidation.validate(newProject)
         if (errors.isNotEmpty()) {
-            context.eventFlow.tryEmit(EditorEvent.ShowError(errors.first()))
+            context.eventFlow.emit(EditorEvent.ShowError(errors.first()))
             return
         }
 
@@ -32,7 +62,7 @@ class HistoryDelegate(private val context: EditorContext) : HistoryState {
         _redoStack.value = emptyList()
     }
 
-    override fun undo() {
+    private fun handleUndo() {
         val command = _undoStack.value.lastOrNull() ?: return
         val current = context.projectFlow.value ?: return
         context.projectFlow.value = command.undo(current)
@@ -40,11 +70,28 @@ class HistoryDelegate(private val context: EditorContext) : HistoryState {
         _redoStack.value = _redoStack.value + command
     }
 
-    override fun redo() {
+    private fun handleRedo() {
         val command = _redoStack.value.lastOrNull() ?: return
         val current = context.projectFlow.value ?: return
         context.projectFlow.value = command.execute(current)
         _redoStack.value = _redoStack.value.dropLast(1)
         _undoStack.value = _undoStack.value + command
+    }
+
+    override fun execute(command: EditorCommand) {
+        commandQueue.trySend(HistoryOp.Execute(command))
+    }
+
+    override fun undo() {
+        commandQueue.trySend(HistoryOp.Undo)
+    }
+
+    override fun redo() {
+        commandQueue.trySend(HistoryOp.Redo)
+    }
+
+    override fun close() {
+        commandQueue.close()
+        scope.cancel()
     }
 }

@@ -430,6 +430,7 @@ class EditorStore(
     }
 
     override fun close() {
+        historyDelegate.close()
         storeScope.cancel()
     }
 }
