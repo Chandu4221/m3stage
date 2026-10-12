@@ -2,6 +2,7 @@ package io.github.chandu4221.m3stage.ui.organism
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,6 +21,14 @@ import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
  * Renders the hierarchical DOM-like component tree for the currently active screen.
  * Supports expanding/collapsing nodes, node selection, locking, visibility, and deletion.
  */
+data class LayerRowItem(
+    val id: NodeId,
+    val depth: Int,
+    val node: DesignNode,
+    val slotBadge: String?,
+    val parentId: NodeId? = null
+)
+
 @Composable
 fun LayersTreeDrawer(
     activeScreen: Screen?,
@@ -40,6 +49,16 @@ fun LayersTreeDrawer(
                 expandedNodeIds = expandedNodeIds + rootId
             }
         }
+    }
+
+    // T4.5: Memoize flattened row model per activeScreen (immutable tree)
+    val allRows = remember(activeScreen) {
+        if (activeScreen == null) emptyList() else flattenTree(activeScreen.root)
+    }
+
+    // T4.5: Derive visible rows from expandedNodeIds and memoized allRows
+    val visibleRows = remember(expandedNodeIds, allRows) {
+        if (allRows.isEmpty()) emptyList() else filterVisibleRows(allRows, expandedNodeIds)
     }
 
     Surface(
@@ -93,25 +112,34 @@ fun LayersTreeDrawer(
                         .fillMaxSize()
                         .padding(horizontal = 8.dp, vertical = 8.dp)
                 ) {
-                    renderTreeItem(
-                        node = activeScreen.root,
-                        depth = 0,
-                        slotBadge = null,
-                        selectedNodeId = selectedNodeId,
-                        lockedNodeIds = lockedNodeIds,
-                        expandedNodeIds = expandedNodeIds,
-                        onToggleExpand = { id ->
-                            expandedNodeIds = if (id in expandedNodeIds) {
-                                expandedNodeIds - id
-                            } else {
-                                expandedNodeIds + id
-                            }
-                        },
-                        onSelectNode = onSelectNode,
-                        onToggleVisibility = onToggleVisibility,
-                        onToggleLock = onToggleLock,
-                        onDeleteNode = onDeleteNode
-                    )
+                    items(
+                        items = visibleRows,
+                        key = { it.id.value }
+                    ) { row ->
+                        val isExpanded = row.id in expandedNodeIds
+                        val hasChildren = row.node.allDirectChildren.isNotEmpty()
+
+                        LayerTreeRow(
+                            node = row.node,
+                            depth = row.depth,
+                            isSelected = row.id == selectedNodeId,
+                            isLocked = row.id in lockedNodeIds,
+                            isExpanded = isExpanded,
+                            hasChildren = hasChildren,
+                            slotBadge = row.slotBadge,
+                            onSelect = { onSelectNode(row.id) },
+                            onToggleExpand = {
+                                expandedNodeIds = if (row.id in expandedNodeIds) {
+                                    expandedNodeIds - row.id
+                                } else {
+                                    expandedNodeIds + row.id
+                                }
+                            },
+                            onToggleVisibility = { onToggleVisibility(row.id) },
+                            onToggleLock = { onToggleLock(row.id) },
+                            onDelete = { onDeleteNode(row.id) }
+                        )
+                    }
                 }
             }
         }
@@ -119,82 +147,55 @@ fun LayersTreeDrawer(
 }
 
 /**
- * Recursive tree flattener into LazyColumn items.
+ * Flattens the tree into a list of LayerRowItems capturing parent relationships for expansion filtering.
  */
-private fun androidx.compose.foundation.lazy.LazyListScope.renderTreeItem(
-    node: DesignNode,
-    depth: Int,
-    slotBadge: String?,
-    selectedNodeId: NodeId?,
-    lockedNodeIds: Set<NodeId>,
-    expandedNodeIds: Set<NodeId>,
-    onToggleExpand: (NodeId) -> Unit,
-    onSelectNode: (NodeId) -> Unit,
-    onToggleVisibility: (NodeId) -> Unit,
-    onToggleLock: (NodeId) -> Unit,
-    onDeleteNode: (NodeId) -> Unit
-) {
-    val isExpanded = node.id in expandedNodeIds
-    val hasChildren = node.allDirectChildren.isNotEmpty()
+private fun flattenTree(
+    root: DesignNode,
+    depth: Int = 0,
+    slotBadge: String? = null,
+    parentId: NodeId? = null
+): List<LayerRowItem> {
+    val result = mutableListOf<LayerRowItem>()
+    result.add(LayerRowItem(root.id, depth, root, slotBadge, parentId))
 
-    item(key = node.id.value) {
-        LayerTreeRow(
-            node = node,
-            depth = depth,
-            isSelected = node.id == selectedNodeId,
-            isLocked = node.id in lockedNodeIds,
-            isExpanded = isExpanded,
-            hasChildren = hasChildren,
-            slotBadge = slotBadge,
-            onSelect = { onSelectNode(node.id) },
-            onToggleExpand = { onToggleExpand(node.id) },
-            onToggleVisibility = { onToggleVisibility(node.id) },
-            onToggleLock = { onToggleLock(node.id) },
-            onDelete = { onDeleteNode(node.id) }
-        )
-    }
-
-    if (isExpanded) {
-        // 1. Render named slots children first
-        val slotChildIds = mutableSetOf<NodeId>()
-        for ((slotId, slotChildren) in node.slots) {
-            for (child in slotChildren) {
-                slotChildIds.add(child.id)
-                renderTreeItem(
-                    node = child,
-                    depth = depth + 1,
-                    slotBadge = slotId.value,
-                    selectedNodeId = selectedNodeId,
-                    lockedNodeIds = lockedNodeIds,
-                    expandedNodeIds = expandedNodeIds,
-                    onToggleExpand = onToggleExpand,
-                    onSelectNode = onSelectNode,
-                    onToggleVisibility = onToggleVisibility,
-                    onToggleLock = onToggleLock,
-                    onDeleteNode = onDeleteNode
-                )
-            }
-        }
-
-        // 2. Render general raw children (excluding any already rendered in slots)
-        for (child in node.children) {
-            if (child.id !in slotChildIds) {
-                renderTreeItem(
-                    node = child,
-                    depth = depth + 1,
-                    slotBadge = null,
-                    selectedNodeId = selectedNodeId,
-                    lockedNodeIds = lockedNodeIds,
-                    expandedNodeIds = expandedNodeIds,
-                    onToggleExpand = onToggleExpand,
-                    onSelectNode = onSelectNode,
-                    onToggleVisibility = onToggleVisibility,
-                    onToggleLock = onToggleLock,
-                    onDeleteNode = onDeleteNode
-                )
-            }
+    // 1. Named slots first
+    val slotChildIds = mutableSetOf<NodeId>()
+    for ((slotId, slotChildren) in root.slots) {
+        for (child in slotChildren) {
+            slotChildIds.add(child.id)
+            result.addAll(flattenTree(child, depth + 1, slotId.value, root.id))
         }
     }
+
+    // 2. General raw children (excluding slot children)
+    for (child in root.children) {
+        if (child.id !in slotChildIds) {
+            result.addAll(flattenTree(child, depth + 1, null, root.id))
+        }
+    }
+
+    return result
+}
+
+/**
+ * Filters rows to only include those whose ancestors are all expanded.
+ */
+private fun filterVisibleRows(
+    rows: List<LayerRowItem>,
+    expandedNodeIds: Set<NodeId>
+): List<LayerRowItem> {
+    val visible = mutableListOf<LayerRowItem>()
+    val visibleParentIds = mutableSetOf<NodeId>()
+
+    for (row in rows) {
+        val parentId = row.parentId
+        if (parentId == null || (parentId in expandedNodeIds && parentId in visibleParentIds)) {
+            visible.add(row)
+            visibleParentIds.add(row.id)
+        }
+    }
+
+    return visible
 }
 
 @Preview
