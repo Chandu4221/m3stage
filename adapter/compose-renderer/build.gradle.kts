@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.components.resources)
     implementation(libs.compose.material.icons.extended)
+    implementation(libs.material.kolor)
     testImplementation(libs.kotlin.testJunit)
 }
 

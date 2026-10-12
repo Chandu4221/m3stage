@@ -1,5 +1,7 @@
 package io.github.chandu4221.m3stage.adapter.renderer
 
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,7 +17,28 @@ object DesignRenderer {
         node: DesignNode,
         selectedNodeId: NodeId?,
         onNodeClick: (NodeId) -> Unit,
-        lockedNodeIds: Set<NodeId> = emptySet()
+        lockedNodeIds: Set<NodeId> = emptySet(),
+        scheme: ColorScheme? = null
+    ) {
+        val content = @Composable {
+            RenderInternal(node, selectedNodeId, onNodeClick, lockedNodeIds)
+        }
+
+        if (scheme != null) {
+            MaterialTheme(colorScheme = scheme) {
+                content()
+            }
+        } else {
+            content()
+        }
+    }
+
+    @Composable
+    private fun RenderInternal(
+        node: DesignNode,
+        selectedNodeId: NodeId?,
+        onNodeClick: (NodeId) -> Unit,
+        lockedNodeIds: Set<NodeId>
     ) {
         @Composable
         fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null) {

@@ -30,14 +30,16 @@ fun main() = application {
     }
 
     val project by store.project.collectAsState()
-    val seedColor = Color(project?.seedColor ?: 0xFF6750A4L)
+    val seedColor = project?.seedColor ?: 0xFF6750A4L
     val isDarkMode = project?.isDarkMode ?: false
 
-    // Generates the complete 36-role Material 3 ColorScheme dynamically from the seed color!
-    val dynamicColorScheme = rememberDynamicColorScheme(
-        seedColor = seedColor,
-        isDark = isDarkMode
-    )
+    // Generates the complete 36-role Material 3 ColorScheme dynamically once per (seedColor, isDarkMode)!
+    val dynamicColorScheme = remember(seedColor, isDarkMode) {
+        io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver.resolveScheme(
+            seedColor = seedColor,
+            isDarkMode = isDarkMode
+        )
+    }
 
     Window(
         onCloseRequest = {

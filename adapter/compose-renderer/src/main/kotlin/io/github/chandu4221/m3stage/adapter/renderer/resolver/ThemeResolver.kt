@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.adapter.renderer.resolver
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -8,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import com.materialkolor.dynamicColorScheme
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 import io.github.chandu4221.m3stage.theme.M3ShapeToken
@@ -15,20 +17,26 @@ import io.github.chandu4221.m3stage.theme.M3TypographyToken
 
 object ThemeResolver {
 
+    fun resolveScheme(seedColor: Long, isDarkMode: Boolean): ColorScheme {
+        return dynamicColorScheme(
+            seedColor = Color(seedColor),
+            isDark = isDarkMode
+        )
+    }
+
     @Composable
     @ReadOnlyComposable
-    fun resolveColor(colorValue: PropertyValue.ColorValue?): Color {
+    fun resolveColor(colorValue: PropertyValue.ColorValue?, scheme: ColorScheme = MaterialTheme.colorScheme): Color {
         return when (colorValue) {
             is PropertyValue.ColorValue.Custom -> Color(colorValue.argb)
-            is PropertyValue.ColorValue.Token -> resolveColorToken(colorValue.token)
+            is PropertyValue.ColorValue.Token -> resolveColorToken(colorValue.token, scheme)
             null -> Color.Unspecified
         }
     }
 
     @Composable
     @ReadOnlyComposable
-    fun resolveColorToken(token: M3ColorToken): Color {
-        val scheme = MaterialTheme.colorScheme
+    fun resolveColorToken(token: M3ColorToken, scheme: ColorScheme = MaterialTheme.colorScheme): Color {
         return when (token) {
             M3ColorToken.Primary -> scheme.primary
             M3ColorToken.OnPrimary -> scheme.onPrimary

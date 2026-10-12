@@ -10,10 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import com.materialkolor.rememberDynamicColorScheme
+import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
 import io.github.chandu4221.m3stage.ui.theme.SeedColorPresets
 
 /**
@@ -58,10 +60,12 @@ private fun ThemeContainer(
     seedColor: Color,
     content: @Composable () -> Unit
 ) {
-    val dynamicColorScheme = rememberDynamicColorScheme(
-        seedColor = seedColor,
-        isDark = isDark
-    )
+    val dynamicColorScheme = remember(seedColor, isDark) {
+        ThemeResolver.resolveScheme(
+            seedColor = seedColor.toArgb().toLong() and 0xFFFFFFFFL,
+            isDarkMode = isDark
+        )
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
