@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import com.materialkolor.dynamicColorScheme
+import com.materialkolor.material3.dynamicColorScheme
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 import io.github.chandu4221.m3stage.theme.M3ShapeToken

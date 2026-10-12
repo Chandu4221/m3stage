@@ -87,9 +87,11 @@ object SelectionTargetResolver {
 
     /**
      * Resolves double-click target:
-     * - anchor becomes what single-click would select.
-     * - then selects the deepest node under cursor within the NEW anchor subtree.
-     * - If single-click selects a childless leaf, anchor is unchanged and leaf is selected.
+     * - In Figma, double-clicking drills down sequentially level-by-level:
+     *     Level 1 -> double-click -> Level 2 -> double-click -> Level 3 ... -> Leaf.
+     * - It establishes a new anchor at the currently selected container (or outermost container under cursor if unselected),
+     *   and then selects the next container level down (or leaf if no child container) containing the point.
+     * - If the target is already a leaf, it remains selected without changing anchor.
      */
     fun resolveDoubleClickTarget(
         point: Offset,
@@ -107,18 +109,20 @@ object SelectionTargetResolver {
             return singleTarget to currentAnchor
         }
 
+        // Establish the new anchor at this container
         val newAnchor = singleTarget
-        // Select deepest node under cursor inside newAnchor subtree
-        val deepestInsideNewAnchor = bounds.entries
-            .filter { (id, rect) -> isDescendantOf(id, newAnchor, treeInfo) && rect.contains(point) }
-            .mapNotNull { (id, _) -> treeInfo[id] }
-            .sortedWith(
-                compareByDescending<NodeTreeInfo> { it.depth }
-                    .thenBy { bounds[it.id]?.let { r -> r.width * r.height } ?: Float.MAX_VALUE }
-            )
-            .firstOrNull()?.id ?: newAnchor
 
-        return deepestInsideNewAnchor to newAnchor
+        // Find child nodes of newAnchor containing the point
+        val (childTarget, _) = resolveSingleClickTarget(
+            point = point,
+            anchor = newAnchor,
+            screenRootId = screenRootId,
+            treeInfo = treeInfo,
+            bounds = bounds
+        )
+
+        val nextSelection = childTarget ?: newAnchor
+        return nextSelection to newAnchor
     }
 
     /**
