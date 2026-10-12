@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.*
 import io.github.chandu4221.m3stage.adapter.codegen.registry.ComponentCodegenRegistry
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ComposeSymbols
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolver
+import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolver.requiredImport
 import io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.Project
@@ -76,25 +77,57 @@ class ComposeCodeGenerator : CodeGenerator {
         usedClassNames.forEach { className ->
             fileSpecBuilder.addImport(className.packageName, className.simpleName)
         }
-        // Essential Compose Multiplatform UI & Modifier imports
-        fileSpecBuilder.addImport("androidx.compose.ui", "Modifier", "zIndex")
-        fileSpecBuilder.addImport("androidx.compose.ui.unit", "dp")
-        fileSpecBuilder.addImport(
-            "androidx.compose.foundation.layout",
-            "fillMaxSize",
-            "fillMaxWidth",
-            "fillMaxHeight",
-            "padding",
-            "size",
-            "width",
-            "height",
-            "wrapContentSize",
-            "offset",
-            "weight",
-            "aspectRatio"
-        )
-        fileSpecBuilder.addImport("androidx.compose.foundation", "background", "border", "verticalScroll", "horizontalScroll", "rememberScrollState")
-        fileSpecBuilder.addImport("androidx.compose.ui.draw", "clip", "shadow", "alpha", "rotate", "scale")
+
+        val usedModifiers = collectUsedModifiers(screen.root)
+        if (usedModifiers.isNotEmpty()) {
+            fileSpecBuilder.addImport("androidx.compose.ui", "Modifier")
+            val modifierPackages = usedModifiers.mapNotNull { it.requiredImport() }.toSortedSet()
+            for (pkg in modifierPackages) {
+                when (pkg) {
+                    "androidx.compose.ui" -> {
+                        fileSpecBuilder.addImport("androidx.compose.ui", "zIndex")
+                    }
+                    "androidx.compose.foundation.layout" -> {
+                        fileSpecBuilder.addImport(
+                            "androidx.compose.foundation.layout",
+                            "fillMaxSize",
+                            "fillMaxWidth",
+                            "fillMaxHeight",
+                            "padding",
+                            "size",
+                            "width",
+                            "height",
+                            "wrapContentSize",
+                            "offset",
+                            "weight",
+                            "aspectRatio"
+                        )
+                    }
+                    "androidx.compose.foundation" -> {
+                        fileSpecBuilder.addImport(
+                            "androidx.compose.foundation",
+                            "background",
+                            "border",
+                            "verticalScroll",
+                            "horizontalScroll",
+                            "rememberScrollState"
+                        )
+                    }
+                    "androidx.compose.ui.draw" -> {
+                        fileSpecBuilder.addImport(
+                            "androidx.compose.ui.draw",
+                            "clip",
+                            "shadow",
+                            "alpha",
+                            "rotate",
+                            "scale"
+                        )
+                    }
+                }
+            }
+            fileSpecBuilder.addImport("androidx.compose.ui.unit", "dp")
+        }
+
         val fileSpec = fileSpecBuilder.build()
         val rawCode = fileSpec.toString()
         return try {
@@ -119,6 +152,20 @@ class ComposeCodeGenerator : CodeGenerator {
         }
         node.allDirectChildren.forEach { child ->
             collectUsedClassNamesRecursive(child, result)
+        }
+    }
+
+    private fun collectUsedModifiers(node: DesignNode): Set<io.github.chandu4221.m3stage.modifier.ModifierSpec> {
+        val result = mutableSetOf<io.github.chandu4221.m3stage.modifier.ModifierSpec>()
+        collectUsedModifiersRecursive(node, result)
+        return result
+    }
+
+    private fun collectUsedModifiersRecursive(node: DesignNode, result: MutableSet<io.github.chandu4221.m3stage.modifier.ModifierSpec>) {
+        if (!node.isVisible) return
+        result.addAll(node.modifiers)
+        node.allDirectChildren.forEach { child ->
+            collectUsedModifiersRecursive(child, result)
         }
     }
 }

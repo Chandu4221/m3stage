@@ -198,4 +198,37 @@ class GeneratedCodeCompilesTest {
         // ZIndex inside Column must be skipped
         assertTrue(!code.contains(".zIndex("), "ZIndex inside Column must be skipped defensively")
     }
+
+    @Test
+    fun testZeroModifiersEmitsNoModifierImports() {
+        val rootText = DesignNode(
+            id = NodeId("root-text"),
+            kind = ComponentKind.Text,
+            props = mapOf(TextDefinition.TextContent.id to PropertyValue.StringValue("Hello")),
+            modifiers = emptyList()
+        )
+
+        val project = Project(
+            id = ProjectId("test-proj"),
+            name = "Test App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-1"),
+                    name = "ZeroModifiersScreen",
+                    route = "/zero-modifiers",
+                    root = rootText
+                )
+            )
+        )
+
+        val generator = ComposeCodeGenerator()
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(!code.contains("import androidx.compose.ui.Modifier"), "Must not import Modifier when no modifiers exist")
+        assertTrue(!code.contains("import androidx.compose.foundation.layout"), "Must not import layout when no layout modifiers exist")
+        assertTrue(!code.contains("import androidx.compose.ui.draw"), "Must not import draw when no draw modifiers exist")
+    }
 }
