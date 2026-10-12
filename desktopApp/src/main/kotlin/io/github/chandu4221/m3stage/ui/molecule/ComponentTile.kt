@@ -33,17 +33,18 @@ fun ComponentTile(
     displayName: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(84.dp)
             .semantics { role = Role.Button }
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = if (enabled) 1f else 0.4f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (enabled) 0.6f else 0.2f))
     ) {
         Column(
             modifier = Modifier
@@ -52,10 +53,11 @@ fun ComponentTile(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            val contentAlpha = if (enabled) 1f else 0.4f
             Icon(
                 imageVector = icon,
                 contentDescription = displayName,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha),
                 modifier = Modifier.size(26.dp)
             )
 
@@ -64,7 +66,7 @@ fun ComponentTile(
             Text(
                 text = displayName,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center

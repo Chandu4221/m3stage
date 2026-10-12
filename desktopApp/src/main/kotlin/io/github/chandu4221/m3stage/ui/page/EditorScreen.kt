@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
+import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.query.canPlace
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.state.EditorEvent
@@ -37,6 +39,14 @@ fun EditorScreen(store: EditorStore) {
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
     val selectedNode = activeScreen?.root?.let { root ->
         selectedNodeId?.let { root.findNode(it) }
+    }
+    val effectiveTargetNode = selectedNode ?: activeScreen?.root
+    val disallowedKinds = remember(effectiveTargetNode) {
+        if (effectiveTargetNode == null) {
+            emptySet()
+        } else {
+            ComponentKind.entries.filterNot { canPlace(effectiveTargetNode, it) }.toSet()
+        }
     }
 
     var viewportState by remember { mutableStateOf(CanvasViewportState()) }
@@ -107,6 +117,7 @@ fun EditorScreen(store: EditorStore) {
                 val targetParentId = selectedNodeId ?: active.root.id
                 store.addNodeToActiveScreen(targetParentId, kind)
             },
+            disallowedKinds = disallowedKinds,
 
             // Floating Canvas
             screens = project?.screens ?: emptyList(),

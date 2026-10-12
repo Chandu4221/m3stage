@@ -34,6 +34,7 @@ fun EditorShellTemplate(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
+    disallowedKinds: Set<ComponentKind> = emptySet(),
     // Canvas state
     screens: List<Screen>,
     activeScreenId: ScreenId?,
@@ -94,7 +95,8 @@ fun EditorShellTemplate(
                 PartsDrawer(
                     searchQuery = searchQuery,
                     onSearchQueryChange = onSearchQueryChange,
-                    onComponentSelected = onComponentSelected
+                    onComponentSelected = onComponentSelected,
+                    disallowedKinds = disallowedKinds
                 )
             }
         }

@@ -29,7 +29,8 @@ fun PartsDrawer(
     onComponentSelected: (ComponentKind) -> Unit,
     modifier: Modifier = Modifier,
     activeCategory: ComponentCategory? = null,
-    onCategorySelected: (ComponentCategory?) -> Unit = {}
+    onCategorySelected: (ComponentCategory?) -> Unit = {},
+    disallowedKinds: Set<ComponentKind> = emptySet()
 ) {
     Surface(
         modifier = modifier.width(280.dp).fillMaxHeight(),
@@ -124,6 +125,7 @@ fun PartsDrawer(
                                     displayName = def.displayName,
                                     icon = resolveComponentIcon(def.kind),
                                     onClick = { onComponentSelected(def.kind) },
+                                    enabled = def.kind !in disallowedKinds,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
