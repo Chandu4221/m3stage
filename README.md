@@ -19,25 +19,71 @@ Design, assemble, and inspect Material 3 user interfaces across side-by-side dev
 - **Smart Drag & Drop**: Dropping components onto a screen or `Scaffold` automatically routes them into the screen's main content column.
 - **Dynamic Theming via MaterialKolor**: Generates the complete 36-role Material 3 color palette in real-time from any seed color, with instant Light/Dark mode toggling.
 
-### 🧩 11-Component Full-Fidelity Metamodel
+### 🧩 24-Component Full-Fidelity Metamodel
 Zero registry drift across the metamodel, live renderer, and code generator:
 | Category | Components | Supported Properties |
 | :--- | :--- | :--- |
-| **Layouts** | `Scaffold`, `Column`, `Row`, `Box` | Spacing, arrangements (`spacedBy`, `Center`, `SpaceBetween`, etc.), alignments, container color |
-| **Navigation** | `TopAppBar` | Title, container color, title content color, action children |
-| **Surfaces** | `Card` | Elevation (dp), container color, corner shape tokens |
-| **Inputs** | `Button`, `TextField` | Enabled state, button colors, value, label, placeholder, single-line |
-| **Display** | `Text`, `Icon`, `Image` | Content, typography tokens, color tokens, text overflow (Ellipsis), vector icons, tint, content description |
+| **Actions** | `Button`, `IconButton`, `FloatingActionButton`, `OutlinedButton`, `TextButton` | Enabled state, custom container/content colors, shapes, elevation |
+| **Containment** | `Scaffold`, `Card`, `HorizontalDivider` | Container colors, elevation (dp), corner shape tokens, thickness |
+| **Navigation** | `TopAppBar`, `NavigationBar` | Title, container colors, navigation/action slots, navigation items |
+| **Selection** | `Switch`, `Checkbox`, `RadioButton`, `Slider` | Checked/selected states, value range, steps, enabled state, color tokens |
+| **Text Inputs** | `TextField`, `OutlinedTextField` | Value, label, placeholder, single line, leading/trailing icon slots |
+| **Communication** | `Text`, `Icon`, `Image`, `Badge` | Typography tokens, color tokens, overflow (Ellipsis), vector icons, tint, scale modes |
+| **Layouts** | `Column`, `Row`, `Box`, `Spacer` | Spacing, arrangements (`spacedBy`, `Center`, `SpaceBetween`, etc.), alignments, dp dimensions |
 
 ### ⚡ 100% WYSIWYG Code Export
 - **Idiomatic Jetpack Compose Output**: Generated code uses canonical Compose APIs (`MaterialTheme.colorScheme`, `MaterialTheme.typography`, `MaterialTheme.shapes`, `Arrangement.spacedBy`, `ButtonDefaults.buttonColors`).
 - **Google `ktfmt` Code Formatting**: All exported files are formatted with Google's official Kotlin code formatter.
 - **Kotlin Identifier Sanitization**: Converts user screen names (e.g. `"Screen 1"`, `"my-profile"`, `"1Home"`) into valid PascalCase Kotlin files (`Screen1.kt`, `fun Screen1Screen()`) with collision deduplication.
-- **Non-Blocking Architecture**: Code generation (KotlinPoet AST parsing and formatting) runs on `Dispatchers.Default` and file writing on `Dispatchers.IO`, keeping the desktop UI responsive at 60 FPS.
+- **Non-Blocking Architecture**: Code generation (KotlinPoet AST parsing and formatting) runs on `Dispatchers.Default` and file writing on `Dispatchers.IO`, keeping the desktop UI responsive.
+
+#### Sample Generated Code Preview
+```kotlin
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+public fun HomeScreen() {
+  Scaffold(
+    modifier = Modifier.fillMaxSize(),
+    containerColor = MaterialTheme.colorScheme.background,
+    topBar = {
+      TopAppBar(
+        title = { Text("Dashboard") },
+        modifier = Modifier.fillMaxWidth(),
+        actions = {
+          IconButton(onClick = { /* Read-only Visual Model */ }) {
+            Icon(
+              imageVector = Icons.Default.Favorite,
+              contentDescription = null,
+            )
+          }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+          containerColor = MaterialTheme.colorScheme.surface
+        ),
+      )
+    },
+  ) { innerPadding ->
+    Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+      Column(
+        modifier = Modifier.padding(16.0.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.0.dp),
+      ) {
+        Button(
+          onClick = { /* Read-only Visual Model */ },
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          Text(text = "Submit", style = MaterialTheme.typography.labelLarge)
+        }
+      }
+    }
+  }
+}
+```
 
 ### 🛡️ Resilient Persistence & Data Loss Prevention
-- **Corrupt File Quarantine**: If a project file fails JSON deserialization, M3Stage automatically preserves a timestamped quarantine backup (`project.json.corrupt_<timestamp>`) preventing accidental file wipeout.
-- **Complete Undo/Redo**: Full history stack using the Command Pattern.
+- **Corrupt File Quarantine**: If a project file fails JSON deserialization or has an unsupported future schema version, M3Stage automatically preserves a timestamped quarantine backup (`project.json.corrupt_<timestamp>`) preventing accidental file wipeout.
+- **Schema Versioning**: Versioned DTO schema (`schemaVersion = 1`) with safe backward-compatibility and quarantine detection for future versions.
+- **Complete Undo/Redo**: Full command queue history stack with modifier update coalescing and stack bounds.
 - **Pure-Function Invariants**: Round-trip invariance testing ensures that $\text{Project} \rightarrow \text{JSON} \rightarrow \text{Project}$ is 100% lossless.
 
 ---
