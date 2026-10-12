@@ -1,5 +1,6 @@
 package io.github.chandu4221.m3stage.adapter.renderer
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -8,7 +9,14 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.positionInRoot
 import io.github.chandu4221.m3stage.adapter.renderer.registry.ComponentRendererRegistry
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.resolveModifiers
 import io.github.chandu4221.m3stage.model.DesignNode
@@ -37,6 +45,7 @@ object DesignRenderer {
         }
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     private fun RenderInternal(
         node: DesignNode,
@@ -44,10 +53,11 @@ object DesignRenderer {
         onNodeClick: (NodeId) -> Unit,
         lockedNodeIds: Set<NodeId>
     ) {
+        val hitTracker = remember { CanvasHitTracker() }
         var hoveredNodeId by remember { mutableStateOf<NodeId?>(null) }
 
         @Composable
-        fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null) {
+        fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null, depth: Int = 0) {
             if (!currentNode.isVisible) return
 
             val isSelected = currentNode.id == selectedNodeId
@@ -55,27 +65,61 @@ object DesignRenderer {
             val isHovered = currentNode.id == hoveredNodeId
 
             SelectionOverlay(
+                nodeId = currentNode.id,
+                depth = depth,
                 isSelected = isSelected,
                 isLocked = isLocked,
                 isHovered = isHovered,
-                onHover = { hoveredNodeId = currentNode.id },
-                onExit = {
-                    if (hoveredNodeId == currentNode.id) {
-                        hoveredNodeId = null
-                    }
-                },
-                onClick = { onNodeClick(currentNode.id) }
+                hitTracker = hitTracker
             ) {
                 val renderer = ComponentRendererRegistry[currentNode.kind]
                 if (renderer != null) {
                     val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
-                    renderer.Render(currentNode, modifier = elementModifier) { child -> renderNode(child, currentNode) }
+                    renderer.Render(currentNode, modifier = elementModifier) { child ->
+                        renderNode(child, currentNode, depth + 1)
+                    }
                 } else {
                     Text(text = "Unsupported: ${currentNode.kind.displayName}")
                 }
             }
         }
 
-        renderNode(node, null)
+        Box(
+            modifier = Modifier
+                .onPointerEvent(PointerEventType.Move) { event ->
+                    val change = event.changes.firstOrNull()
+                    if (change != null) {
+                        hoveredNodeId = hitTracker.findDeepestNodeAt(change.position)
+                    }
+                }
+                .onPointerEvent(PointerEventType.Exit) {
+                    hoveredNodeId = null
+                }
+                .pointerInput(node.id) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val down = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.firstOrNull() ?: continue
+                            if (!down.pressed) continue
+
+                            var upOrCancel = false
+                            while (!upOrCancel) {
+                                val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                val change = event.changes.firstOrNull()
+                                if (change == null || !change.pressed) {
+                                    upOrCancel = true
+                                    if (change != null) {
+                                        val clickedNode = hitTracker.findDeepestNodeAt(change.position)
+                                        if (clickedNode != null) {
+                                            onNodeClick(clickedNode)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+        ) {
+            renderNode(node, null, 0)
+        }
     }
 }
