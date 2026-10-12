@@ -7,6 +7,7 @@ import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.port.CodeGenerator
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
+import io.github.chandu4221.m3stage.query.findAcceptingSlot
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
 import kotlinx.coroutines.*
@@ -89,30 +90,42 @@ class EditorStore(
             return
         }
 
+        val parentDef = ComponentCatalog.find(targetNode.kind)
+        if (parentDef == null) {
+            notifyUser("Cannot add node: unrecognized component kind '${targetNode.kind}'.")
+            return
+        }
+
         var targetParentId = parentId
         var targetSlotId: io.github.chandu4221.m3stage.component.slot.SlotId? = null
 
-        if (targetNode.kind == ComponentKind.Scaffold) {
-            when (kind) {
-                ComponentKind.TopAppBar -> {
-                    targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.TopBarSlot.id
+        val acceptingSlotId = parentDef.findAcceptingSlot(kind)
+        if (acceptingSlotId != null) {
+            val slotDef = parentDef.findSlot(acceptingSlotId)
+            val existingInSlot = targetNode.slots[acceptingSlotId] ?: emptyList()
+            if (slotDef != null && slotDef.isFull(existingInSlot.size)) {
+                val occupant = existingInSlot.firstOrNull()?.kind?.displayName ?: "another component"
+                notifyUser("${targetNode.kind.displayName}'s ${acceptingSlotId.value} slot is already occupied by a $occupant.")
+                return
+            }
+            targetSlotId = acceptingSlotId
+        } else if (parentDef.canAcceptChild(kind)) {
+            targetParentId = parentId
+            targetSlotId = null
+        } else {
+            val containerChild = io.github.chandu4221.m3stage.query.findDefaultContainerChild(targetNode, kind)
+            if (containerChild != null) {
+                targetParentId = containerChild.id
+                val childDef = ComponentCatalog.find(containerChild.kind)
+                targetSlotId = childDef?.findAcceptingSlot(kind)
+            } else {
+                val tip = if (targetNode.kind == ComponentKind.Scaffold) {
+                    "Scaffold content accepts containers — try adding a Column first, or drop the ${kind.displayName} onto a Column."
+                } else {
+                    "Try adding a container first, or select a compatible container."
                 }
-                ComponentKind.NavigationBar -> {
-                    targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.BottomBarSlot.id
-                }
-                ComponentKind.FloatingActionButton -> {
-                    targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.FloatingActionButtonSlot.id
-                }
-                else -> {
-                    // Route into the Scaffold's content column if available, else into ContentSlot
-                    val contentColumn = targetNode.allDirectChildren.firstOrNull { it.kind == ComponentKind.Column }
-                    if (contentColumn != null) {
-                        targetParentId = contentColumn.id
-                        targetSlotId = null
-                    } else {
-                        targetSlotId = io.github.chandu4221.m3stage.component.definition.ScaffoldDefinition.ContentSlot.id
-                    }
-                }
+                notifyUser("${kind.displayName} can't be added to ${targetNode.kind.displayName}. $tip")
+                return
             }
         }
 
