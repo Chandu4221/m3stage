@@ -63,6 +63,8 @@ fun FloatingCanvasStudio(
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
+    isCodePreviewOpen: Boolean = false,
+    onToggleCodePreview: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -229,6 +231,17 @@ fun FloatingCanvasStudio(
                         contentDescription = "Zoom to Fit",
                         onClick = onZoomFit,
                         tooltip = "Reset Zoom (100%)"
+                    )
+                }
+
+                // Code Preview Toggle Capsule
+                CapsuleToolbar {
+                    ToolIconButton(
+                        icon = Icons.Default.Code,
+                        contentDescription = "Toggle Code Preview",
+                        isSelected = isCodePreviewOpen,
+                        onClick = onToggleCodePreview,
+                        tooltip = "Toggle Code Preview"
                     )
                 }
             }

@@ -64,6 +64,46 @@ fun EditorScreen(store: EditorStore) {
     var showExportDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Live Code Preview State
+    var isCodePreviewOpen by remember { mutableStateOf(false) }
+    var codePreviewContent by remember { mutableStateOf("") }
+    var isGeneratingCode by remember { mutableStateOf(false) }
+
+    val activeScreenFileName = remember(activeScreen) {
+        if (activeScreen != null) {
+            "${io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer.toPascalCase(activeScreen.name)}.kt"
+        } else {
+            "Screen.kt"
+        }
+    }
+
+    // Debounced code generation when code preview is open
+    LaunchedEffect(isCodePreviewOpen, project, activeScreenId) {
+        if (!isCodePreviewOpen) return@LaunchedEffect
+        val currentProject = project ?: return@LaunchedEffect
+        val currentActiveScreenId = activeScreenId ?: return@LaunchedEffect
+        val targetScreen = currentProject.screens.firstOrNull { it.id == currentActiveScreenId } ?: return@LaunchedEffect
+
+        isGeneratingCode = true
+        kotlinx.coroutines.delay(500) // 500ms debounce
+        try {
+            val generatedProject = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                store.codeGenerator.generate(currentProject)
+            }
+            val pascalName = io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer.toPascalCase(targetScreen.name)
+            val matchingFile = generatedProject.files.firstOrNull { it.fileName.startsWith(pascalName) }
+                ?: generatedProject.files.firstOrNull()
+
+            if (matchingFile != null) {
+                codePreviewContent = matchingFile.content
+            }
+        } catch (e: Exception) {
+            codePreviewContent = "// Generation error: ${e.message}"
+        } finally {
+            isGeneratingCode = false
+        }
+    }
+
     LaunchedEffect(Unit) {
         store.events.collect { event ->
             when (event) {
@@ -237,6 +277,11 @@ fun EditorScreen(store: EditorStore) {
             onDeleteScreen = { screenId -> store.deleteScreen(screenId) },
             onDuplicateScreen = { screenId -> store.duplicateScreen(screenId) },
             onReorderScreens = { from, to -> store.reorderScreens(from, to) },
+            isCodePreviewOpen = isCodePreviewOpen,
+            codePreviewFileName = activeScreenFileName,
+            codePreviewContent = codePreviewContent,
+            isGeneratingCode = isGeneratingCode,
+            onToggleCodePreview = { isCodePreviewOpen = !isCodePreviewOpen },
             // Inspector & Tree Actions
             selectedNode = selectedNode,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,

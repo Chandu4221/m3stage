@@ -19,6 +19,7 @@ class EditorStore(
 ) : SelectionState, HistoryState, ProjectSession, AutoCloseable {
 
     private val context = EditorContext(idGenerator, repository, codeGenerator)
+    val codeGenerator: CodeGenerator get() = context.codeGenerator
     private val selectionDelegate = SelectionDelegate()
     private val historyDelegate = HistoryDelegate(context)
     private val sessionDelegate = ProjectSessionDelegate(context)

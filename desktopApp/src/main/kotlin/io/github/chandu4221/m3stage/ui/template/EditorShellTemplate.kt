@@ -58,6 +58,12 @@ fun EditorShellTemplate(
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
+    // Code preview state
+    isCodePreviewOpen: Boolean = false,
+    codePreviewFileName: String = "",
+    codePreviewContent: String = "",
+    isGeneratingCode: Boolean = false,
+    onToggleCodePreview: () -> Unit = {},
     // Inspector state
     selectedNode: DesignNode?,
     isNodeLocked: Boolean,
@@ -140,8 +146,20 @@ fun EditorShellTemplate(
                 onRenameScreen = onRenameScreen,
                 onDeleteScreen = onDeleteScreen,
                 onDuplicateScreen = onDuplicateScreen,
-                onReorderScreens = onReorderScreens
+                onReorderScreens = onReorderScreens,
+                isCodePreviewOpen = isCodePreviewOpen,
+                onToggleCodePreview = onToggleCodePreview
             )
+
+            if (isCodePreviewOpen) {
+                io.github.chandu4221.m3stage.ui.organism.CodePreviewPanel(
+                    fileName = codePreviewFileName,
+                    code = codePreviewContent,
+                    isGenerating = isGeneratingCode,
+                    onClose = onToggleCodePreview,
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter)
+                )
+            }
         }
 
         // 4. Right Inspector Surface
