@@ -74,6 +74,7 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                     name = "Home",
                     route = "/",
                     root = rootNode
+                )
             )
         )
         val errors = io.github.chandu4221.m3stage.validation.ProjectValidation.validate(newProject)

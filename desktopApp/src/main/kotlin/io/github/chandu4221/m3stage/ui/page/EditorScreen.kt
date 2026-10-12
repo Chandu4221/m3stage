@@ -56,11 +56,17 @@ fun EditorScreen(store: EditorStore) {
                 }
 
                 is EditorEvent.LoadFailed -> {
-                    snackbarHostState.showSnackbar("Failed to load project: ${event.reason}")
+                    snackbarHostState.showSnackbar(
+                        message = "Failed to load project: ${event.reason}",
+                        duration = androidx.compose.material3.SnackbarDuration.Long
+                    )
                 }
 
                 is EditorEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = androidx.compose.material3.SnackbarDuration.Long
+                    )
                 }
 
                 else -> {}
