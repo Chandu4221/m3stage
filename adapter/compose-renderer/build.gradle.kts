@@ -27,5 +27,5 @@ repositories {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnit()
 }

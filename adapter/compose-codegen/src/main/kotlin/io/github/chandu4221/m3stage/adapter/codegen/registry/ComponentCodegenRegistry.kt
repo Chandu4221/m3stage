@@ -1,13 +1,11 @@
 package io.github.chandu4221.m3stage.adapter.codegen.registry
 
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.actions.ButtonCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.actions.*
 import io.github.chandu4221.m3stage.adapter.codegen.component.containment.*
-import io.github.chandu4221.m3stage.adapter.codegen.component.layouts.BoxCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.layouts.ColumnCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.layouts.RowCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.navigation.TopAppBarCodegen
-import io.github.chandu4221.m3stage.adapter.codegen.component.textinputs.TextFieldCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.component.layouts.*
+import io.github.chandu4221.m3stage.adapter.codegen.component.navigation.*
+import io.github.chandu4221.m3stage.adapter.codegen.component.textinputs.*
 import io.github.chandu4221.m3stage.component.ComponentKind
 
 object ComponentCodegenRegistry {
@@ -23,8 +21,24 @@ object ComponentCodegenRegistry {
         ComponentKind.Box to BoxCodegen(),
         ComponentKind.Card to CardCodegen(),
         ComponentKind.Scaffold to ScaffoldCodegen(),
-        ComponentKind.TopAppBar to TopAppBarCodegen()
+        ComponentKind.TopAppBar to TopAppBarCodegen(),
+        // 13 new components
+        ComponentKind.Badge to BadgeCodegen(),
+        ComponentKind.Checkbox to CheckboxCodegen(),
+        ComponentKind.Switch to SwitchCodegen(),
+        ComponentKind.Slider to SliderCodegen(),
+        ComponentKind.Spacer to SpacerCodegen(),
+        ComponentKind.HorizontalDivider to HorizontalDividerCodegen(),
+        ComponentKind.FloatingActionButton to FloatingActionButtonCodegen(),
+        ComponentKind.IconButton to IconButtonCodegen(),
+        ComponentKind.NavigationBar to NavigationBarCodegen(),
+        ComponentKind.RadioButton to RadioButtonCodegen(),
+        ComponentKind.OutlinedButton to OutlinedButtonCodegen(),
+        ComponentKind.OutlinedTextField to OutlinedTextFieldCodegen(),
+        ComponentKind.TextButton to TextButtonCodegen()
     )
+
+    val registeredKinds: Set<ComponentKind> = registry.keys
 
     operator fun get(kind: ComponentKind): ComponentCodegen? = registry[kind]
 }
