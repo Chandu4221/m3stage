@@ -77,4 +77,30 @@ class ProjectValidationTest {
         val errors = ProjectValidation.validate(project)
         assertTrue(errors.isEmpty())
     }
+
+    @Test
+    fun testDualContainmentProducesError() {
+        val childId = NodeId("child-1")
+        val childNode = DesignNode(id = childId, kind = ComponentKind.TopAppBar)
+        val rootNode = DesignNode(
+            id = NodeId("root"),
+            kind = ComponentKind.Scaffold,
+            children = listOf(childNode),
+            slots = mapOf(
+                io.github.chandu4221.m3stage.component.slot.SlotId("topBar") to listOf(childNode)
+            )
+        )
+
+        val project = Project(
+            id = ProjectId("proj-1"),
+            name = "Test",
+            basePackage = "com.example",
+            screens = listOf(
+                Screen(id = ScreenId("screen-1"), name = "Home", route = "/", root = rootNode)
+            )
+        )
+
+        val errors = ProjectValidation.validate(project)
+        assertTrue(errors.any { it.contains("both children and slot") })
+    }
 }

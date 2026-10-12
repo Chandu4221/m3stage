@@ -60,6 +60,16 @@ object ProjectValidation {
                 }
             }
 
+            // 5. Dual-containment invariant rule (INV-4)
+            val childrenIds = node.children.map { it.id.value }.toSet()
+            node.slots.forEach { (slotId, slotChildren) ->
+                slotChildren.forEach { slotChild ->
+                    if (slotChild.id.value in childrenIds) {
+                        errors.add("Node '${slotChild.kind}' (id=${slotChild.id.value}) is contained in both children and slot '${slotId.value}' of parent '${node.kind}'")
+                    }
+                }
+            }
+
             // 5. Recursively validate all descendants
             node.allDirectChildren.forEach { child ->
                 validateSubtree(child, "$path -> ${child.kind.displayName}")
