@@ -16,6 +16,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import io.github.chandu4221.m3stage.adapter.renderer.registry.ComponentRendererRegistry
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.resolveModifiers
@@ -86,6 +87,9 @@ object DesignRenderer {
 
         Box(
             modifier = Modifier
+                .onGloballyPositioned { rootCoords ->
+                    hitTracker.rootCoordinates = rootCoords
+                }
                 .onPointerEvent(PointerEventType.Move) { event ->
                     val change = event.changes.firstOrNull()
                     if (change != null) {

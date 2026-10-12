@@ -12,18 +12,25 @@ import io.github.chandu4221.m3stage.model.NodeId
  * Enables hit-testing that always resolves to the deepest nested node under the pointer.
  */
 class CanvasHitTracker {
+    var rootCoordinates: LayoutCoordinates? = null
     private val boundsMap = mutableMapOf<NodeId, Pair<Int, Rect>>()
 
     fun recordBounds(id: NodeId, depth: Int, coordinates: LayoutCoordinates) {
         if (!coordinates.isAttached) return
-        val pos = coordinates.positionInRoot()
-        val size = coordinates.size
-        boundsMap[id] = depth to Rect(
-            left = pos.x,
-            top = pos.y,
-            right = pos.x + size.width,
-            bottom = pos.y + size.height
-        )
+        val root = rootCoordinates
+        val rect = if (root != null && root.isAttached) {
+            root.localBoundingBoxOf(coordinates)
+        } else {
+            val pos = coordinates.positionInRoot()
+            val size = coordinates.size
+            Rect(
+                left = pos.x,
+                top = pos.y,
+                right = pos.x + size.width,
+                bottom = pos.y + size.height
+            )
+        }
+        boundsMap[id] = depth to rect
     }
 
     fun unregister(id: NodeId) {
