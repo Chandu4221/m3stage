@@ -460,18 +460,8 @@ private fun ScreenArtboard(
                                 artboardOrigin = coords.positionInRoot()
                             }
                         }
-                        .selectionPointerInput(
-                            registry = registry,
-                            treeInfo = treeInfo,
-                            screenRootId = screen.root.id,
-                            anchorState = anchorState,
-                            onSelectNode = { target ->
-                                onActivate()
-                                onNodeClick(target)
-                            },
-                            onHoverChange = { hoveredNodeId = it }
-                        )
                 ) {
+                    // 1. Rendered components (below input layer)
                     DesignRenderer.Render(
                         node = screen.root,
                         selectedNodeId = selectedNodeId,
@@ -481,6 +471,7 @@ private fun ScreenArtboard(
                         artboardOrigin = { artboardOrigin }
                     )
 
+                    // 2. Figma-style selection & hover chrome
                     SelectionChrome(
                         registry = registry,
                         hoveredNodeId = hoveredNodeId,
@@ -488,6 +479,23 @@ private fun ScreenArtboard(
                         selectedNode = selectedNode,
                         zoomProvider = zoomProvider,
                         modifier = Modifier.fillMaxSize()
+                    )
+
+                    // 3. Top transparent pointer overlay (intercepts gestures before child buttons/widgets)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .selectionPointerInput(
+                                registry = registry,
+                                treeInfo = treeInfo,
+                                screenRootId = screen.root.id,
+                                anchorState = anchorState,
+                                onSelectNode = { target ->
+                                    onActivate()
+                                    onNodeClick(target)
+                                },
+                                onHoverChange = { hoveredNodeId = it }
+                            )
                     )
                 }
             }
