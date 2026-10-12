@@ -30,20 +30,20 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                     } else {
                         context.eventFlow.emit(
                             EditorEvent.LoadFailed(
-                                "Invalid project invariants: ${
-                                    validationErrors.joinToString(
-                                        "; "
-                                    )
-                                }"
+                                "Invalid project: ${validationErrors.joinToString("; ")}. Initialized fresh project."
                             )
                         )
+                        createNewProject()
                     }
                 } else {
                     // Truly first launch: file does not exist on disk
                     createNewProject()
                 }
             } catch (e: Exception) {
-                context.eventFlow.emit(EditorEvent.LoadFailed(e.message ?: "Failed to load project"))
+                context.eventFlow.emit(
+                    EditorEvent.LoadFailed("${e.message ?: "Failed to load project"}. Initialized fresh project.")
+                )
+                createNewProject()
             }
         }
     }
