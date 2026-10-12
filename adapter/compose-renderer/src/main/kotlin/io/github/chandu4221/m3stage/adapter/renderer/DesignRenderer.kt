@@ -23,8 +23,17 @@ import io.github.chandu4221.m3stage.adapter.renderer.resolver.resolveModifiers
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 
+private object NoIndication : androidx.compose.foundation.IndicationNodeFactory {
+    override fun create(interactionSource: androidx.compose.foundation.interaction.InteractionSource): androidx.compose.ui.node.DelegatableNode {
+        return object : androidx.compose.ui.Modifier.Node() {}
+    }
+    override fun hashCode(): Int = -1
+    override fun equals(other: Any?): Boolean = other === this
+}
+
 object DesignRenderer {
 
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
     @Composable
     fun Render(
         node: DesignNode,
@@ -34,7 +43,12 @@ object DesignRenderer {
         scheme: ColorScheme? = null
     ) {
         val content = @Composable {
-            RenderInternal(node, selectedNodeId, onNodeClick, lockedNodeIds)
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.foundation.LocalIndication provides NoIndication,
+                androidx.compose.material3.LocalRippleConfiguration provides null
+            ) {
+                RenderInternal(node, selectedNodeId, onNodeClick, lockedNodeIds)
+            }
         }
 
         if (scheme != null) {

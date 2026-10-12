@@ -398,13 +398,17 @@ private fun ScreenArtboard(
         // --- HARDWARE FRAME & LIVE COMPOSE RENDERER ---
         Box(
             modifier = Modifier
-                .clickable(onClick = {
-                    if (draggedComponentKind != null) {
-                        onDropOnScreen(screen.id, draggedComponentKind)
-                    } else {
-                        onActivate()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        if (draggedComponentKind != null) {
+                            onDropOnScreen(screen.id, draggedComponentKind)
+                        } else {
+                            onActivate()
+                        }
                     }
-                })
+                )
                 .then(
                     if (draggedComponentKind != null) {
                         Modifier.drawBehind {

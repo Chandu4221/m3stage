@@ -1,5 +1,6 @@
 package io.github.chandu4221.m3stage.adapter.renderer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,11 +22,11 @@ fun SelectionOverlay(
     hitTracker: CanvasHitTracker?,
     content: @Composable () -> Unit
 ) {
-    val (borderWidth, borderColor) = when {
-        isLocked -> 2.dp to MaterialTheme.colorScheme.tertiary
-        isSelected -> 2.dp to MaterialTheme.colorScheme.primary
-        isHovered -> 1.5.dp to MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
-        else -> 0.dp to Color.Transparent
+    val (borderWidth, borderColor, backgroundColor) = when {
+        isLocked -> Triple(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f))
+        isSelected -> Triple(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+        isHovered -> Triple(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.75f), MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+        else -> Triple(0.dp, Color.Transparent, Color.Transparent)
     }
 
     Box(
@@ -36,6 +37,10 @@ fun SelectionOverlay(
             .border(
                 width = borderWidth,
                 color = borderColor,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .background(
+                color = backgroundColor,
                 shape = RoundedCornerShape(4.dp)
             )
     ) {
