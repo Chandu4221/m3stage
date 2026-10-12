@@ -74,7 +74,7 @@ object ScaffoldDefinition {
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.Scaffold,
                 props = self.createDefaultProps(),
-                children = listOf(topBarNode, contentColumnNode),
+                children = emptyList(),
                 slots = mapOf(
                     TopBarSlot.id to listOf(topBarNode),
                     ContentSlot.id to listOf(contentColumnNode)
