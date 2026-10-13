@@ -12,9 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import java.awt.GraphicsEnvironment
-import java.awt.MouseInfo
 import androidx.compose.ui.Alignment
+
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -46,20 +45,6 @@ import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportController
 import io.github.chandu4221.m3stage.ui.device.DeviceOrientation
 
-/**
- * Safely fetches current OS pointer position in screen coordinates.
- * Returns null if running in a headless environment (such as automated tests).
- */
-private fun getScreenPointerPosition(): Offset? {
-    return try {
-        if (!GraphicsEnvironment.isHeadless()) {
-            val point = MouseInfo.getPointerInfo()?.location
-            if (point != null) Offset(point.x.toFloat(), point.y.toFloat()) else null
-        } else null
-    } catch (_: Throwable) {
-        null
-    }
-}
 
 /**
  * Parent Canvas (CanvasWorkbench): Infinite studio desk.
@@ -354,7 +339,6 @@ private fun FloatingArtboardToolbar(
         modifier = Modifier
             .clickable(onClick = onActivate)
             .pointerInput(screen.id) {
-                var startPointerPos: Offset? = null
                 var sessionDeltaDp = Offset.Zero
                 var startZoom = 1f
                 var densityVal = 1f
@@ -362,7 +346,6 @@ private fun FloatingArtboardToolbar(
                 detectDragGestures(
                     onDragStart = {
                         currentOnActivate()
-                        startPointerPos = getScreenPointerPosition()
                         sessionDeltaDp = Offset.Zero
                         startZoom = currentZoom
                         densityVal = currentDensity.density
@@ -371,31 +354,18 @@ private fun FloatingArtboardToolbar(
                     onDragEnd = {
                         val finalDelta = sessionDeltaDp
                         sessionDeltaDp = Offset.Zero
-                        startPointerPos = null
                         currentOnDragEnd(finalDelta)
                     },
                     onDragCancel = {
                         sessionDeltaDp = Offset.Zero
-                        startPointerPos = null
                         currentOnDragCancel()
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        val currentPointer = getScreenPointerPosition()
-                        val startPointer = startPointerPos
-                        if (currentPointer != null && startPointer != null) {
-                            val deltaScreenPx = currentPointer - startPointer
-                            sessionDeltaDp = Offset(
-                                deltaScreenPx.x / (densityVal * startZoom),
-                                deltaScreenPx.y / (densityVal * startZoom)
-                            )
-                        } else {
-                            // Fallback for headless environments
-                            sessionDeltaDp += Offset(
-                                dragAmount.x / (densityVal * startZoom),
-                                dragAmount.y / (densityVal * startZoom)
-                            )
-                        }
+                        sessionDeltaDp += Offset(
+                            dragAmount.x / (densityVal * startZoom),
+                            dragAmount.y / (densityVal * startZoom)
+                        )
                         currentOnDragDelta(sessionDeltaDp)
                     }
                 )
