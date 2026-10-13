@@ -28,6 +28,8 @@ interface CanvasViewportController {
     fun getScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId): Offset?
     fun setScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId, offset: Offset)
     fun moveScreenBy(screenId: io.github.chandu4221.m3stage.model.ScreenId, delta: Offset)
+    fun clearScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId)
+    fun clearAllScreenOffsets()
 }
 
 /**
@@ -83,7 +85,7 @@ class CanvasViewportDelegate(
 
     override fun tidy() {
         _viewportState.value = _viewportState.value.tidy()
-        _screenOffsets.value = emptyMap()
+        clearAllScreenOffsets()
     }
 
     override fun setActiveTool(tool: CanvasPointerTool) {
@@ -104,6 +106,18 @@ class CanvasViewportDelegate(
         val old = current[screenId] ?: Offset.Zero
         current[screenId] = old + delta
         _screenOffsets.value = current
+    }
+
+    override fun clearScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId) {
+        if (screenId in _screenOffsets.value) {
+            val current = _screenOffsets.value.toMutableMap()
+            current.remove(screenId)
+            _screenOffsets.value = current
+        }
+    }
+
+    override fun clearAllScreenOffsets() {
+        _screenOffsets.value = emptyMap()
     }
 }
 

@@ -238,14 +238,20 @@ fun CanvasWorkbench(
                                 onDuplicate = { onDuplicateScreen(screen.id) },
                                 onDelete = { onDeleteScreen(screen.id) },
                                 onDragScreen = { dragDeltaPx ->
+                                    // dragDeltaPx is received inside the counter-scaled toolbar (scale = 1/zoom).
+                                    // But the screen Column is inside the canvas container (scale = zoom).
+                                    // To ensure the toolbar remains locked 1:1 directly under the cursor regardless of zoom:
+                                    val zoomFactor = viewportState.value.zoom
                                     val densityVal = density.density
-                                    val deltaDpX = dragDeltaPx.x / densityVal
-                                    val deltaDpY = dragDeltaPx.y / densityVal
+                                    val deltaDpX = dragDeltaPx.x / (densityVal * zoomFactor)
+                                    val deltaDpY = dragDeltaPx.y / (densityVal * zoomFactor)
                                     val currentPos = viewportController.getScreenOffset(screen.id) ?: Offset(screen.canvasX, screen.canvasY)
                                     viewportController.setScreenOffset(screen.id, currentPos + Offset(deltaDpX, deltaDpY))
                                 },
                                 onDragEnd = {
                                     val finalPos = viewportController.getScreenOffset(screen.id)
+                                    // CRITICAL EDGE CASE: purge ephemeral offset immediately so domain is single source of truth
+                                    viewportController.clearScreenOffset(screen.id)
                                     if (finalPos != null) {
                                         onMoveScreen(screen.id, finalPos.x, finalPos.y)
                                     }

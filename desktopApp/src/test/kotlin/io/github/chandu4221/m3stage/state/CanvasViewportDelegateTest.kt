@@ -109,8 +109,20 @@ class CanvasViewportDelegateTest {
         delegate.setScreenOffset(screen2, Offset(500f, 0f))
         assertEquals(Offset(500f, 0f), delegate.getScreenOffset(screen2))
 
+        delegate.clearScreenOffset(screen1)
+        assertEquals(null, delegate.getScreenOffset(screen1))
+        assertEquals(Offset(500f, 0f), delegate.getScreenOffset(screen2))
+
         delegate.tidy()
         assertEquals(null, delegate.getScreenOffset(screen1))
         assertEquals(null, delegate.getScreenOffset(screen2))
+    }
+
+    @Test
+    fun `delegate clearScreenOffset handles non-existent screen gracefully`() {
+        val delegate = CanvasViewportDelegate()
+        val screenId = io.github.chandu4221.m3stage.model.ScreenId("unknown")
+        delegate.clearScreenOffset(screenId)
+        assertEquals(null, delegate.getScreenOffset(screenId))
     }
 }
