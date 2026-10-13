@@ -8,6 +8,8 @@ import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.validation.ProjectValidation
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
@@ -15,6 +17,8 @@ class ProjectSessionDelegate(
     private val context: EditorContext,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 ) : ProjectSession, AutoCloseable {
+
+    private val saveMutex = Mutex()
 
     var autosaveBlocked = false
         private set
@@ -46,14 +50,16 @@ class ProjectSessionDelegate(
             context.projectFlow
                 .debounce(800.milliseconds)
                 .collect { proj ->
-                    if (proj != null && _isDirty.value && !autosaveBlocked) {
-                        try {
-                            context.repository.save(proj)
-                            lastSavedOrLoadedProject = proj
-                            _isDirty.value = false
-                            context.eventFlow.emit(EditorEvent.SaveSuccess)
-                        } catch (e: Exception) {
-                            context.eventFlow.emit(EditorEvent.SaveFailed)
+                    saveMutex.withLock {
+                        if (proj != null && _isDirty.value && !autosaveBlocked) {
+                            try {
+                                context.repository.save(proj)
+                                lastSavedOrLoadedProject = proj
+                                _isDirty.value = false
+                                context.eventFlow.emit(EditorEvent.SaveSuccess)
+                            } catch (e: Exception) {
+                                context.eventFlow.emit(EditorEvent.SaveFailed)
+                            }
                         }
                     }
                 }
@@ -101,13 +107,16 @@ class ProjectSessionDelegate(
     override fun saveProject() {
         val current = context.projectFlow.value ?: return
         scope.launch {
-            try {
-                context.repository.save(current)
-                autosaveBlocked = false
-                _isDirty.value = false
-                context.eventFlow.emit(EditorEvent.SaveSuccess)
-            } catch (e: Exception) {
-                context.eventFlow.emit(EditorEvent.SaveFailed)
+            saveMutex.withLock {
+                try {
+                    context.repository.save(current)
+                    lastSavedOrLoadedProject = current
+                    autosaveBlocked = false
+                    _isDirty.value = false
+                    context.eventFlow.emit(EditorEvent.SaveSuccess)
+                } catch (e: Exception) {
+                    context.eventFlow.emit(EditorEvent.SaveFailed)
+                }
             }
         }
     }
@@ -143,10 +152,14 @@ class ProjectSessionDelegate(
             runBlocking {
                 try {
                     withTimeout(2000.milliseconds) {
-                        context.repository.save(current)
-                        lastSavedOrLoadedProject = current
-                        _isDirty.value = false
-                        context.eventFlow.emit(EditorEvent.SaveSuccess)
+                        saveMutex.withLock {
+                            if (_isDirty.value && !autosaveBlocked) {
+                                context.repository.save(current)
+                                lastSavedOrLoadedProject = current
+                                _isDirty.value = false
+                                context.eventFlow.emit(EditorEvent.SaveSuccess)
+                            }
+                        }
                     }
                 } catch (e: Exception) {
                     context.eventFlow.emit(EditorEvent.SaveFailed)

@@ -7,6 +7,7 @@ import io.github.chandu4221.m3stage.port.GeneratedProject
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -33,14 +34,28 @@ class ProjectSessionDelegateTest {
 
     private class MockProjectRepo(
         var loadException: Exception? = null,
-        var projectToLoad: Project? = null
+        var projectToLoad: Project? = null,
+        var onSaveDelayMs: Long = 0
     ) : ProjectRepository {
         var saveCallCount = 0
+        var concurrentSaveDetected = false
+        private var isSaving = false
         var lastSavedProject: Project? = null
 
         override suspend fun save(project: Project) {
-            saveCallCount++
-            lastSavedProject = project
+            if (isSaving) {
+                concurrentSaveDetected = true
+            }
+            isSaving = true
+            try {
+                if (onSaveDelayMs > 0) {
+                    delay(onSaveDelayMs)
+                }
+                saveCallCount++
+                lastSavedProject = project
+            } finally {
+                isSaving = false
+            }
         }
 
         override suspend fun load(): Project? {
@@ -203,6 +218,37 @@ class ProjectSessionDelegateTest {
         testScope.advanceUntilIdle()
 
         assertEquals(0, repo.saveCallCount, "No autosaves should run after session delegate is closed")
+    }
+
+    @Test
+    fun testConcurrentSavesAreSerializedByMutex() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "Project1",
+            basePackage = "com.example.test",
+            screens = emptyList()
+        )
+        val repo = MockProjectRepo(projectToLoad = initialProject, onSaveDelayMs = 500)
+        val context = EditorContext(idGen, repo, DummyCodeGen())
+
+        val delegate = ProjectSessionDelegate(context, testScope)
+        delegate.loadProject()
+        testScope.advanceUntilIdle()
+
+        // Trigger two manual saves in quick succession while onSaveDelayMs is active
+        context.projectFlow.value = initialProject.copy(name = "Edit1")
+        delegate.saveProject()
+        context.projectFlow.value = initialProject.copy(name = "Edit2")
+        delegate.saveProject()
+
+        testScope.advanceUntilIdle()
+
+        assertFalse(repo.concurrentSaveDetected, "Concurrent saves must never interleave")
+        assertEquals(2, repo.saveCallCount, "Both saves should complete serialized")
     }
 }
 
