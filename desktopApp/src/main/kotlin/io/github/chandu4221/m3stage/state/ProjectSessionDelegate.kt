@@ -11,14 +11,21 @@ import kotlinx.coroutines.flow.*
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
-class ProjectSessionDelegate(private val context: EditorContext) : ProjectSession {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+class ProjectSessionDelegate(
+    private val context: EditorContext,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+) : ProjectSession {
+
+    var autosaveBlocked = false
+        private set
 
     private val _isDirty = MutableStateFlow(false)
     override val isDirty: StateFlow<Boolean> = _isDirty.asStateFlow()
 
     override val project: StateFlow<Project?> = context.projectFlow.asStateFlow()
     override val events: SharedFlow<EditorEvent> = context.eventFlow.asSharedFlow()
+
+    private var lastSavedOrLoadedProject: Project? = null
 
     init {
         // Debounced autosave observer
@@ -28,7 +35,7 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                 .collect { p ->
                     if (isInitial) {
                         isInitial = false
-                    } else if (p != null) {
+                    } else if (p != null && p != lastSavedOrLoadedProject) {
                         _isDirty.value = true
                     }
                 }
@@ -39,9 +46,10 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
             context.projectFlow
                 .debounce(800.milliseconds)
                 .collect { proj ->
-                    if (proj != null && _isDirty.value) {
+                    if (proj != null && _isDirty.value && !autosaveBlocked) {
                         try {
                             context.repository.save(proj)
+                            lastSavedOrLoadedProject = proj
                             _isDirty.value = false
                             context.eventFlow.emit(EditorEvent.SaveSuccess)
                         } catch (e: Exception) {
@@ -59,10 +67,14 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                 if (loaded != null) {
                     val validationErrors = ProjectValidation.validate(loaded)
                     if (validationErrors.isEmpty()) {
+                        autosaveBlocked = false
+                        lastSavedOrLoadedProject = loaded
                         context.projectFlow.value = loaded
                         _isDirty.value = false
                         context.eventFlow.emit(EditorEvent.LoadSuccess)
                     } else {
+                        autosaveBlocked = true
+                        _isDirty.value = false
                         context.eventFlow.emit(
                             EditorEvent.LoadFailed(
                                 "Invalid project: ${validationErrors.joinToString("; ")}. Initialized fresh project."
@@ -72,9 +84,12 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
                     }
                 } else {
                     // Truly first launch: file does not exist on disk
+                    autosaveBlocked = false
                     createNewProject()
                 }
             } catch (e: Exception) {
+                autosaveBlocked = true
+                _isDirty.value = false
                 context.eventFlow.emit(
                     EditorEvent.LoadFailed("${e.message ?: "Failed to load project"}. Initialized fresh project.")
                 )
@@ -88,6 +103,7 @@ class ProjectSessionDelegate(private val context: EditorContext) : ProjectSessio
         scope.launch {
             try {
                 context.repository.save(current)
+                autosaveBlocked = false
                 _isDirty.value = false
                 context.eventFlow.emit(EditorEvent.SaveSuccess)
             } catch (e: Exception) {
