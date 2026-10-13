@@ -272,6 +272,39 @@ class ScreenCommandTest {
     }
 
     @Test
+    fun testEditorStoreTidyScreensRespectsScreenOrientationWidth() {
+        val repo = object : io.github.chandu4221.m3stage.port.ProjectRepository {
+            override suspend fun save(project: Project) {}
+            override suspend fun load(): Project? = null
+        }
+        val codeGen = object : io.github.chandu4221.m3stage.port.CodeGenerator {
+            override fun generate(project: Project): io.github.chandu4221.m3stage.port.GeneratedProject =
+                io.github.chandu4221.m3stage.port.GeneratedProject(emptyList())
+        }
+
+        val store = EditorStore(idGen, repo, codeGen)
+        store.createNewProject()
+
+        val initialScreen = store.project.value!!.screens.first()
+        store.duplicateScreen(initialScreen.id)
+
+        val screen1 = store.project.value!!.screens[0]
+        val screen2 = store.project.value!!.screens[1]
+
+        // Toggle screen1 from Portrait to Landscape (Pixel 8 landscape width = 892)
+        store.toggleScreenOrientation(screen1.id)
+        assertEquals(DeviceOrientation.Landscape, store.project.value!!.screens[0].orientation)
+
+        // Tidy screens
+        store.tidyScreens()
+
+        val tidied = store.project.value!!
+        assertEquals(0f, tidied.findScreen(screen1.id)?.canvasX)
+        // Screen 2 starts after s1 landscape width (892) + 64 = 956f (not portrait 412 + 64 = 476f)
+        assertEquals(956f, tidied.findScreen(screen2.id)?.canvasX)
+    }
+
+    @Test
     fun testRemoveNodeCommandSlotAwareAndIndexPreservingUndo() {
         val btn1 = DesignNode(id = NodeId("btn-1"), kind = ComponentKind.Button)
         val btn2 = DesignNode(id = NodeId("btn-2"), kind = ComponentKind.Button)
