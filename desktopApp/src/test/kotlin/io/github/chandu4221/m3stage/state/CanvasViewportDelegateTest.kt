@@ -91,4 +91,54 @@ class CanvasViewportDelegateTest {
         val screenCenter = delegate.viewportState.value.panOffset + (contentBounds.center * delegate.viewportState.value.zoom)
         assertOffsetClose(Offset(500f, 400f), screenCenter)
     }
+
+    @Test
+    fun `zoomIn without explicit center anchors around viewport center preserving stationary center point`() {
+        val initialPan = Offset(300f, 150f)
+        val initialZoom = 1.0f
+        val viewportSize = Size(1000f, 600f)
+        val state = CanvasViewportState(
+            zoom = initialZoom,
+            panOffset = initialPan,
+            viewportSize = viewportSize
+        )
+
+        val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+        val worldCenterBefore = (viewportCenter - initialPan) / initialZoom
+
+        val zoomed = state.zoomIn()
+
+        assertEquals(1.1f, zoomed.zoom, 0.001f)
+        val screenPosAfter = zoomed.panOffset + (worldCenterBefore * zoomed.zoom)
+        assertOffsetClose(viewportCenter, screenPosAfter)
+    }
+
+    @Test
+    fun `zoomOut without explicit center anchors around viewport center preserving stationary center point`() {
+        val initialPan = Offset(250f, -80f)
+        val initialZoom = 1.5f
+        val viewportSize = Size(800f, 600f)
+        val state = CanvasViewportState(
+            zoom = initialZoom,
+            panOffset = initialPan,
+            viewportSize = viewportSize
+        )
+
+        val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+        val worldCenterBefore = (viewportCenter - initialPan) / initialZoom
+
+        val zoomed = state.zoomOut()
+
+        assertEquals(1.4f, zoomed.zoom, 0.001f)
+        val screenPosAfter = zoomed.panOffset + (worldCenterBefore * zoomed.zoom)
+        assertOffsetClose(viewportCenter, screenPosAfter)
+    }
+
+    @Test
+    fun `delegate setViewportSize updates viewportSize`() {
+        val delegate = CanvasViewportDelegate()
+        val newSize = Size(1920f, 1080f)
+        delegate.setViewportSize(newSize)
+        assertEquals(newSize, delegate.viewportState.value.viewportSize)
+    }
 }

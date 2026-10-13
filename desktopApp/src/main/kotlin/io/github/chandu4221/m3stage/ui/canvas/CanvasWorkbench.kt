@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.TransformOrigin
@@ -95,6 +97,9 @@ fun CanvasWorkbench(
         modifier = modifier
             .fillMaxSize()
             .clipToBounds()
+            .onSizeChanged { size ->
+                viewportController.setViewportSize(Size(size.width.toFloat(), size.height.toFloat()))
+            }
             .pointerHoverIcon(effectiveCursor, overrideDescendants = isPanningMode)
             .background(MaterialTheme.colorScheme.surfaceDim)
             // P1: Dotted grid in screen-space (does NOT scale with zoom)

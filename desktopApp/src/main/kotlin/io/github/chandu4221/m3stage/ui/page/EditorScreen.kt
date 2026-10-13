@@ -191,6 +191,20 @@ fun EditorScreen(store: EditorStore) {
                     return@onPreviewKeyEvent true
                 }
 
+                // 2.6. Zoom: Ctrl+(+/-/0)
+                if (keyEvent.isCtrlPressed) {
+                    if (keyEvent.key == Key.Equals || keyEvent.key == Key.Plus || keyEvent.key == Key.NumPadAdd) {
+                        viewportController.zoomIn()
+                        return@onPreviewKeyEvent true
+                    } else if (keyEvent.key == Key.Minus || keyEvent.key == Key.NumPadSubtract) {
+                        viewportController.zoomOut()
+                        return@onPreviewKeyEvent true
+                    } else if (keyEvent.key == Key.Zero || keyEvent.key == Key.NumPad0) {
+                        viewportController.resetZoom()
+                        return@onPreviewKeyEvent true
+                    }
+                }
+
                 // 3. Escape: cancel drag if dragging, else pop anchor / deselect
                 if (keyEvent.key == Key.Escape) {
                     if (draggedComponentKind != null) {

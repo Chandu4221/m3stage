@@ -23,6 +23,7 @@ interface CanvasViewportController {
     fun resetZoom()
     fun tidy()
     fun setActiveTool(tool: CanvasPointerTool)
+    fun setViewportSize(size: Size)
 }
 
 /**
@@ -79,6 +80,12 @@ class CanvasViewportDelegate(
 
     override fun setActiveTool(tool: CanvasPointerTool) {
         _viewportState.value = _viewportState.value.copy(activeTool = tool)
+    }
+
+    override fun setViewportSize(size: Size) {
+        if (_viewportState.value.viewportSize != size) {
+            _viewportState.value = _viewportState.value.copy(viewportSize = size)
+        }
     }
 }
 
