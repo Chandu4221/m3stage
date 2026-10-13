@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,6 +72,7 @@ fun DeviceCanvas(
     val selectedNode = remember(selectedNodeId, screen.root) {
         selectedNodeId?.let { screen.root.findNode(it) }
     }
+    val dropTargetColor = MaterialTheme.colorScheme.tertiary
 
     Box(
         modifier = modifier
@@ -83,14 +85,16 @@ fun DeviceCanvas(
                             onClick = { onDropOnScreen(screen.id, draggedComponentKind) }
                         )
                         .drawBehind {
-                            val strokeWidth = 3.dp.toPx()
+                            val zoom = zoomProvider().coerceAtLeast(0.01f)
+                            val strokeWidth = (3.dp.toPx() / zoom).coerceAtLeast(0.5f)
+                            val dashLength = 12f / zoom
                             drawRoundRect(
-                                color = Color(0xFF388E3C), // Drop target green highlight
+                                color = dropTargetColor,
                                 size = size,
                                 cornerRadius = CornerRadius(24.dp.toPx()),
                                 style = Stroke(
                                     width = strokeWidth,
-                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 12f), 0f)
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashLength, dashLength), 0f)
                                 )
                             )
                         }
@@ -134,28 +138,40 @@ fun DeviceCanvas(
                 )
 
                 // 3. Top transparent pointer overlay (intercepts gestures before child buttons/widgets)
-                val hoverCursor = if (hoveredNodeId != null) {
-                    ToolCursorMapper.resolveCursor(CanvasPointerTool.Select, CanvasCursorOverride.ClickableHover)
+                if (draggedComponentKind != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onDropOnScreen(screen.id, draggedComponentKind) }
+                            )
+                    )
                 } else {
-                    ToolCursorMapper.resolveCursor(CanvasPointerTool.Select)
-                }
+                    val hoverCursor = if (hoveredNodeId != null) {
+                        ToolCursorMapper.resolveCursor(CanvasPointerTool.Select, CanvasCursorOverride.ClickableHover)
+                    } else {
+                        ToolCursorMapper.resolveCursor(CanvasPointerTool.Select)
+                    }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerHoverIcon(hoverCursor)
-                        .selectionPointerInput(
-                            registry = registry,
-                            treeInfo = treeInfo,
-                            screenRootId = screen.root.id,
-                            anchorState = anchorState,
-                            onSelectNode = { target ->
-                                onActivate()
-                                onSelectNode(target)
-                            },
-                            onHoverChange = { hoveredNodeId = it }
-                        )
-                )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerHoverIcon(hoverCursor)
+                            .selectionPointerInput(
+                                registry = registry,
+                                treeInfo = treeInfo,
+                                screenRootId = screen.root.id,
+                                anchorState = anchorState,
+                                onSelectNode = { target ->
+                                    onActivate()
+                                    onSelectNode(target)
+                                },
+                                onHoverChange = { hoveredNodeId = it }
+                            )
+                    )
+                }
             }
         }
     }

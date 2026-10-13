@@ -26,7 +26,7 @@ class SelectionDelegate : SelectionState {
         }
     }
 
-    override fun setActiveScreen(id: ScreenId) {
+    override fun setActiveScreen(id: ScreenId?) {
         _activeScreenId.value = id
         _selectedNodeId.value = null
         _drillAnchorNodeId.value = null

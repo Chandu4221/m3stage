@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,7 +40,7 @@ import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 fun FloatingCanvasStudio(
     screens: List<Screen>,
     activeScreenId: ScreenId?,
-    onSelectScreen: (ScreenId) -> Unit,
+    onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
     lockedNodeIds: Set<NodeId>,
@@ -59,6 +60,8 @@ fun FloatingCanvasStudio(
     onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
     onTidy: () -> Unit = {},
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
+    onDeviceChange: (ScreenId, DevicePreset) -> Unit = { _, _ -> },
+    onOrientationToggle: (ScreenId) -> Unit = {},
     isCodePreviewOpen: Boolean = false,
     onToggleCodePreview: () -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
@@ -90,6 +93,8 @@ fun FloatingCanvasStudio(
                     onDuplicateScreen = onDuplicateScreen,
                     onMoveScreen = onMoveScreen,
                     onReorderScreens = onReorderScreens,
+                    onDeviceChange = onDeviceChange,
+                    onOrientationToggle = onOrientationToggle,
                     draggedComponentKind = draggedComponentKind,
                     onDropOnScreen = onDropOnScreen
                 )
@@ -233,8 +238,11 @@ fun FloatingCanvasStudio(
                     ToolIconButton(
                         icon = Icons.Default.FitScreen,
                         contentDescription = "Zoom to Fit",
-                        onClick = { viewportController.resetZoom() },
-                        tooltip = "Reset Zoom (100%)"
+                        onClick = {
+                            val bounds = computeScreensContentBounds(screens)
+                            viewportController.zoomFit(contentBounds = bounds)
+                        },
+                        tooltip = "Zoom to Fit"
                     )
                 }
 
@@ -251,6 +259,33 @@ fun FloatingCanvasStudio(
             }
         }
     }
+}
+
+private fun computeScreensContentBounds(
+    screens: List<Screen>,
+    defaultDevice: DevicePreset = DevicePreset.Default
+): Rect? {
+    if (screens.isEmpty()) return null
+    var minX = Float.MAX_VALUE
+    var minY = Float.MAX_VALUE
+    var maxX = Float.MIN_VALUE
+    var maxY = Float.MIN_VALUE
+    for (screen in screens) {
+        val w = screen.resolveWidthDp(defaultDevice).toFloat()
+        val h = screen.resolveHeightDp(defaultDevice).toFloat()
+        minX = minOf(minX, screen.canvasX)
+        minY = minOf(minY, screen.canvasY)
+        maxX = maxOf(maxX, screen.canvasX + w)
+        maxY = maxOf(maxY, screen.canvasY + h)
+    }
+    if (maxX <= minX || maxY <= minY) return null
+    val padding = 64f
+    return Rect(
+        left = minX - padding,
+        top = minY - padding - 48f,
+        right = maxX + padding,
+        bottom = maxY + padding
+    )
 }
 
 @Preview

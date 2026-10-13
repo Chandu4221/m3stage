@@ -43,7 +43,7 @@ fun EditorShellTemplate(
     // Canvas state
     screens: List<Screen>,
     activeScreenId: ScreenId?,
-    onSelectScreen: (ScreenId) -> Unit,
+    onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
     lockedNodeIds: Set<NodeId>,
@@ -135,6 +135,8 @@ fun EditorShellTemplate(
                 onMoveScreen = { id, x, y -> store.moveScreen(id, x, y) },
                 onTidy = { store.tidyScreens() },
                 onReorderScreens = { from, to -> store.reorderScreens(from, to) },
+                onDeviceChange = { id, device -> store.updateScreenDevice(id, device) },
+                onOrientationToggle = { id -> store.toggleScreenOrientation(id) },
                 isCodePreviewOpen = isCodePreviewOpen,
                 onToggleCodePreview = onToggleCodePreview,
                 draggedComponentKind = draggedComponentKind,

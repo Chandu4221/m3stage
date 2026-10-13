@@ -9,6 +9,7 @@ data class Screen(
     val route: String,
     val root: DesignNode,
     val device: DevicePreset? = null,
+    val orientation: DeviceOrientation = DeviceOrientation.Portrait,
     val canvasX: Float = 0f,
     val canvasY: Float = 0f,
 ) {
@@ -28,6 +29,22 @@ data class Screen(
      */
     fun resolveDevice(projectDefault: DevicePreset): DevicePreset =
         device ?: projectDefault
+
+    /**
+     * Resolves the active width in Dp for this screen based on its resolved device and orientation.
+     */
+    fun resolveWidthDp(projectDefault: DevicePreset): Int {
+        val dev = resolveDevice(projectDefault)
+        return if (orientation == DeviceOrientation.Portrait) dev.widthDp else dev.heightDp
+    }
+
+    /**
+     * Resolves the active height in Dp for this screen based on its resolved device and orientation.
+     */
+    fun resolveHeightDp(projectDefault: DevicePreset): Int {
+        val dev = resolveDevice(projectDefault)
+        return if (orientation == DeviceOrientation.Portrait) dev.heightDp else dev.widthDp
+    }
 
     /**
      * Finds a node by [nodeId] anywhere in this screen's tree.

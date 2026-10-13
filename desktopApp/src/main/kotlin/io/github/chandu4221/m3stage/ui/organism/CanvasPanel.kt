@@ -18,7 +18,7 @@ import io.github.chandu4221.m3stage.ui.canvas.CanvasWorkbench
 fun CanvasPanel(
     screens: List<Screen>,
     activeScreenId: ScreenId?,
-    onSelectScreen: (ScreenId) -> Unit,
+    onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
     viewportController: CanvasViewportController,
@@ -29,6 +29,8 @@ fun CanvasPanel(
     onDuplicateScreen: (ScreenId) -> Unit = {},
     onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
+    onDeviceChange: (ScreenId, DevicePreset) -> Unit = { _, _ -> },
+    onOrientationToggle: (ScreenId) -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
@@ -50,6 +52,8 @@ fun CanvasPanel(
         onDeleteScreen = onDeleteScreen,
         onDuplicateScreen = onDuplicateScreen,
         onMoveScreen = onMoveScreen,
+        onDeviceChange = onDeviceChange,
+        onOrientationToggle = onOrientationToggle,
         draggedComponentKind = draggedComponentKind,
         onDropOnScreen = onDropOnScreen,
         modifier = modifier

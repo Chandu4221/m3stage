@@ -1,6 +1,9 @@
 package io.github.chandu4221.m3stage.state
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import kotlin.math.roundToInt
 
 enum class CanvasPointerTool {
     Select,
@@ -13,10 +16,11 @@ enum class CanvasPointerTool {
 data class CanvasViewportState(
     val zoom: Float = 1.0f,
     val panOffset: Offset = Offset.Zero,
-    val activeTool: CanvasPointerTool = CanvasPointerTool.Select
+    val activeTool: CanvasPointerTool = CanvasPointerTool.Select,
+    val viewportSize: Size = Size(1200f, 800f)
 ) {
     val zoomPercentage: Int
-        get() = (zoom * 100).toInt()
+        get() = (zoom * 100).roundToInt()
 
     /**
      * Cursor-anchored zoom mutation.
@@ -36,25 +40,40 @@ data class CanvasViewportState(
         zoomAt(center, factor)
 
     fun zoomIn(center: Offset? = null): CanvasViewportState {
-        return if (center != null) {
-            val targetZoom = (zoom + 0.1f).coerceAtMost(2.5f)
-            zoomAt(center, targetZoom / zoom)
+        val anchor = center ?: if (viewportSize.width > 0f && viewportSize.height > 0f) {
+            Offset(viewportSize.width / 2f, viewportSize.height / 2f)
         } else {
-            copy(zoom = (zoom + 0.1f).coerceAtMost(2.5f))
+            Offset(600f, 400f)
         }
+        val targetZoom = (zoom + 0.1f).coerceAtMost(2.5f)
+        return if (targetZoom == zoom) this else zoomAt(anchor, targetZoom / zoom)
     }
 
     fun zoomOut(center: Offset? = null): CanvasViewportState {
-        return if (center != null) {
-            val targetZoom = (zoom - 0.1f).coerceAtLeast(0.25f)
-            zoomAt(center, targetZoom / zoom)
+        val anchor = center ?: if (viewportSize.width > 0f && viewportSize.height > 0f) {
+            Offset(viewportSize.width / 2f, viewportSize.height / 2f)
         } else {
-            copy(zoom = (zoom - 0.1f).coerceAtLeast(0.25f))
+            Offset(600f, 400f)
         }
+        val targetZoom = (zoom - 0.1f).coerceAtLeast(0.25f)
+        return if (targetZoom == zoom) this else zoomAt(anchor, targetZoom / zoom)
     }
 
-    fun zoomFit(): CanvasViewportState =
+    fun resetZoom(): CanvasViewportState =
         copy(zoom = 1.0f, panOffset = Offset.Zero)
+
+    fun zoomFit(contentBounds: Rect? = null): CanvasViewportState {
+        if (contentBounds != null && contentBounds.width > 0f && contentBounds.height > 0f && viewportSize.width > 0f && viewportSize.height > 0f) {
+            val scaleX = viewportSize.width / contentBounds.width
+            val scaleY = viewportSize.height / contentBounds.height
+            val fitZoom = minOf(scaleX, scaleY).coerceIn(0.25f, 2.5f)
+            val centerViewport = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+            val centerContent = contentBounds.center
+            val newPan = centerViewport - (centerContent * fitZoom)
+            return copy(zoom = fitZoom, panOffset = newPan)
+        }
+        return resetZoom()
+    }
 
     fun panBy(delta: Offset): CanvasViewportState =
         copy(panOffset = panOffset + delta)

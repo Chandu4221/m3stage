@@ -7,6 +7,11 @@ enum class DeviceCategory(val displayName: String) {
     Desktop("Desktop")
 }
 
+enum class DeviceOrientation {
+    Portrait,
+    Landscape
+}
+
 /**
  * Strongly-typed Device Preset for visual canvas viewports.
  * Canonical dimensions match official Android reference devices and Jetpack Compose Devices catalog.

@@ -191,18 +191,36 @@ fun EditorScreen(store: EditorStore) {
                     return@onPreviewKeyEvent true
                 }
 
-                // 3. Escape: cancel drag if dragging, else pop anchor / deselect
+                // 2.6. Zoom: Ctrl+(+/-/0)
+                if (keyEvent.isCtrlPressed) {
+                    if (keyEvent.key == Key.Equals || keyEvent.key == Key.Plus || keyEvent.key == Key.NumPadAdd) {
+                        viewportController.zoomIn()
+                        return@onPreviewKeyEvent true
+                    } else if (keyEvent.key == Key.Minus || keyEvent.key == Key.NumPadSubtract) {
+                        viewportController.zoomOut()
+                        return@onPreviewKeyEvent true
+                    } else if (keyEvent.key == Key.Zero || keyEvent.key == Key.NumPad0) {
+                        viewportController.resetZoom()
+                        return@onPreviewKeyEvent true
+                    }
+                }
+
+                // 3. Escape: cancel drag if dragging, else pop anchor / deselect node / deselect screen
                 if (keyEvent.key == Key.Escape) {
                     if (draggedComponentKind != null) {
                         draggedComponentKind = null
                         return@onPreviewKeyEvent true
                     }
-                    val root = activeScreen?.root
-                    if (root != null) {
-                        val treeInfo = root.toTreeInfo()
-                        store.popSelectionAnchor(treeInfo, root.id)
+                    if (selectedNodeId != null) {
+                        val root = activeScreen?.root
+                        if (root != null) {
+                            val treeInfo = root.toTreeInfo()
+                            store.popSelectionAnchor(treeInfo, root.id)
+                        } else {
+                            store.selectNode(null)
+                        }
                     } else {
-                        store.selectNode(null)
+                        store.setActiveScreen(null)
                     }
                     return@onPreviewKeyEvent true
                 }

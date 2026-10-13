@@ -58,6 +58,18 @@ class CanvasViewportDelegateTest {
     }
 
     @Test
+    fun `zoomPercentage rounds rather than truncating`() {
+        val state1 = CanvasViewportState(zoom = 0.999f)
+        assertEquals(100, state1.zoomPercentage)
+
+        val state2 = CanvasViewportState(zoom = 0.334f)
+        assertEquals(33, state2.zoomPercentage)
+
+        val state3 = CanvasViewportState(zoom = 0.336f)
+        assertEquals(34, state3.zoomPercentage)
+    }
+
+    @Test
     fun `delegate handles pan and tool switching`() {
         val delegate = CanvasViewportDelegate()
 
@@ -90,5 +102,80 @@ class CanvasViewportDelegateTest {
         // Transformed to screen: panOffset + (350, 300) * 2.0 must equal viewport center (500, 400)
         val screenCenter = delegate.viewportState.value.panOffset + (contentBounds.center * delegate.viewportState.value.zoom)
         assertOffsetClose(Offset(500f, 400f), screenCenter)
+    }
+
+    @Test
+    fun `state zoomFit directly centers content and calculates scale`() {
+        val viewportSize = Size(1000f, 800f)
+        val state = CanvasViewportState(
+            zoom = 1.0f,
+            panOffset = Offset(200f, 200f),
+            viewportSize = viewportSize
+        )
+        val contentBounds = Rect(Offset(100f, 100f), Size(500f, 400f))
+
+        val fitted = state.zoomFit(contentBounds)
+
+        assertEquals(2.0f, fitted.zoom, 0.001f)
+        val screenCenter = fitted.panOffset + (contentBounds.center * fitted.zoom)
+        assertOffsetClose(Offset(500f, 400f), screenCenter)
+    }
+
+    @Test
+    fun `state zoomFit without content bounds falls back to resetZoom`() {
+        val state = CanvasViewportState(zoom = 1.8f, panOffset = Offset(150f, 75f))
+        val fitted = state.zoomFit(null)
+        assertEquals(1.0f, fitted.zoom)
+        assertEquals(Offset.Zero, fitted.panOffset)
+    }
+
+    @Test
+    fun `zoomIn without explicit center anchors around viewport center preserving stationary center point`() {
+        val initialPan = Offset(300f, 150f)
+        val initialZoom = 1.0f
+        val viewportSize = Size(1000f, 600f)
+        val state = CanvasViewportState(
+            zoom = initialZoom,
+            panOffset = initialPan,
+            viewportSize = viewportSize
+        )
+
+        val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+        val worldCenterBefore = (viewportCenter - initialPan) / initialZoom
+
+        val zoomed = state.zoomIn()
+
+        assertEquals(1.1f, zoomed.zoom, 0.001f)
+        val screenPosAfter = zoomed.panOffset + (worldCenterBefore * zoomed.zoom)
+        assertOffsetClose(viewportCenter, screenPosAfter)
+    }
+
+    @Test
+    fun `zoomOut without explicit center anchors around viewport center preserving stationary center point`() {
+        val initialPan = Offset(250f, -80f)
+        val initialZoom = 1.5f
+        val viewportSize = Size(800f, 600f)
+        val state = CanvasViewportState(
+            zoom = initialZoom,
+            panOffset = initialPan,
+            viewportSize = viewportSize
+        )
+
+        val viewportCenter = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+        val worldCenterBefore = (viewportCenter - initialPan) / initialZoom
+
+        val zoomed = state.zoomOut()
+
+        assertEquals(1.4f, zoomed.zoom, 0.001f)
+        val screenPosAfter = zoomed.panOffset + (worldCenterBefore * zoomed.zoom)
+        assertOffsetClose(viewportCenter, screenPosAfter)
+    }
+
+    @Test
+    fun `delegate setViewportSize updates viewportSize`() {
+        val delegate = CanvasViewportDelegate()
+        val newSize = Size(1920f, 1080f)
+        delegate.setViewportSize(newSize)
+        assertEquals(newSize, delegate.viewportState.value.viewportSize)
     }
 }
