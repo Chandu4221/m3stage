@@ -311,7 +311,7 @@ fun EditorScreen(store: EditorStore) {
             onRedo = { store.redo() },
             onAddScreen = {
                 val count = (project?.screens?.size ?: 0) + 1
-                store.addNewScreen("Screen $count", "/screen$count")
+                store.addNewScreen("Screen$count", "/screen$count")
                 // Automatically pan canvas to reveal the newly added screen on the right!
                 val screenIndex = project?.screens?.size ?: 1
                 val estimatedOffset = -((screenIndex - 1) * 460f)
