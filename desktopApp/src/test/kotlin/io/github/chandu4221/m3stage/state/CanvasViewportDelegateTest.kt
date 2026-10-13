@@ -58,6 +58,18 @@ class CanvasViewportDelegateTest {
     }
 
     @Test
+    fun `zoomPercentage rounds rather than truncating`() {
+        val state1 = CanvasViewportState(zoom = 0.999f)
+        assertEquals(100, state1.zoomPercentage)
+
+        val state2 = CanvasViewportState(zoom = 0.334f)
+        assertEquals(33, state2.zoomPercentage)
+
+        val state3 = CanvasViewportState(zoom = 0.336f)
+        assertEquals(34, state3.zoomPercentage)
+    }
+
+    @Test
     fun `delegate handles pan and tool switching`() {
         val delegate = CanvasViewportDelegate()
 

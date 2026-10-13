@@ -2,6 +2,7 @@ package io.github.chandu4221.m3stage.state
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import kotlin.math.roundToInt
 
 enum class CanvasPointerTool {
     Select,
@@ -18,7 +19,7 @@ data class CanvasViewportState(
     val viewportSize: Size = Size(1200f, 800f)
 ) {
     val zoomPercentage: Int
-        get() = (zoom * 100).toInt()
+        get() = (zoom * 100).roundToInt()
 
     /**
      * Cursor-anchored zoom mutation.
