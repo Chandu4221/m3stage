@@ -134,28 +134,40 @@ fun DeviceCanvas(
                 )
 
                 // 3. Top transparent pointer overlay (intercepts gestures before child buttons/widgets)
-                val hoverCursor = if (hoveredNodeId != null) {
-                    ToolCursorMapper.resolveCursor(CanvasPointerTool.Select, CanvasCursorOverride.ClickableHover)
+                if (draggedComponentKind != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onDropOnScreen(screen.id, draggedComponentKind) }
+                            )
+                    )
                 } else {
-                    ToolCursorMapper.resolveCursor(CanvasPointerTool.Select)
-                }
+                    val hoverCursor = if (hoveredNodeId != null) {
+                        ToolCursorMapper.resolveCursor(CanvasPointerTool.Select, CanvasCursorOverride.ClickableHover)
+                    } else {
+                        ToolCursorMapper.resolveCursor(CanvasPointerTool.Select)
+                    }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerHoverIcon(hoverCursor)
-                        .selectionPointerInput(
-                            registry = registry,
-                            treeInfo = treeInfo,
-                            screenRootId = screen.root.id,
-                            anchorState = anchorState,
-                            onSelectNode = { target ->
-                                onActivate()
-                                onSelectNode(target)
-                            },
-                            onHoverChange = { hoveredNodeId = it }
-                        )
-                )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerHoverIcon(hoverCursor)
+                            .selectionPointerInput(
+                                registry = registry,
+                                treeInfo = treeInfo,
+                                screenRootId = screen.root.id,
+                                anchorState = anchorState,
+                                onSelectNode = { target ->
+                                    onActivate()
+                                    onSelectNode(target)
+                                },
+                                onHoverChange = { hoveredNodeId = it }
+                            )
+                    )
+                }
             }
         }
     }
