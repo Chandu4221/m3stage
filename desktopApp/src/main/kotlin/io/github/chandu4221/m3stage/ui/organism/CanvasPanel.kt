@@ -18,7 +18,7 @@ import io.github.chandu4221.m3stage.ui.canvas.CanvasWorkbench
 fun CanvasPanel(
     screens: List<Screen>,
     activeScreenId: ScreenId?,
-    onSelectScreen: (ScreenId) -> Unit,
+    onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
     viewportController: CanvasViewportController,

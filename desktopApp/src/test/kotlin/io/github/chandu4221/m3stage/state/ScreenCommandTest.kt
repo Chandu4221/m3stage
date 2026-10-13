@@ -408,5 +408,38 @@ class ScreenCommandTest {
         assertEquals(oldPos, copied.oldPositions)
         assertEquals(newPos, copied.newPositions)
     }
+
+    @Test
+    fun testDeselectScreenAndPreserveDeselectionAcrossMoves() {
+        val repo = object : io.github.chandu4221.m3stage.port.ProjectRepository {
+            override suspend fun save(project: Project) {}
+            override suspend fun load(): Project? = null
+        }
+        val codeGen = object : io.github.chandu4221.m3stage.port.CodeGenerator {
+            override fun generate(project: Project): io.github.chandu4221.m3stage.port.GeneratedProject =
+                io.github.chandu4221.m3stage.port.GeneratedProject(emptyList())
+        }
+
+        val store = EditorStore(idGen, repo, codeGen)
+        store.createNewProject()
+
+        val screenId = store.project.value!!.screens.first().id
+        store.setActiveScreen(screenId)
+        assertEquals(screenId, store.activeScreenId.value)
+
+        // Move the screen
+        store.moveScreen(screenId, 150f, 100f)
+        assertEquals(150f, store.project.value!!.findScreen(screenId)?.canvasX)
+
+        // Click parent canvas to deselect screen
+        store.setActiveScreen(null)
+        kotlin.test.assertNull(store.activeScreenId.value)
+        kotlin.test.assertNull(store.selectedNodeId.value)
+
+        // Move screen again; selection should remain null (no re-select race)
+        store.moveScreen(screenId, 200f, 120f)
+        assertEquals(200f, store.project.value!!.findScreen(screenId)?.canvasX)
+        kotlin.test.assertNull(store.activeScreenId.value)
+    }
 }
 

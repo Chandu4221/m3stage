@@ -43,7 +43,7 @@ fun EditorShellTemplate(
     // Canvas state
     screens: List<Screen>,
     activeScreenId: ScreenId?,
-    onSelectScreen: (ScreenId) -> Unit,
+    onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
     lockedNodeIds: Set<NodeId>,

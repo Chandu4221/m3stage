@@ -205,18 +205,22 @@ fun EditorScreen(store: EditorStore) {
                     }
                 }
 
-                // 3. Escape: cancel drag if dragging, else pop anchor / deselect
+                // 3. Escape: cancel drag if dragging, else pop anchor / deselect node / deselect screen
                 if (keyEvent.key == Key.Escape) {
                     if (draggedComponentKind != null) {
                         draggedComponentKind = null
                         return@onPreviewKeyEvent true
                     }
-                    val root = activeScreen?.root
-                    if (root != null) {
-                        val treeInfo = root.toTreeInfo()
-                        store.popSelectionAnchor(treeInfo, root.id)
+                    if (selectedNodeId != null) {
+                        val root = activeScreen?.root
+                        if (root != null) {
+                            val treeInfo = root.toTreeInfo()
+                            store.popSelectionAnchor(treeInfo, root.id)
+                        } else {
+                            store.selectNode(null)
+                        }
                     } else {
-                        store.selectNode(null)
+                        store.setActiveScreen(null)
                     }
                     return@onPreviewKeyEvent true
                 }

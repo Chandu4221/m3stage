@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,7 +64,7 @@ import io.github.chandu4221.m3stage.ui.device.DeviceOrientation
 fun CanvasWorkbench(
     screens: List<Screen>,
     activeScreenId: ScreenId?,
-    onSelectScreen: (ScreenId) -> Unit,
+    onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
     lockedNodeIds: Set<NodeId>,
@@ -133,6 +134,14 @@ fun CanvasWorkbench(
                             change.consume()
                             viewportController.panBy(dragAmount)
                         }
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        onSelectScreen(null)
+                        onNodeClick(null)
                     }
                 )
             }

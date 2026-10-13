@@ -26,14 +26,18 @@ class EditorStore(
 
     // Scope for observing state changes
     private val storeScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var lastObservedProjectId: ProjectId? = null
 
     init {
-        // Auto-select the first screen whenever a project is loaded or created
+        // Auto-select the first screen whenever a new project is loaded or created
         storeScope.launch {
             project.collect { currentProject ->
-                if (currentProject != null && activeScreenId.value == null) {
-                    currentProject.screens.firstOrNull()?.let { firstScreen ->
-                        setActiveScreen(firstScreen.id)
+                if (currentProject != null && currentProject.id != lastObservedProjectId) {
+                    lastObservedProjectId = currentProject.id
+                    if (activeScreenId.value == null) {
+                        currentProject.screens.firstOrNull()?.let { firstScreen ->
+                            setActiveScreen(firstScreen.id)
+                        }
                     }
                 }
             }
@@ -46,7 +50,7 @@ class EditorStore(
     override val lockedNodeIds = selectionDelegate.lockedNodeIds
     override val drillAnchorNodeId = selectionDelegate.drillAnchorNodeId
     override fun selectNode(id: NodeId?) = selectionDelegate.selectNode(id)
-    override fun setActiveScreen(id: ScreenId) = selectionDelegate.setActiveScreen(id)
+    override fun setActiveScreen(id: ScreenId?) = selectionDelegate.setActiveScreen(id)
     override fun toggleLock(id: NodeId) = selectionDelegate.toggleLock(id)
     override fun isNodeLocked(id: NodeId) = selectionDelegate.isNodeLocked(id)
     override fun setDrillAnchor(id: NodeId?) = selectionDelegate.setDrillAnchor(id)
