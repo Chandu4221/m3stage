@@ -218,7 +218,8 @@ fun CanvasWorkbench(
                                     )
                                 }
                         ) {
-                            // P5: Floating Artboard Toolbar (Counter-scaled at 1 / zoom)
+                            // P5 / P3-18: Floating Artboard Toolbar (Counter-scaled at 1 / zoom)
+                            // Anchored at TransformOrigin(0.5f, 1f) to keep bottom edge exactly 12dp above artboard across all zoom levels
                             Box(
                                 modifier = Modifier.graphicsLayer {
                                     val z = viewportState.value.zoom
