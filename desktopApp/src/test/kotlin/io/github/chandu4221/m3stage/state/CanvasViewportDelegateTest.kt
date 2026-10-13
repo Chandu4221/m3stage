@@ -91,4 +91,26 @@ class CanvasViewportDelegateTest {
         val screenCenter = delegate.viewportState.value.panOffset + (contentBounds.center * delegate.viewportState.value.zoom)
         assertOffsetClose(Offset(500f, 400f), screenCenter)
     }
+
+    @Test
+    fun `delegate tracks and updates individual screen offsets`() {
+        val delegate = CanvasViewportDelegate()
+        val screen1 = io.github.chandu4221.m3stage.model.ScreenId("screen-1")
+        val screen2 = io.github.chandu4221.m3stage.model.ScreenId("screen-2")
+
+        assertEquals(null, delegate.getScreenOffset(screen1))
+
+        delegate.moveScreenBy(screen1, Offset(100f, 50f))
+        assertEquals(Offset(100f, 50f), delegate.getScreenOffset(screen1))
+
+        delegate.moveScreenBy(screen1, Offset(20f, -10f))
+        assertEquals(Offset(120f, 40f), delegate.getScreenOffset(screen1))
+
+        delegate.setScreenOffset(screen2, Offset(500f, 0f))
+        assertEquals(Offset(500f, 0f), delegate.getScreenOffset(screen2))
+
+        delegate.tidy()
+        assertEquals(null, delegate.getScreenOffset(screen1))
+        assertEquals(null, delegate.getScreenOffset(screen2))
+    }
 }

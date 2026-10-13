@@ -313,10 +313,10 @@ fun EditorScreen(store: EditorStore) {
                 val count = (project?.screens?.size ?: 0) + 1
                 store.addNewScreen("Screen$count", "/screen$count")
                 // Automatically pan canvas to reveal the newly added screen on the right!
-                val screenIndex = project?.screens?.size ?: 1
-                val estimatedOffset = -((screenIndex - 1) * 460f)
+                val newlyAddedScreen = store.project.value?.screens?.lastOrNull()
+                val targetX = newlyAddedScreen?.canvasX ?: 0f
                 val currentPan = viewportController.viewportState.value.panOffset
-                viewportController.panBy(Offset(estimatedOffset - currentPan.x, 0f))
+                viewportController.panBy(Offset(-targetX - currentPan.x, 0f))
             },
             onExportCode = { showExportDialog = true },
             isCodePreviewOpen = isCodePreviewOpen,

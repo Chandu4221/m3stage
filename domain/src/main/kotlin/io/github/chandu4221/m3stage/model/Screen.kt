@@ -9,6 +9,8 @@ data class Screen(
     val route: String,
     val root: DesignNode,
     val device: DevicePreset? = null,
+    val canvasX: Float = 0f,
+    val canvasY: Float = 0f,
 ) {
     init {
         require(name.isNotBlank()) { "Screen name cannot be blank" }

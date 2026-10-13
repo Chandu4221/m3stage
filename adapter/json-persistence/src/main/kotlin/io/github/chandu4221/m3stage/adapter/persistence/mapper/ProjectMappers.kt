@@ -19,6 +19,8 @@ fun Screen.toDto(): ScreenDto = ScreenDto(
     name = this.name,
     route = this.route,
     device = this.device?.id,
+    canvasX = this.canvasX,
+    canvasY = this.canvasY,
     root = this.root.toDto()
 )
 
@@ -37,5 +39,7 @@ fun ScreenDto.toDomain(): Screen = Screen(
     name = this.name,
     route = this.route,
     device = this.device?.let { DevicePreset.fromId(it) },
+    canvasX = this.canvasX,
+    canvasY = this.canvasY,
     root = this.root.toDomain()
 )

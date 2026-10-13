@@ -223,6 +223,62 @@ data class ReorderScreensCommand(
 }
 
 /**
+ * Moves a screen to a new canvas coordinate (x, y). Undo restores previous coordinate.
+ */
+data class MoveScreenCommand(
+    val screenId: ScreenId,
+    val newX: Float,
+    val newY: Float
+) : EditorCommand {
+    private var oldX: Float = 0f
+    private var oldY: Float = 0f
+
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        oldX = screen.canvasX
+        oldY = screen.canvasY
+        val updatedScreens = project.screens.map {
+            if (it.id == screenId) it.copy(canvasX = newX, canvasY = newY) else it
+        }
+        return project.copy(screens = updatedScreens)
+    }
+
+    override fun undo(project: Project): Project {
+        val updatedScreens = project.screens.map {
+            if (it.id == screenId) it.copy(canvasX = oldX, canvasY = oldY) else it
+        }
+        return project.copy(screens = updatedScreens)
+    }
+}
+
+/**
+ * Tidies all screens along a clean horizontal row. Undo restores previous coordinates for all screens.
+ */
+data class TidyScreensCommand(
+    val newPositions: Map<ScreenId, Pair<Float, Float>>
+) : EditorCommand {
+    private var oldPositions: Map<ScreenId, Pair<Float, Float>> = emptyMap()
+
+    override fun execute(project: Project): Project {
+        oldPositions = project.screens.associate { it.id to (it.canvasX to it.canvasY) }
+        val updatedScreens = project.screens.map { screen ->
+            val pos = newPositions[screen.id]
+            if (pos != null) screen.copy(canvasX = pos.first, canvasY = pos.second) else screen
+        }
+        return project.copy(screens = updatedScreens)
+    }
+
+    override fun undo(project: Project): Project {
+        val updatedScreens = project.screens.map { screen ->
+            val pos = oldPositions[screen.id]
+            if (pos != null) screen.copy(canvasX = pos.first, canvasY = pos.second) else screen
+        }
+        return project.copy(screens = updatedScreens)
+    }
+}
+
+
+/**
  * Updates the project's seed color and dark mode theme. Undo restores the previous theme.
  */
 data class UpdateThemeCommand(

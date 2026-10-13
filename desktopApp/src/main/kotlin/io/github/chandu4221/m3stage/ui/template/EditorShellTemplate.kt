@@ -132,6 +132,8 @@ fun EditorShellTemplate(
                 onRenameScreen = { id, name -> store.renameScreen(id, name) },
                 onDeleteScreen = { store.deleteScreen(it) },
                 onDuplicateScreen = { store.duplicateScreen(it) },
+                onMoveScreen = { id, x, y -> store.moveScreen(id, x, y) },
+                onTidy = { store.tidyScreens() },
                 onReorderScreens = { from, to -> store.reorderScreens(from, to) },
                 isCodePreviewOpen = isCodePreviewOpen,
                 onToggleCodePreview = onToggleCodePreview,

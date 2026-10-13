@@ -28,5 +28,7 @@ data class ScreenDto(
     val name: String,
     val route: String,
     val device: String? = null,
+    val canvasX: Float = 0f,
+    val canvasY: Float = 0f,
     val root: DesignNodeDto
 )

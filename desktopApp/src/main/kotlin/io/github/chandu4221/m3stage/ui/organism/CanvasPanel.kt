@@ -27,6 +27,7 @@ fun CanvasPanel(
     onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
+    onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
@@ -48,6 +49,7 @@ fun CanvasPanel(
         onRenameScreen = onRenameScreen,
         onDeleteScreen = onDeleteScreen,
         onDuplicateScreen = onDuplicateScreen,
+        onMoveScreen = onMoveScreen,
         draggedComponentKind = draggedComponentKind,
         onDropOnScreen = onDropOnScreen,
         modifier = modifier

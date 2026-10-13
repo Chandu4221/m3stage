@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -31,7 +32,9 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
@@ -69,11 +72,13 @@ fun CanvasWorkbench(
     onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
+    onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+    val density = LocalDensity.current
     val viewportState = viewportController.viewportState
     val activeTool = viewportState.value.activeTool
     var isDraggingCanvas by remember { mutableStateOf(false) }
@@ -171,9 +176,8 @@ fun CanvasWorkbench(
                 }
                 .padding(vertical = 56.dp, horizontal = 72.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(48.dp),
-                verticalAlignment = Alignment.Top
+            Box(
+                modifier = Modifier.wrapContentSize(unbounded = true)
             ) {
                 screens.forEachIndexed { index, screen ->
                     val isActive = screen.id == activeScreenId
@@ -186,9 +190,21 @@ fun CanvasWorkbench(
                     val currentW = if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
                     val currentH = if (orientation == DeviceOrientation.Portrait) activeDevice.heightDp else activeDevice.widthDp
 
+                    // 2D screen world coordinate on the canvas: ephemeral drag offset or domain coordinate
+                    val customOffset = viewportController.getScreenOffset(screen.id)
+                    val screenX = customOffset?.x ?: screen.canvasX
+                    val screenY = customOffset?.y ?: screen.canvasY
+
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    x = screenX.dp.roundToPx(),
+                                    y = screenY.dp.roundToPx()
+                                )
+                            }
                     ) {
                         // P5: Floating Artboard Toolbar (Counter-scaled at 1 / zoom)
                         Box(
@@ -220,7 +236,20 @@ fun CanvasWorkbench(
                                 onMoveRight = { onMoveRight(index) },
                                 onRename = { onRenameScreen(screen.id, it) },
                                 onDuplicate = { onDuplicateScreen(screen.id) },
-                                onDelete = { onDeleteScreen(screen.id) }
+                                onDelete = { onDeleteScreen(screen.id) },
+                                onDragScreen = { dragDeltaPx ->
+                                    val densityVal = density.density
+                                    val deltaDpX = dragDeltaPx.x / densityVal
+                                    val deltaDpY = dragDeltaPx.y / densityVal
+                                    val currentPos = viewportController.getScreenOffset(screen.id) ?: Offset(screen.canvasX, screen.canvasY)
+                                    viewportController.setScreenOffset(screen.id, currentPos + Offset(deltaDpX, deltaDpY))
+                                },
+                                onDragEnd = {
+                                    val finalPos = viewportController.getScreenOffset(screen.id)
+                                    if (finalPos != null) {
+                                        onMoveScreen(screen.id, finalPos.x, finalPos.y)
+                                    }
+                                }
                             )
                         }
 
@@ -269,7 +298,9 @@ private fun FloatingArtboardToolbar(
     onMoveRight: () -> Unit,
     onRename: (String) -> Unit,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onDragScreen: (Offset) -> Unit = {},
+    onDragEnd: () -> Unit = {}
 ) {
     var deviceDropdownExpanded by remember { mutableStateOf(false) }
     var actionsMenuExpanded by remember { mutableStateOf(false) }
@@ -283,14 +314,32 @@ private fun FloatingArtboardToolbar(
             width = if (isActive) 1.5.dp else 1.dp,
             color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
         ),
-        modifier = Modifier.clickable(onClick = onActivate)
+        modifier = Modifier
+            .clickable(onClick = onActivate)
+            .pointerInput(screen.id) {
+                detectDragGestures(
+                    onDragStart = { onActivate() },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDragScreen(dragAmount)
+                    }
+                )
+            }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Screen Name Badge
+            // Drag grip indicator & Screen Name Badge
+            Icon(
+                imageVector = Icons.Default.DragIndicator,
+                contentDescription = "Move Screen",
+                modifier = Modifier.size(16.dp),
+                tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
             Text(
                 text = screen.name,
                 style = MaterialTheme.typography.titleSmall,

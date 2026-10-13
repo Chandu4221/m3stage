@@ -248,14 +248,24 @@ class EditorStore(
 
     // --- Bridge: Add New Screen ---
     fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
+        val currentProject = project.value
         val idGen = context.idGenerator
         val rootNode = ComponentCatalog[ComponentKind.Scaffold].createDefaultSubtree(idGen)
         val screenId = idGen.nextScreenId()
+        val defaultDevice = currentProject?.defaultDevice ?: DevicePreset.Default
+        val resolvedWidth = (device ?: defaultDevice).widthDp.toFloat()
+        val nextX = if (currentProject != null && currentProject.screens.isNotEmpty()) {
+            currentProject.screens.maxOf { it.canvasX + (it.device ?: defaultDevice).widthDp } + 64f
+        } else {
+            0f
+        }
         val newScreen = Screen(
             id = screenId,
             name = name,
             route = route,
             device = device,
+            canvasX = nextX,
+            canvasY = 0f,
             root = rootNode
         )
         execute(AddScreenCommand(newScreen))
@@ -351,15 +361,40 @@ class EditorStore(
 
         val freshScreenId = context.idGenerator.nextScreenId()
         val duplicatedRoot = reIdSubtree(originalScreen.root)
+        val defaultDevice = currentProject.defaultDevice
+        val nextX = currentProject.screens.maxOf { it.canvasX + (it.device ?: defaultDevice).widthDp } + 64f
         val duplicatedScreen = Screen(
             id = freshScreenId,
             name = candidateName,
             route = candidateRoute,
             root = duplicatedRoot,
-            device = originalScreen.device
+            device = originalScreen.device,
+            canvasX = nextX,
+            canvasY = originalScreen.canvasY
         )
         execute(DuplicateScreenCommand(duplicatedScreen))
         setActiveScreen(freshScreenId)
+    }
+
+    // --- Bridge: Move Screen (Canvas 2D) ---
+    fun moveScreen(screenId: ScreenId, newX: Float, newY: Float) {
+        execute(MoveScreenCommand(screenId, newX, newY))
+    }
+
+    // --- Bridge: Tidy Screens (Horizontal Layout) ---
+    fun tidyScreens() {
+        val currentProject = project.value ?: return
+        if (currentProject.screens.isEmpty()) return
+
+        val defaultDevice = currentProject.defaultDevice
+        val newPositions = mutableMapOf<ScreenId, Pair<Float, Float>>()
+        var currentX = 0f
+        for (screen in currentProject.screens) {
+            newPositions[screen.id] = currentX to 0f
+            val width = (screen.device ?: defaultDevice).widthDp.toFloat()
+            currentX += width + 64f
+        }
+        execute(TidyScreensCommand(newPositions))
     }
 
     // --- Bridge: Reorder Screens ---

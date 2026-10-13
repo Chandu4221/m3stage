@@ -101,4 +101,38 @@ class ScreenCommandTest {
         assertEquals(ScreenId("screen-2"), undone.screens[1].id)
         assertTrue(ProjectValidation.validate(undone).isEmpty())
     }
+
+    @Test
+    fun testMoveScreenCommand() {
+        val project = createSampleProject()
+        val command = MoveScreenCommand(ScreenId("screen-1"), 200f, 150f)
+
+        val executed = command.execute(project)
+        val screen = executed.findScreen(ScreenId("screen-1"))
+        assertEquals(200f, screen?.canvasX)
+        assertEquals(150f, screen?.canvasY)
+
+        val undone = command.undo(executed)
+        val undoneScreen = undone.findScreen(ScreenId("screen-1"))
+        assertEquals(0f, undoneScreen?.canvasX)
+        assertEquals(0f, undoneScreen?.canvasY)
+    }
+
+    @Test
+    fun testTidyScreensCommand() {
+        val project = createSampleProject()
+        val newPositions = mapOf(
+            ScreenId("screen-1") to (0f to 0f),
+            ScreenId("screen-2") to (476f to 0f)
+        )
+        val command = TidyScreensCommand(newPositions)
+
+        val executed = command.execute(project)
+        assertEquals(0f, executed.findScreen(ScreenId("screen-1"))?.canvasX)
+        assertEquals(476f, executed.findScreen(ScreenId("screen-2"))?.canvasX)
+
+        val undone = command.undo(executed)
+        assertEquals(0f, undone.findScreen(ScreenId("screen-1"))?.canvasX)
+        assertEquals(0f, undone.findScreen(ScreenId("screen-2"))?.canvasX)
+    }
 }

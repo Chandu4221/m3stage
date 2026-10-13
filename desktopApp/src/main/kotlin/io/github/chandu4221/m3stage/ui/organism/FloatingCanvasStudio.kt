@@ -56,6 +56,8 @@ fun FloatingCanvasStudio(
     onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
+    onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
+    onTidy: () -> Unit = {},
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     isCodePreviewOpen: Boolean = false,
     onToggleCodePreview: () -> Unit = {},
@@ -86,6 +88,7 @@ fun FloatingCanvasStudio(
                     onRenameScreen = onRenameScreen,
                     onDeleteScreen = onDeleteScreen,
                     onDuplicateScreen = onDuplicateScreen,
+                    onMoveScreen = onMoveScreen,
                     onReorderScreens = onReorderScreens,
                     draggedComponentKind = draggedComponentKind,
                     onDropOnScreen = onDropOnScreen
@@ -204,7 +207,10 @@ fun FloatingCanvasStudio(
                     ToolIconButton(
                         icon = Icons.AutoMirrored.Filled.FormatAlignLeft,
                         contentDescription = "Tidy Artboards",
-                        onClick = { viewportController.tidy() },
+                        onClick = {
+                            viewportController.tidy()
+                            onTidy()
+                        },
                         tooltip = "Tidy & Center Artboards"
                     )
                 }
