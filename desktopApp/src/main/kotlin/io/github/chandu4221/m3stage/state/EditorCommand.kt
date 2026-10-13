@@ -1,5 +1,6 @@
 package io.github.chandu4221.m3stage.state
 
+import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.mutation.*
@@ -43,7 +44,7 @@ data class AddNodeCommand(
 
 /**
  * Removes a node. Undo re-inserts it.
- * (Captures parent info at execution time for accurate undo).
+ * (Captures parent and slot info at execution time for accurate undo).
  */
 data class RemoveNodeCommand(
     val screenId: ScreenId,
@@ -51,14 +52,26 @@ data class RemoveNodeCommand(
 ) : EditorCommand {
     var removedNode: DesignNode? = null
     var parentId: NodeId? = null
+    var slotId: SlotId? = null
+    var index: Int = -1
 
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
         val nodeToRemove = screen.root.findNode(nodeId) ?: return project
+        val parent = screen.root.findParent(nodeId)
 
         // Capture state for undo
         this.removedNode = nodeToRemove
-        this.parentId = screen.root.findParent(nodeId)?.id ?: screen.root.id
+        this.parentId = parent?.id
+        if (parent != null) {
+            val foundSlot = parent.findSlotForNode(nodeId)
+            this.slotId = foundSlot
+            if (foundSlot != null) {
+                this.index = (parent.slots[foundSlot] ?: emptyList()).indexOfFirst { it.id == nodeId }
+            } else {
+                this.index = parent.children.indexOfFirst { it.id == nodeId }
+            }
+        }
 
         val newRoot = screen.root.removeNode(nodeId)
         return project.updateScreenRoot(screenId, newRoot)
@@ -69,7 +82,11 @@ data class RemoveNodeCommand(
         val parent = parentId ?: return project
 
         val screen = project.findScreen(screenId) ?: return project
-        val newRoot = screen.root.addNode(parent, node)
+        val newRoot = if (index >= 0) {
+            screen.root.insertNode(parent, node, index, slotId)
+        } else {
+            screen.root.addNode(parent, node, slotId)
+        }
         return project.updateScreenRoot(screenId, newRoot)
     }
 }
@@ -199,14 +216,20 @@ data class DuplicateScreenCommand(
 }
 
 /**
- * Reorders screens by moving screen from fromIndex to toIndex. Undo moves back.
+ * Reorders screens by moving screen from fromIndex to toIndex. Undo moves back using identity.
  */
 data class ReorderScreensCommand(
     val fromIndex: Int,
     val toIndex: Int
 ) : EditorCommand {
+    var movedScreenId: ScreenId? = null
+    var originalIndex: Int = fromIndex
+
     override fun execute(project: Project): Project {
         if (fromIndex !in project.screens.indices || toIndex !in project.screens.indices) return project
+        val screen = project.screens[fromIndex]
+        this.movedScreenId = screen.id
+        this.originalIndex = fromIndex
         val mutable = project.screens.toMutableList()
         val item = mutable.removeAt(fromIndex)
         mutable.add(toIndex, item)
@@ -214,10 +237,22 @@ data class ReorderScreensCommand(
     }
 
     override fun undo(project: Project): Project {
-        if (fromIndex !in project.screens.indices || toIndex !in project.screens.indices) return project
+        val screenId = movedScreenId
+        if (screenId != null) {
+            val currentIndex = project.screens.indexOfFirst { it.id == screenId }
+            if (currentIndex >= 0) {
+                val mutable = project.screens.toMutableList()
+                val item = mutable.removeAt(currentIndex)
+                val targetIndex = originalIndex.coerceIn(0, mutable.size)
+                mutable.add(targetIndex, item)
+                return project.copy(screens = mutable)
+            }
+        }
+        if (toIndex !in project.screens.indices) return project
         val mutable = project.screens.toMutableList()
         val item = mutable.removeAt(toIndex)
-        mutable.add(fromIndex, item)
+        val targetIndex = fromIndex.coerceIn(0, mutable.size)
+        mutable.add(targetIndex, item)
         return project.copy(screens = mutable)
     }
 }

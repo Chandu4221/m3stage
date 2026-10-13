@@ -2,6 +2,7 @@ package io.github.chandu4221.m3stage.state
 
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.validation.ProjectValidation
@@ -265,6 +266,89 @@ class ScreenCommandTest {
         assertEquals(476f, tidiedProject.findScreen(ScreenId("screen-2"))?.canvasX)
         // Screen 3 starts after s2 width in landscape (892) + 64 = 476 + 892 + 64 = 1432
         assertEquals(1432f, tidiedProject.findScreen(ScreenId("screen-3"))?.canvasX)
+    }
+
+    @Test
+    fun testRemoveNodeCommandSlotAwareAndIndexPreservingUndo() {
+        val btn1 = DesignNode(id = NodeId("btn-1"), kind = ComponentKind.Button)
+        val btn2 = DesignNode(id = NodeId("btn-2"), kind = ComponentKind.Button)
+        val btn3 = DesignNode(id = NodeId("btn-3"), kind = ComponentKind.Button)
+        val topBar = DesignNode(id = NodeId("top-bar"), kind = ComponentKind.TopAppBar)
+        val scaffold = DesignNode(
+            id = NodeId("scaffold-1"),
+            kind = ComponentKind.Scaffold,
+            slots = mapOf(SlotId("topBar") to listOf(topBar)),
+            children = listOf(btn1, btn2, btn3)
+        )
+        val project = Project(
+            id = idGen.nextProjectId(),
+            name = "Test",
+            basePackage = "com.test",
+            screens = listOf(
+                Screen(id = ScreenId("screen-1"), name = "Main", route = "/", root = scaffold)
+            )
+        )
+
+        // 1. Remove middle child (btn-2 at index 1)
+        val removeMiddle = RemoveNodeCommand(ScreenId("screen-1"), NodeId("btn-2"))
+        val projectAfterRemoveChild = removeMiddle.execute(project)
+        val screenAfterRemoveChild = projectAfterRemoveChild.findScreen(ScreenId("screen-1"))!!
+        assertEquals(listOf(NodeId("btn-1"), NodeId("btn-3")), screenAfterRemoveChild.root.children.map { it.id })
+
+        val restoredAfterRemoveChild = removeMiddle.undo(projectAfterRemoveChild)
+        val screenRestoredChild = restoredAfterRemoveChild.findScreen(ScreenId("screen-1"))!!
+        assertEquals(listOf(NodeId("btn-1"), NodeId("btn-2"), NodeId("btn-3")), screenRestoredChild.root.children.map { it.id })
+
+        // 2. Remove node from a slot (topBar from slot 'topBar')
+        val removeSlotNode = RemoveNodeCommand(ScreenId("screen-1"), NodeId("top-bar"))
+        val projectAfterRemoveSlot = removeSlotNode.execute(project)
+        val screenAfterRemoveSlot = projectAfterRemoveSlot.findScreen(ScreenId("screen-1"))!!
+        assertTrue(screenAfterRemoveSlot.root.slots[SlotId("topBar")].isNullOrEmpty())
+
+        val restoredAfterRemoveSlot = removeSlotNode.undo(projectAfterRemoveSlot)
+        val screenRestoredSlot = restoredAfterRemoveSlot.findScreen(ScreenId("screen-1"))!!
+        assertEquals(listOf(NodeId("top-bar")), screenRestoredSlot.root.slots[SlotId("topBar")]?.map { it.id })
+    }
+
+    @Test
+    fun testReorderScreensUndoPreservesIdentityAcrossDeletions() {
+        val root1 = ComponentCatalog[ComponentKind.Scaffold].createDefaultSubtree(idGen)
+        val root2 = ComponentCatalog[ComponentKind.Scaffold].createDefaultSubtree(idGen)
+        val root3 = ComponentCatalog[ComponentKind.Scaffold].createDefaultSubtree(idGen)
+        val s1 = Screen(id = ScreenId("s-1"), name = "S1", route = "/1", root = root1)
+        val s2 = Screen(id = ScreenId("s-2"), name = "S2", route = "/2", root = root2)
+        val s3 = Screen(id = ScreenId("s-3"), name = "S3", route = "/3", root = root3)
+
+        val project = Project(
+            id = idGen.nextProjectId(),
+            name = "Test",
+            basePackage = "com.test",
+            screens = listOf(s1, s2, s3)
+        )
+
+        // Reorder: Move s-1 from index 0 to index 2 -> [s-2, s-3, s-1]
+        val reorder = ReorderScreensCommand(0, 2)
+        val reordered = reorder.execute(project)
+        assertEquals(listOf(ScreenId("s-2"), ScreenId("s-3"), ScreenId("s-1")), reordered.screens.map { it.id })
+
+        // Delete s-2 at index 0 -> [s-3, s-1]
+        val delete = DeleteScreenCommand(s2, 0)
+        val deleted = delete.execute(reordered)
+        assertEquals(listOf(ScreenId("s-3"), ScreenId("s-1")), deleted.screens.map { it.id })
+
+        // Undo delete -> restores s-2 at index 0 -> [s-2, s-3, s-1]
+        val undoDeleted = delete.undo(deleted)
+        assertEquals(listOf(ScreenId("s-2"), ScreenId("s-3"), ScreenId("s-1")), undoDeleted.screens.map { it.id })
+
+        // Undo reorder -> restores s-1 back to index 0 by ID -> [s-1, s-2, s-3]
+        val undoReordered = reorder.undo(undoDeleted)
+        assertEquals(listOf(ScreenId("s-1"), ScreenId("s-2"), ScreenId("s-3")), undoReordered.screens.map { it.id })
+
+        // Direct undo test: reorder again, delete s-2, then undo reorder without undoing delete first
+        val reorderedAgain = reorder.execute(project)
+        val deletedAgain = delete.execute(reorderedAgain) // [s-3, s-1]
+        val directUndoReorder = reorder.undo(deletedAgain) // s-1 should be moved back to index 0 -> [s-1, s-3]
+        assertEquals(listOf(ScreenId("s-1"), ScreenId("s-3")), directUndoReorder.screens.map { it.id })
     }
 }
 
