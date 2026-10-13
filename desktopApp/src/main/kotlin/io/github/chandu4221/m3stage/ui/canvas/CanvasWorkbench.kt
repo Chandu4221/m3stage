@@ -182,106 +182,108 @@ fun CanvasWorkbench(
                 modifier = Modifier.wrapContentSize(unbounded = true)
             ) {
                 screens.forEachIndexed { index, screen ->
-                    val isActive = screen.id == activeScreenId
-                    var activeDevice by remember(screen.id) {
-                        mutableStateOf(screen.resolveDevice(projectDefaultDevice))
-                    }
-                    var orientation by remember(screen.id) { mutableStateOf(DeviceOrientation.Portrait) }
-                    var showFrame by remember { mutableStateOf(true) }
+                    key(screen.id) {
+                        val isActive = screen.id == activeScreenId
+                        var activeDevice by remember(screen.id) {
+                            mutableStateOf(screen.resolveDevice(projectDefaultDevice))
+                        }
+                        var orientation by remember(screen.id) { mutableStateOf(DeviceOrientation.Portrait) }
+                        var showFrame by remember(screen.id) { mutableStateOf(true) }
 
-                    val currentW = if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
-                    val currentH = if (orientation == DeviceOrientation.Portrait) activeDevice.heightDp else activeDevice.widthDp
+                        val currentW = if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
+                        val currentH = if (orientation == DeviceOrientation.Portrait) activeDevice.heightDp else activeDevice.widthDp
 
-                    // Visual-only drag delta: written by FloatingArtboardToolbar via onDragDelta.
-                    // Scoped exclusively to active gesture lifetime; reset to Zero between gestures.
-                    var dragDeltaDp by remember(screen.id) { mutableStateOf(Offset.Zero) }
-                    var dragStartCanvasPos by remember(screen.id) { mutableStateOf(Offset.Zero) }
+                        // Visual-only drag delta: written by FloatingArtboardToolbar via onDragDelta.
+                        // Scoped exclusively to active gesture lifetime; reset to Zero between gestures.
+                        var dragDeltaDp by remember(screen.id) { mutableStateOf(Offset.Zero) }
+                        var dragStartCanvasPos by remember(screen.id) { mutableStateOf(Offset.Zero) }
 
-                    // Rendered position: domain position + live drag delta from gesture start
-                    val screenX = screen.canvasX + dragDeltaDp.x
-                    val screenY = screen.canvasY + dragDeltaDp.y
+                        // Rendered position: domain position + live drag delta from gesture start
+                        val screenX = screen.canvasX + dragDeltaDp.x
+                        val screenY = screen.canvasY + dragDeltaDp.y
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = screenX.dp.roundToPx(),
-                                    y = screenY.dp.roundToPx()
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        x = screenX.dp.roundToPx(),
+                                        y = screenY.dp.roundToPx()
+                                    )
+                                }
+                        ) {
+                            // P5: Floating Artboard Toolbar (Counter-scaled at 1 / zoom)
+                            Box(
+                                modifier = Modifier.graphicsLayer {
+                                    val z = viewportState.value.zoom
+                                    scaleX = 1f / z
+                                    scaleY = 1f / z
+                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                }
+                            ) {
+                                FloatingArtboardToolbar(
+                                    screen = screen,
+                                    isActive = isActive,
+                                    activeDevice = activeDevice,
+                                    orientation = orientation,
+                                    showFrame = showFrame,
+                                    widthDp = currentW,
+                                    heightDp = currentH,
+                                    canvasZoom = viewportState.value.zoom,
+                                    onActivate = { onSelectScreen(screen.id) },
+                                    onDeviceChange = { activeDevice = it },
+                                    onOrientationToggle = {
+                                        orientation = if (orientation == DeviceOrientation.Portrait)
+                                            DeviceOrientation.Landscape else DeviceOrientation.Portrait
+                                    },
+                                    onFrameToggle = { showFrame = it },
+                                    canMoveLeft = canMoveLeft(index),
+                                    canMoveRight = canMoveRight(index),
+                                    onMoveLeft = { onMoveLeft(index) },
+                                    onMoveRight = { onMoveRight(index) },
+                                    onRename = { onRenameScreen(screen.id, it) },
+                                    onDuplicate = { onDuplicateScreen(screen.id) },
+                                    onDelete = { onDeleteScreen(screen.id) },
+                                    onDragStart = {
+                                        dragStartCanvasPos = Offset(screen.canvasX, screen.canvasY)
+                                        dragDeltaDp = Offset.Zero
+                                    },
+                                    onDragDelta = { totalDeltaDp ->
+                                        dragDeltaDp = totalDeltaDp
+                                    },
+                                    onDragEnd = { finalDeltaDp ->
+                                        val startPos = dragStartCanvasPos
+                                        dragDeltaDp = Offset.Zero
+                                        if (finalDeltaDp != Offset.Zero) {
+                                            onMoveScreen(screen.id, startPos.x + finalDeltaDp.x, startPos.y + finalDeltaDp.y)
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        dragDeltaDp = Offset.Zero
+                                    }
                                 )
                             }
-                    ) {
-                        // P5: Floating Artboard Toolbar (Counter-scaled at 1 / zoom)
-                        Box(
-                            modifier = Modifier.graphicsLayer {
-                                val z = viewportState.value.zoom
-                                scaleX = 1f / z
-                                scaleY = 1f / z
-                                transformOrigin = TransformOrigin(0.5f, 1f)
-                            }
-                        ) {
-                            FloatingArtboardToolbar(
+
+                            // Sealed Device Canvas (Content inside scaled container)
+                            DeviceCanvas(
                                 screen = screen,
-                                isActive = isActive,
-                                activeDevice = activeDevice,
+                                device = activeDevice,
                                 orientation = orientation,
                                 showFrame = showFrame,
-                                widthDp = currentW,
-                                heightDp = currentH,
-                                canvasZoom = viewportState.value.zoom,
+                                isActive = isActive,
+                                selectedNodeId = if (isActive) selectedNodeId else null,
+                                lockedNodeIds = lockedNodeIds,
                                 onActivate = { onSelectScreen(screen.id) },
-                                onDeviceChange = { activeDevice = it },
-                                onOrientationToggle = {
-                                    orientation = if (orientation == DeviceOrientation.Portrait)
-                                        DeviceOrientation.Landscape else DeviceOrientation.Portrait
+                                onSelectNode = { nodeId ->
+                                    onSelectScreen(screen.id)
+                                    onNodeClick(nodeId)
                                 },
-                                onFrameToggle = { showFrame = it },
-                                canMoveLeft = canMoveLeft(index),
-                                canMoveRight = canMoveRight(index),
-                                onMoveLeft = { onMoveLeft(index) },
-                                onMoveRight = { onMoveRight(index) },
-                                onRename = { onRenameScreen(screen.id, it) },
-                                onDuplicate = { onDuplicateScreen(screen.id) },
-                                onDelete = { onDeleteScreen(screen.id) },
-                                onDragStart = {
-                                    dragStartCanvasPos = Offset(screen.canvasX, screen.canvasY)
-                                    dragDeltaDp = Offset.Zero
-                                },
-                                onDragDelta = { totalDeltaDp ->
-                                    dragDeltaDp = totalDeltaDp
-                                },
-                                onDragEnd = { finalDeltaDp ->
-                                    val startPos = dragStartCanvasPos
-                                    dragDeltaDp = Offset.Zero
-                                    if (finalDeltaDp != Offset.Zero) {
-                                        onMoveScreen(screen.id, startPos.x + finalDeltaDp.x, startPos.y + finalDeltaDp.y)
-                                    }
-                                },
-                                onDragCancel = {
-                                    dragDeltaDp = Offset.Zero
-                                }
+                                zoomProvider = { viewportState.value.zoom },
+                                draggedComponentKind = draggedComponentKind,
+                                onDropOnScreen = onDropOnScreen
                             )
                         }
-
-                        // Sealed Device Canvas (Content inside scaled container)
-                        DeviceCanvas(
-                            screen = screen,
-                            device = activeDevice,
-                            orientation = orientation,
-                            showFrame = showFrame,
-                            isActive = isActive,
-                            selectedNodeId = if (isActive) selectedNodeId else null,
-                            lockedNodeIds = lockedNodeIds,
-                            onActivate = { onSelectScreen(screen.id) },
-                            onSelectNode = { nodeId ->
-                                onSelectScreen(screen.id)
-                                onNodeClick(nodeId)
-                            },
-                            zoomProvider = { viewportState.value.zoom },
-                            draggedComponentKind = draggedComponentKind,
-                            onDropOnScreen = onDropOnScreen
-                        )
                     }
                 }
             }
