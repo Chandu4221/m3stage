@@ -13,6 +13,7 @@ import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.state.CanvasViewportController
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.organism.InspectorPanel
 import io.github.chandu4221.m3stage.ui.organism.FloatingCanvasStudio
@@ -52,16 +53,6 @@ fun EditorShellTemplate(
     onRedo: () -> Unit,
     onAddScreen: () -> Unit,
     onExportCode: () -> Unit,
-    zoomPercentage: Int,
-    onZoomIn: () -> Unit,
-    onZoomOut: () -> Unit,
-    onZoomFit: () -> Unit,
-    isDirty: Boolean = false,
-    onSaveProject: () -> Unit = {},
-    onRenameScreen: (ScreenId, String) -> Unit = { _, _ -> },
-    onDeleteScreen: (ScreenId) -> Unit = {},
-    onDuplicateScreen: (ScreenId) -> Unit = {},
-    onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
     // Code preview state
     isCodePreviewOpen: Boolean = false,
     codePreviewFileName: String = "",
@@ -74,13 +65,9 @@ fun EditorShellTemplate(
     onToggleNodeLock: (NodeId) -> Unit,
     onToggleVisibility: (NodeId) -> Unit = {},
     onDeleteNode: (NodeId) -> Unit = {},
-    modifier: Modifier = Modifier,
-    viewportState: io.github.chandu4221.m3stage.state.CanvasViewportState,
-    onPointerToolChange: (io.github.chandu4221.m3stage.state.CanvasPointerTool) -> Unit,
-    onPanDelta: (androidx.compose.ui.geometry.Offset) -> Unit,
-    onWheelZoom: (Float) -> Unit,
-    onTidy: () -> Unit,
+    viewportController: CanvasViewportController,
     store: EditorStore,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxSize()
@@ -138,21 +125,14 @@ fun EditorShellTemplate(
                 onRedo = onRedo,
                 onAddScreen = onAddScreen,
                 onExportCode = onExportCode,
-                viewportState = viewportState,
-                onPointerToolChange = onPointerToolChange,
-                onPanDelta = onPanDelta,
-                onWheelZoom = onWheelZoom,
-                onZoomIn = onZoomIn,
-                onZoomOut = onZoomOut,
-                onZoomFit = onZoomFit,
-                onTidy = onTidy,
+                viewportController = viewportController,
                 projectName = project?.name,
-                isDirty = isDirty,
-                onSaveProject = onSaveProject,
-                onRenameScreen = onRenameScreen,
-                onDeleteScreen = onDeleteScreen,
-                onDuplicateScreen = onDuplicateScreen,
-                onReorderScreens = onReorderScreens,
+                isDirty = store.isDirty.value,
+                onSaveProject = { store.saveProject() },
+                onRenameScreen = { id, name -> store.renameScreen(id, name) },
+                onDeleteScreen = { store.deleteScreen(it) },
+                onDuplicateScreen = { store.duplicateScreen(it) },
+                onReorderScreens = { from, to -> store.reorderScreens(from, to) },
                 isCodePreviewOpen = isCodePreviewOpen,
                 onToggleCodePreview = onToggleCodePreview,
                 draggedComponentKind = draggedComponentKind,

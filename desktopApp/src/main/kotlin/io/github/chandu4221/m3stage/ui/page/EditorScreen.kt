@@ -20,6 +20,7 @@ import io.github.chandu4221.m3stage.query.canPlace
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.flatten
+import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.state.EditorEvent
 import io.github.chandu4221.m3stage.state.EditorStore
@@ -42,7 +43,6 @@ fun EditorScreen(store: EditorStore) {
 
     var activeRailTab by remember { mutableStateOf(StudioRailTab.Parts) }
     var searchQuery by remember { mutableStateOf("") }
-    var zoomPercentage by remember { mutableStateOf(100) }
 
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
     val selectedNode = activeScreen?.root?.let { root ->
@@ -60,7 +60,7 @@ fun EditorScreen(store: EditorStore) {
         }
     }
 
-    var viewportState by remember { mutableStateOf(CanvasViewportState()) }
+    val viewportController = io.github.chandu4221.m3stage.state.rememberCanvasViewportController()
 
     var showExportDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -234,6 +234,17 @@ fun EditorScreen(store: EditorStore) {
                     }
                 }
 
+                // 6. Tool Shortcuts (V: Select, H: Pan)
+                if (!keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isMetaPressed) {
+                    if (keyEvent.key == Key.V) {
+                        viewportController.setActiveTool(CanvasPointerTool.Select)
+                        return@onPreviewKeyEvent true
+                    } else if (keyEvent.key == Key.H) {
+                        viewportController.setActiveTool(CanvasPointerTool.Pan)
+                        return@onPreviewKeyEvent true
+                    }
+                }
+
                 false
             }
     ) {
@@ -304,16 +315,10 @@ fun EditorScreen(store: EditorStore) {
                 // Automatically pan canvas to reveal the newly added screen on the right!
                 val screenIndex = project?.screens?.size ?: 1
                 val estimatedOffset = -((screenIndex - 1) * 460f)
-                viewportState = viewportState.copy(panOffset = Offset(estimatedOffset, 0f))
+                val currentPan = viewportController.viewportState.value.panOffset
+                viewportController.panBy(Offset(estimatedOffset - currentPan.x, 0f))
             },
             onExportCode = { showExportDialog = true },
-            zoomPercentage = zoomPercentage,
-            isDirty = isDirty,
-            onSaveProject = { store.saveProject() },
-            onRenameScreen = { screenId, newName -> store.renameScreen(screenId, newName) },
-            onDeleteScreen = { screenId -> store.deleteScreen(screenId) },
-            onDuplicateScreen = { screenId -> store.duplicateScreen(screenId) },
-            onReorderScreens = { from, to -> store.reorderScreens(from, to) },
             isCodePreviewOpen = isCodePreviewOpen,
             codePreviewFileName = activeScreenFileName,
             codePreviewContent = codePreviewContent,
@@ -325,19 +330,7 @@ fun EditorScreen(store: EditorStore) {
             onToggleNodeLock = { nodeId -> store.toggleLock(nodeId) },
             onToggleVisibility = { nodeId -> store.toggleVisibility(nodeId) },
             onDeleteNode = { nodeId -> store.removeNode(nodeId) },
-
-            // Viewport & Gestures
-            viewportState = viewportState,
-            onPointerToolChange = { tool -> viewportState = viewportState.copy(activeTool = tool) },
-            onPanDelta = { delta -> viewportState = viewportState.panBy(delta) },
-            onWheelZoom = { delta ->
-                val newZoom = (viewportState.zoom + delta).coerceIn(0.25f, 2.5f)
-                viewportState = viewportState.copy(zoom = newZoom)
-            },
-            onZoomIn = { viewportState = viewportState.zoomIn() },
-            onZoomOut = { viewportState = viewportState.zoomOut() },
-            onZoomFit = { viewportState = viewportState.zoomFit() },
-            onTidy = { viewportState = viewportState.tidy() },
+            viewportController = viewportController,
             store = store,
         )
 

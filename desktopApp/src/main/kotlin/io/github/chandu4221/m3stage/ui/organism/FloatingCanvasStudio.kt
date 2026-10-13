@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -26,7 +25,8 @@ import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
-import io.github.chandu4221.m3stage.state.CanvasViewportState
+import io.github.chandu4221.m3stage.state.CanvasViewportController
+import io.github.chandu4221.m3stage.state.CanvasViewportDelegate
 import io.github.chandu4221.m3stage.ui.atom.DimensionBadge
 import io.github.chandu4221.m3stage.ui.atom.ToolIconButton
 import io.github.chandu4221.m3stage.ui.molecule.CapsuleToolbar
@@ -49,14 +49,7 @@ fun FloatingCanvasStudio(
     onRedo: () -> Unit,
     onAddScreen: () -> Unit,
     onExportCode: () -> Unit,
-    viewportState: CanvasViewportState,
-    onPointerToolChange: (CanvasPointerTool) -> Unit,
-    onPanDelta: (Offset) -> Unit,
-    onWheelZoom: (Float) -> Unit,
-    onZoomIn: () -> Unit,
-    onZoomOut: () -> Unit,
-    onZoomFit: () -> Unit,
-    onTidy: () -> Unit,
+    viewportController: CanvasViewportController,
     projectName: String? = null,
     isDirty: Boolean = false,
     onSaveProject: () -> Unit = {},
@@ -70,6 +63,8 @@ fun FloatingCanvasStudio(
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    val viewportState = viewportController.viewportState
+
     Surface(
         modifier = modifier.fillMaxSize(),
         shape = RoundedCornerShape(4.dp),
@@ -85,9 +80,7 @@ fun FloatingCanvasStudio(
                     onSelectScreen = onSelectScreen,
                     selectedNodeId = selectedNodeId,
                     onNodeClick = onNodeClick,
-                    viewportState = viewportState,
-                    onPanDelta = onPanDelta,
-                    onWheelZoom = onWheelZoom,
+                    viewportController = viewportController,
                     lockedNodeIds = lockedNodeIds,
                     projectDefaultDevice = DevicePreset.Default,
                     onRenameScreen = onRenameScreen,
@@ -150,15 +143,15 @@ fun FloatingCanvasStudio(
                     ToolIconButton(
                         icon = Icons.Default.NearMe,
                         contentDescription = "Select tool",
-                        isSelected = viewportState.activeTool == CanvasPointerTool.Select,
-                        onClick = { onPointerToolChange(CanvasPointerTool.Select) },
+                        isSelected = viewportState.value.activeTool == CanvasPointerTool.Select,
+                        onClick = { viewportController.setActiveTool(CanvasPointerTool.Select) },
                         tooltip = "Selection Pointer (V)"
                     )
                     ToolIconButton(
                         icon = Icons.Default.PanTool,
                         contentDescription = "Hand tool",
-                        isSelected = viewportState.activeTool == CanvasPointerTool.Pan,
-                        onClick = { onPointerToolChange(CanvasPointerTool.Pan) },
+                        isSelected = viewportState.value.activeTool == CanvasPointerTool.Pan,
+                        onClick = { viewportController.setActiveTool(CanvasPointerTool.Pan) },
                         tooltip = "Hand Pan Tool (H / Hold Space)"
                     )
                 }
@@ -211,7 +204,7 @@ fun FloatingCanvasStudio(
                     ToolIconButton(
                         icon = Icons.AutoMirrored.Filled.FormatAlignLeft,
                         contentDescription = "Tidy Artboards",
-                        onClick = onTidy,
+                        onClick = { viewportController.tidy() },
                         tooltip = "Tidy & Center Artboards"
                     )
                 }
@@ -221,20 +214,20 @@ fun FloatingCanvasStudio(
                     ToolIconButton(
                         icon = Icons.Default.Remove,
                         contentDescription = "Zoom Out",
-                        onClick = onZoomOut,
+                        onClick = { viewportController.zoomOut() },
                         tooltip = "Zoom Out"
                     )
-                    DimensionBadge(text = "${viewportState.zoomPercentage}%")
+                    DimensionBadge(text = "${viewportState.value.zoomPercentage}%")
                     ToolIconButton(
                         icon = Icons.Default.Add,
                         contentDescription = "Zoom In",
-                        onClick = onZoomIn,
+                        onClick = { viewportController.zoomIn() },
                         tooltip = "Zoom In"
                     )
                     ToolIconButton(
                         icon = Icons.Default.FitScreen,
                         contentDescription = "Zoom to Fit",
-                        onClick = onZoomFit,
+                        onClick = { viewportController.resetZoom() },
                         tooltip = "Reset Zoom (100%)"
                     )
                 }
@@ -272,14 +265,7 @@ private fun FloatingCanvasStudioPreview() {
                 onRedo = {},
                 onAddScreen = {},
                 onExportCode = {},
-                viewportState = CanvasViewportState(),
-                onPointerToolChange = {},
-                onPanDelta = {},
-                onWheelZoom = {},
-                onZoomIn = {},
-                onZoomOut = {},
-                onZoomFit = {},
-                onTidy = {}
+                viewportController = CanvasViewportDelegate()
             )
         }
     }
