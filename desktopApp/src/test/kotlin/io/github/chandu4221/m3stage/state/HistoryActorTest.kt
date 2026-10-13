@@ -167,6 +167,61 @@ class HistoryActorTest {
     }
 
     @Test
+    fun testDifferentModifierTypesAtSameIndexDoNotCoalesce() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val screenId = ScreenId("screen-1")
+        val nodeId = NodeId("box-1")
+        val initialRoot = DesignNode(
+            id = nodeId,
+            kind = ComponentKind.Box,
+            modifiers = listOf(io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding.all(0f))
+        )
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "TestProject",
+            basePackage = "com.example.test",
+            screens = listOf(
+                Screen(id = screenId, name = "Main", route = "/", root = initialRoot)
+            )
+        )
+
+        val context = EditorContext(idGen, DummyRepo(), DummyCodeGen())
+        context.projectFlow.value = initialProject
+
+        val history = HistoryDelegate(context, testScope)
+
+        // 1. Update index 0 to a Padding modifier
+        history.execute(
+            UpdateModifierCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                index = 0,
+                newModifier = io.github.chandu4221.m3stage.modifier.ModifierSpec.Padding.all(8f)
+            )
+        )
+
+        // 2. Immediately update index 0 to a FillMaxWidth modifier (different type) within 300ms
+        history.execute(
+            UpdateModifierCommand(
+                screenId = screenId,
+                nodeId = nodeId,
+                index = 0,
+                newModifier = io.github.chandu4221.m3stage.modifier.ModifierSpec.FillMaxWidth(1f)
+            )
+        )
+
+        testScope.advanceUntilIdle()
+
+        // Since the modifier types differ, they must NOT coalesce
+        assertEquals(2, history.undoStack.value.size, "Different modifier types at the same index must not coalesce")
+
+        history.close()
+    }
+
+    @Test
     fun testUndoStackCap100() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         val testScope = TestScope(testDispatcher)

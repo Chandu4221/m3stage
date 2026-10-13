@@ -1,5 +1,8 @@
 package io.github.chandu4221.m3stage.state
 
+import io.github.chandu4221.m3stage.model.NodeId
+import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.validation.ProjectValidation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,11 +12,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.reflect.KClass
 
 class HistoryDelegate(
     private val context: EditorContext,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) : HistoryState, AutoCloseable {
+
+    private data class ModifierCoalesceKey(
+        val screenId: ScreenId,
+        val nodeId: NodeId,
+        val index: Int,
+        val modifierType: KClass<out ModifierSpec>
+    )
 
     private val _undoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
     override val undoStack: StateFlow<List<EditorCommand>> = _undoStack.asStateFlow()
@@ -21,7 +32,7 @@ class HistoryDelegate(
     private val _redoStack = MutableStateFlow<List<EditorCommand>>(emptyList())
     override val redoStack: StateFlow<List<EditorCommand>> = _redoStack.asStateFlow()
 
-    private var lastCoalescibleKey: Pair<Triple<io.github.chandu4221.m3stage.model.ScreenId, io.github.chandu4221.m3stage.model.NodeId, Int>, Long>? = null
+    private var lastCoalescibleKey: Pair<ModifierCoalesceKey, Long>? = null
 
     @Synchronized
     override fun execute(command: EditorCommand) {
@@ -52,7 +63,7 @@ class HistoryDelegate(
 
         val now = System.currentTimeMillis()
         val shouldCoalesce = if (command is UpdateModifierCommand) {
-            val key = Triple(command.screenId, command.nodeId, command.index)
+            val key = ModifierCoalesceKey(command.screenId, command.nodeId, command.index, command.newModifier::class)
             val last = lastCoalescibleKey
             if (last != null && last.first == key && (now - last.second) <= 300) {
                 lastCoalescibleKey = Pair(key, now)
