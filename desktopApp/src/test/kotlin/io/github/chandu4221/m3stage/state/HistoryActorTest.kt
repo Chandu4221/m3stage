@@ -7,6 +7,7 @@ import io.github.chandu4221.m3stage.port.GeneratedProject
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -206,4 +207,69 @@ class HistoryActorTest {
 
         history.close()
     }
+
+    @Test
+    fun testCommandExecutesSynchronouslyWithoutAdvancingScheduler() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val screenId = ScreenId("screen-1")
+        val initialRoot = DesignNode(id = NodeId("root"), kind = ComponentKind.Column)
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "TestProject",
+            basePackage = "com.example.test",
+            screens = listOf(
+                Screen(id = screenId, name = "Main", route = "/", root = initialRoot, canvasX = 0f, canvasY = 0f)
+            )
+        )
+
+        val context = EditorContext(idGen, DummyRepo(), DummyCodeGen())
+        context.projectFlow.value = initialProject
+
+        val history = HistoryDelegate(context, testScope)
+
+        // Execute MoveScreenCommand
+        history.execute(MoveScreenCommand(screenId, 150f, 250f))
+
+        // Assert projectFlow was updated synchronously without calling advanceUntilIdle()
+        val screen = context.projectFlow.value!!.screens.first()
+        assertEquals(150f, screen.canvasX, "Position must update synchronously on the caller thread")
+        assertEquals(250f, screen.canvasY, "Position must update synchronously on the caller thread")
+        assertEquals(1, history.undoStack.value.size)
+
+        // Verify undo also applies synchronously without advancing scheduler
+        history.undo()
+        val undoneScreen = context.projectFlow.value!!.screens.first()
+        assertEquals(0f, undoneScreen.canvasX, "Undo must update position synchronously")
+        assertEquals(0f, undoneScreen.canvasY, "Undo must update position synchronously")
+        assertEquals(0, history.undoStack.value.size)
+
+        history.close()
+    }
+
+    @Test
+    fun testCommandEmitsErrorWhenNoActiveProject() = runTest {
+        val idGen = TestIdGen()
+        val context = EditorContext(idGen, DummyRepo(), DummyCodeGen())
+        context.projectFlow.value = null
+
+        val history = HistoryDelegate(context, this)
+
+        val receivedEvents = mutableListOf<EditorEvent>()
+        val job = launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) {
+            context.eventFlow.collect { receivedEvents.add(it) }
+        }
+
+        history.execute(MoveScreenCommand(ScreenId("s-1"), 10f, 10f))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, receivedEvents.size)
+        val errorEvent = receivedEvents.first() as EditorEvent.ShowError
+        assertEquals("No active project to execute command on", errorEvent.message)
+
+        job.cancel()
+    }
 }
+
