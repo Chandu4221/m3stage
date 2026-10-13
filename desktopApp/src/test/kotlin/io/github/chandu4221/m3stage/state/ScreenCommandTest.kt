@@ -135,4 +135,52 @@ class ScreenCommandTest {
         assertEquals(0f, undone.findScreen(ScreenId("screen-1"))?.canvasX)
         assertEquals(0f, undone.findScreen(ScreenId("screen-2"))?.canvasX)
     }
+
+    @Test
+    fun testMoveScreenThenTidyThenMoveAgainSequence() {
+        var currentProject = createSampleProject()
+
+        // 1. Move both screens to random positions
+        val move1 = MoveScreenCommand(ScreenId("screen-1"), 300f, 150f)
+        currentProject = move1.execute(currentProject)
+        val move2 = MoveScreenCommand(ScreenId("screen-2"), 700f, 400f)
+        currentProject = move2.execute(currentProject)
+
+        assertEquals(300f, currentProject.findScreen(ScreenId("screen-1"))?.canvasX)
+        assertEquals(150f, currentProject.findScreen(ScreenId("screen-1"))?.canvasY)
+        assertEquals(700f, currentProject.findScreen(ScreenId("screen-2"))?.canvasX)
+        assertEquals(400f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
+
+        // 2. Tidy screens in a row
+        val tidyMap = mapOf(
+            ScreenId("screen-1") to (0f to 0f),
+            ScreenId("screen-2") to (476f to 0f)
+        )
+        val tidy = TidyScreensCommand(tidyMap)
+        currentProject = tidy.execute(currentProject)
+
+        assertEquals(0f, currentProject.findScreen(ScreenId("screen-1"))?.canvasX)
+        assertEquals(0f, currentProject.findScreen(ScreenId("screen-1"))?.canvasY)
+        assertEquals(476f, currentProject.findScreen(ScreenId("screen-2"))?.canvasX)
+        assertEquals(0f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
+
+        // 3. Move Screen 2 again from its tidy anchor (+100f, +50f)
+        val move3 = MoveScreenCommand(ScreenId("screen-2"), 476f + 100f, 0f + 50f)
+        currentProject = move3.execute(currentProject)
+
+        assertEquals(576f, currentProject.findScreen(ScreenId("screen-2"))?.canvasX)
+        assertEquals(50f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
+
+        // 4. Undo move3 -> restores Screen 2 to tidy position
+        currentProject = move3.undo(currentProject)
+        assertEquals(476f, currentProject.findScreen(ScreenId("screen-2"))?.canvasX)
+        assertEquals(0f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
+
+        // 5. Undo tidy -> restores both screens to their pre-tidy moved positions
+        currentProject = tidy.undo(currentProject)
+        assertEquals(300f, currentProject.findScreen(ScreenId("screen-1"))?.canvasX)
+        assertEquals(150f, currentProject.findScreen(ScreenId("screen-1"))?.canvasY)
+        assertEquals(700f, currentProject.findScreen(ScreenId("screen-2"))?.canvasX)
+        assertEquals(400f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
+    }
 }
