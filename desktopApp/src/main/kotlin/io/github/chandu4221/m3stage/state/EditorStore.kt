@@ -471,6 +471,8 @@ class EditorStore(
     }
 
     override fun close() {
+        sessionDelegate.flushSave()
+        sessionDelegate.close()
         historyDelegate.close()
         storeScope.cancel()
     }

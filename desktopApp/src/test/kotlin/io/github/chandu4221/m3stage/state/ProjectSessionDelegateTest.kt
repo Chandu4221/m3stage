@@ -126,4 +126,45 @@ class ProjectSessionDelegateTest {
         assertEquals(1, repo.saveCallCount)
         assertEquals("UpdatedProject", repo.lastSavedProject?.name)
     }
+
+    @Test
+    fun testFlushSaveWritesDirtyProjectSynchronously() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "LoadedProject",
+            basePackage = "com.example.test",
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-1"),
+                    name = "Home",
+                    route = "/",
+                    root = DesignNode(id = NodeId("root"), kind = ComponentKind.Scaffold)
+                )
+            )
+        )
+        val repo = MockProjectRepo(projectToLoad = initialProject)
+        val context = EditorContext(idGen, repo, DummyCodeGen())
+
+        val delegate = ProjectSessionDelegate(context, testScope)
+        delegate.loadProject()
+        testScope.advanceUntilIdle()
+
+        // Mutate projectFlow -> dirty, but do NOT advance time past 800ms debounce
+        context.projectFlow.value = initialProject.copy(name = "ChangedImmediately")
+        testScheduler.runCurrent()
+
+        assertEquals(0, repo.saveCallCount, "Should not be saved before debounce expires")
+        assertTrue(delegate.isDirty.value, "Must be dirty")
+
+        // Trigger flushSave (e.g. on exit)
+        delegate.flushSave()
+
+        assertEquals(1, repo.saveCallCount, "flushSave must immediately write to disk")
+        assertEquals("ChangedImmediately", repo.lastSavedProject?.name)
+        assertFalse(delegate.isDirty.value, "isDirty must be cleared after flushSave")
+    }
 }

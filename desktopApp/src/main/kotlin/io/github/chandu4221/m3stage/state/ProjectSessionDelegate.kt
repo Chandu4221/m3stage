@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class ProjectSessionDelegate(
     private val context: EditorContext,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-) : ProjectSession {
+) : ProjectSession, AutoCloseable {
 
     var autosaveBlocked = false
         private set
@@ -137,7 +137,25 @@ class ProjectSessionDelegate(
         context.projectFlow.value = newProject
     }
 
-    fun close() {
+    fun flushSave() {
+        val current = context.projectFlow.value ?: return
+        if (_isDirty.value && !autosaveBlocked) {
+            runBlocking {
+                try {
+                    withTimeout(2000.milliseconds) {
+                        context.repository.save(current)
+                        lastSavedOrLoadedProject = current
+                        _isDirty.value = false
+                        context.eventFlow.emit(EditorEvent.SaveSuccess)
+                    }
+                } catch (e: Exception) {
+                    context.eventFlow.emit(EditorEvent.SaveFailed)
+                }
+            }
+        }
+    }
+
+    override fun close() {
         scope.cancel()
     }
 
