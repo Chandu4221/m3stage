@@ -379,7 +379,10 @@ class EditorStore(
 
     // --- Bridge: Move Screen (Canvas 2D) ---
     fun moveScreen(screenId: ScreenId, newX: Float, newY: Float) {
-        execute(MoveScreenCommand(screenId, newX, newY))
+        val screen = project.value?.findScreen(screenId)
+        val oldX = screen?.canvasX ?: 0f
+        val oldY = screen?.canvasY ?: 0f
+        execute(MoveScreenCommand(screenId, oldX, oldY, newX, newY))
     }
 
     // --- Bridge: Update Screen Device & Orientation ---
@@ -420,6 +423,7 @@ class EditorStore(
         if (currentProject.screens.isEmpty()) return
 
         val defaultDevice = currentProject.defaultDevice
+        val oldPositions = currentProject.screens.associate { it.id to (it.canvasX to it.canvasY) }
         val newPositions = mutableMapOf<ScreenId, Pair<Float, Float>>()
         var currentX = 0f
         for (screen in currentProject.screens) {
@@ -427,7 +431,7 @@ class EditorStore(
             val width = screen.resolveWidthDp(defaultDevice).toFloat()
             currentX += width + 64f
         }
-        execute(TidyScreensCommand(newPositions))
+        execute(TidyScreensCommand(oldPositions, newPositions))
     }
 
     // --- Bridge: Reorder Screens ---

@@ -122,11 +122,12 @@ class ScreenCommandTest {
     @Test
     fun testTidyScreensCommand() {
         val project = createSampleProject()
+        val oldPositions = project.screens.associate { it.id to (it.canvasX to it.canvasY) }
         val newPositions = mapOf(
             ScreenId("screen-1") to (0f to 0f),
             ScreenId("screen-2") to (476f to 0f)
         )
-        val command = TidyScreensCommand(newPositions)
+        val command = TidyScreensCommand(oldPositions, newPositions)
 
         val executed = command.execute(project)
         assertEquals(0f, executed.findScreen(ScreenId("screen-1"))?.canvasX)
@@ -142,9 +143,9 @@ class ScreenCommandTest {
         var currentProject = createSampleProject()
 
         // 1. Move both screens to random positions
-        val move1 = MoveScreenCommand(ScreenId("screen-1"), 300f, 150f)
+        val move1 = MoveScreenCommand(ScreenId("screen-1"), 0f, 0f, 300f, 150f)
         currentProject = move1.execute(currentProject)
-        val move2 = MoveScreenCommand(ScreenId("screen-2"), 700f, 400f)
+        val move2 = MoveScreenCommand(ScreenId("screen-2"), 0f, 0f, 700f, 400f)
         currentProject = move2.execute(currentProject)
 
         assertEquals(300f, currentProject.findScreen(ScreenId("screen-1"))?.canvasX)
@@ -153,11 +154,12 @@ class ScreenCommandTest {
         assertEquals(400f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
 
         // 2. Tidy screens in a row
+        val oldTidy = currentProject.screens.associate { it.id to (it.canvasX to it.canvasY) }
         val tidyMap = mapOf(
             ScreenId("screen-1") to (0f to 0f),
             ScreenId("screen-2") to (476f to 0f)
         )
-        val tidy = TidyScreensCommand(tidyMap)
+        val tidy = TidyScreensCommand(oldTidy, tidyMap)
         currentProject = tidy.execute(currentProject)
 
         assertEquals(0f, currentProject.findScreen(ScreenId("screen-1"))?.canvasX)
@@ -166,7 +168,7 @@ class ScreenCommandTest {
         assertEquals(0f, currentProject.findScreen(ScreenId("screen-2"))?.canvasY)
 
         // 3. Move Screen 2 again from its tidy anchor (+100f, +50f)
-        val move3 = MoveScreenCommand(ScreenId("screen-2"), 476f + 100f, 0f + 50f)
+        val move3 = MoveScreenCommand(ScreenId("screen-2"), 476f, 0f, 476f + 100f, 0f + 50f)
         currentProject = move3.execute(currentProject)
 
         assertEquals(576f, currentProject.findScreen(ScreenId("screen-2"))?.canvasX)
@@ -258,7 +260,8 @@ class ScreenCommandTest {
             currentX += screen.resolveWidthDp(project.defaultDevice) + 64f
         }
 
-        val tidy = TidyScreensCommand(newPositions)
+        val oldPositions = project.screens.associate { it.id to (it.canvasX to it.canvasY) }
+        val tidy = TidyScreensCommand(oldPositions, newPositions)
         val tidiedProject = tidy.execute(project)
 
         assertEquals(0f, tidiedProject.findScreen(ScreenId("screen-1"))?.canvasX)
@@ -349,6 +352,28 @@ class ScreenCommandTest {
         val deletedAgain = delete.execute(reorderedAgain) // [s-3, s-1]
         val directUndoReorder = reorder.undo(deletedAgain) // s-1 should be moved back to index 0 -> [s-1, s-3]
         assertEquals(listOf(ScreenId("s-1"), ScreenId("s-3")), directUndoReorder.screens.map { it.id })
+    }
+
+    @Test
+    fun testMoveScreenCommandEqualityAndCopyPreservesUndoState() {
+        val cmd = MoveScreenCommand(ScreenId("screen-1"), 10f, 20f, 100f, 200f)
+        val copied = cmd.copy()
+        assertEquals(cmd, copied)
+        assertEquals(10f, copied.oldX)
+        assertEquals(20f, copied.oldY)
+        assertEquals(100f, copied.newX)
+        assertEquals(200f, copied.newY)
+    }
+
+    @Test
+    fun testTidyScreensCommandEqualityAndCopyPreservesUndoState() {
+        val oldPos = mapOf(ScreenId("screen-1") to (10f to 20f))
+        val newPos = mapOf(ScreenId("screen-1") to (100f to 200f))
+        val cmd = TidyScreensCommand(oldPos, newPos)
+        val copied = cmd.copy()
+        assertEquals(cmd, copied)
+        assertEquals(oldPos, copied.oldPositions)
+        assertEquals(newPos, copied.newPositions)
     }
 }
 

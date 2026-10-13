@@ -262,16 +262,14 @@ data class ReorderScreensCommand(
  */
 data class MoveScreenCommand(
     val screenId: ScreenId,
+    val oldX: Float,
+    val oldY: Float,
     val newX: Float,
     val newY: Float
 ) : EditorCommand {
-    private var oldX: Float = 0f
-    private var oldY: Float = 0f
+    constructor(screenId: ScreenId, newX: Float, newY: Float) : this(screenId, 0f, 0f, newX, newY)
 
     override fun execute(project: Project): Project {
-        val screen = project.findScreen(screenId) ?: return project
-        oldX = screen.canvasX
-        oldY = screen.canvasY
         val updatedScreens = project.screens.map {
             if (it.id == screenId) it.copy(canvasX = newX, canvasY = newY) else it
         }
@@ -290,12 +288,12 @@ data class MoveScreenCommand(
  * Tidies all screens along a clean horizontal row. Undo restores previous coordinates for all screens.
  */
 data class TidyScreensCommand(
+    val oldPositions: Map<ScreenId, Pair<Float, Float>>,
     val newPositions: Map<ScreenId, Pair<Float, Float>>
 ) : EditorCommand {
-    private var oldPositions: Map<ScreenId, Pair<Float, Float>> = emptyMap()
+    constructor(newPositions: Map<ScreenId, Pair<Float, Float>>) : this(emptyMap(), newPositions)
 
     override fun execute(project: Project): Project {
-        oldPositions = project.screens.associate { it.id to (it.canvasX to it.canvasY) }
         val updatedScreens = project.screens.map { screen ->
             val pos = newPositions[screen.id]
             if (pos != null) screen.copy(canvasX = pos.first, canvasY = pos.second) else screen
