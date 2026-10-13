@@ -190,10 +190,12 @@ fun CanvasWorkbench(
                     val currentW = if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
                     val currentH = if (orientation == DeviceOrientation.Portrait) activeDevice.heightDp else activeDevice.widthDp
 
-                    // 2D screen world coordinate on the canvas: ephemeral drag offset or domain coordinate
-                    val customOffset = viewportController.getScreenOffset(screen.id)
-                    val screenX = customOffset?.x ?: screen.canvasX
-                    val screenY = customOffset?.y ?: screen.canvasY
+                    // Relative ephemeral drag delta in canvas DP, scoped exclusively to active gesture lifetime
+                    var dragDeltaDp by remember(screen.id) { mutableStateOf(Offset.Zero) }
+
+                    // Rendered position: domain position + active gesture delta (no stale map)
+                    val screenX = screen.canvasX + dragDeltaDp.x
+                    val screenY = screen.canvasY + dragDeltaDp.y
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -238,22 +240,17 @@ fun CanvasWorkbench(
                                 onDuplicate = { onDuplicateScreen(screen.id) },
                                 onDelete = { onDeleteScreen(screen.id) },
                                 onDragScreen = { dragDeltaPx ->
-                                    // dragDeltaPx is received inside the counter-scaled toolbar (scale = 1/zoom).
-                                    // But the screen Column is inside the canvas container (scale = zoom).
-                                    // To ensure the toolbar remains locked 1:1 directly under the cursor regardless of zoom:
                                     val zoomFactor = viewportState.value.zoom
                                     val densityVal = density.density
                                     val deltaDpX = dragDeltaPx.x / (densityVal * zoomFactor)
                                     val deltaDpY = dragDeltaPx.y / (densityVal * zoomFactor)
-                                    val currentPos = viewportController.getScreenOffset(screen.id) ?: Offset(screen.canvasX, screen.canvasY)
-                                    viewportController.setScreenOffset(screen.id, currentPos + Offset(deltaDpX, deltaDpY))
+                                    dragDeltaDp += Offset(deltaDpX, deltaDpY)
                                 },
                                 onDragEnd = {
-                                    val finalPos = viewportController.getScreenOffset(screen.id)
-                                    // CRITICAL EDGE CASE: purge ephemeral offset immediately so domain is single source of truth
-                                    viewportController.clearScreenOffset(screen.id)
-                                    if (finalPos != null) {
-                                        onMoveScreen(screen.id, finalPos.x, finalPos.y)
+                                    val committedDelta = dragDeltaDp
+                                    dragDeltaDp = Offset.Zero
+                                    if (committedDelta != Offset.Zero) {
+                                        onMoveScreen(screen.id, screen.canvasX + committedDelta.x, screen.canvasY + committedDelta.y)
                                     }
                                 }
                             )

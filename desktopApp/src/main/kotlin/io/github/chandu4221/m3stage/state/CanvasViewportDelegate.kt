@@ -13,7 +13,6 @@ import androidx.compose.ui.geometry.Size
  */
 interface CanvasViewportController {
     val viewportState: State<CanvasViewportState>
-    val screenOffsets: State<Map<io.github.chandu4221.m3stage.model.ScreenId, Offset>>
 
     fun panBy(delta: Offset)
     fun zoomAt(cursor: Offset, factor: Float)
@@ -24,12 +23,6 @@ interface CanvasViewportController {
     fun resetZoom()
     fun tidy()
     fun setActiveTool(tool: CanvasPointerTool)
-
-    fun getScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId): Offset?
-    fun setScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId, offset: Offset)
-    fun moveScreenBy(screenId: io.github.chandu4221.m3stage.model.ScreenId, delta: Offset)
-    fun clearScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId)
-    fun clearAllScreenOffsets()
 }
 
 /**
@@ -41,9 +34,6 @@ class CanvasViewportDelegate(
 ) : CanvasViewportController {
     private val _viewportState = mutableStateOf(initialState)
     override val viewportState: State<CanvasViewportState> = _viewportState
-
-    private val _screenOffsets = mutableStateOf<Map<io.github.chandu4221.m3stage.model.ScreenId, Offset>>(emptyMap())
-    override val screenOffsets: State<Map<io.github.chandu4221.m3stage.model.ScreenId, Offset>> = _screenOffsets
 
     override fun panBy(delta: Offset) {
         _viewportState.value = _viewportState.value.panBy(delta)
@@ -85,39 +75,10 @@ class CanvasViewportDelegate(
 
     override fun tidy() {
         _viewportState.value = _viewportState.value.tidy()
-        clearAllScreenOffsets()
     }
 
     override fun setActiveTool(tool: CanvasPointerTool) {
         _viewportState.value = _viewportState.value.copy(activeTool = tool)
-    }
-
-    override fun getScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId): Offset? =
-        _screenOffsets.value[screenId]
-
-    override fun setScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId, offset: Offset) {
-        val current = _screenOffsets.value.toMutableMap()
-        current[screenId] = offset
-        _screenOffsets.value = current
-    }
-
-    override fun moveScreenBy(screenId: io.github.chandu4221.m3stage.model.ScreenId, delta: Offset) {
-        val current = _screenOffsets.value.toMutableMap()
-        val old = current[screenId] ?: Offset.Zero
-        current[screenId] = old + delta
-        _screenOffsets.value = current
-    }
-
-    override fun clearScreenOffset(screenId: io.github.chandu4221.m3stage.model.ScreenId) {
-        if (screenId in _screenOffsets.value) {
-            val current = _screenOffsets.value.toMutableMap()
-            current.remove(screenId)
-            _screenOffsets.value = current
-        }
-    }
-
-    override fun clearAllScreenOffsets() {
-        _screenOffsets.value = emptyMap()
     }
 }
 
