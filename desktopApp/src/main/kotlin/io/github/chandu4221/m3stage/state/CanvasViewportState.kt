@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.state
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import kotlin.math.roundToInt
 
@@ -58,8 +59,21 @@ data class CanvasViewportState(
         return if (targetZoom == zoom) this else zoomAt(anchor, targetZoom / zoom)
     }
 
-    fun zoomFit(): CanvasViewportState =
+    fun resetZoom(): CanvasViewportState =
         copy(zoom = 1.0f, panOffset = Offset.Zero)
+
+    fun zoomFit(contentBounds: Rect? = null): CanvasViewportState {
+        if (contentBounds != null && contentBounds.width > 0f && contentBounds.height > 0f && viewportSize.width > 0f && viewportSize.height > 0f) {
+            val scaleX = viewportSize.width / contentBounds.width
+            val scaleY = viewportSize.height / contentBounds.height
+            val fitZoom = minOf(scaleX, scaleY).coerceIn(0.25f, 2.5f)
+            val centerViewport = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
+            val centerContent = contentBounds.center
+            val newPan = centerViewport - (centerContent * fitZoom)
+            return copy(zoom = fitZoom, panOffset = newPan)
+        }
+        return resetZoom()
+    }
 
     fun panBy(delta: Offset): CanvasViewportState =
         copy(panOffset = panOffset + delta)

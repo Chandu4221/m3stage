@@ -105,6 +105,31 @@ class CanvasViewportDelegateTest {
     }
 
     @Test
+    fun `state zoomFit directly centers content and calculates scale`() {
+        val viewportSize = Size(1000f, 800f)
+        val state = CanvasViewportState(
+            zoom = 1.0f,
+            panOffset = Offset(200f, 200f),
+            viewportSize = viewportSize
+        )
+        val contentBounds = Rect(Offset(100f, 100f), Size(500f, 400f))
+
+        val fitted = state.zoomFit(contentBounds)
+
+        assertEquals(2.0f, fitted.zoom, 0.001f)
+        val screenCenter = fitted.panOffset + (contentBounds.center * fitted.zoom)
+        assertOffsetClose(Offset(500f, 400f), screenCenter)
+    }
+
+    @Test
+    fun `state zoomFit without content bounds falls back to resetZoom`() {
+        val state = CanvasViewportState(zoom = 1.8f, panOffset = Offset(150f, 75f))
+        val fitted = state.zoomFit(null)
+        assertEquals(1.0f, fitted.zoom)
+        assertEquals(Offset.Zero, fitted.panOffset)
+    }
+
+    @Test
     fun `zoomIn without explicit center anchors around viewport center preserving stationary center point`() {
         val initialPan = Offset(300f, 150f)
         val initialZoom = 1.0f

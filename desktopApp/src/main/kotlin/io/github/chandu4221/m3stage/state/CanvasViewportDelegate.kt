@@ -57,21 +57,15 @@ class CanvasViewportDelegate(
     }
 
     override fun zoomFit(viewportSize: Size?, contentBounds: Rect?) {
-        if (viewportSize != null && contentBounds != null && contentBounds.width > 0f && contentBounds.height > 0f) {
-            val scaleX = viewportSize.width / contentBounds.width
-            val scaleY = viewportSize.height / contentBounds.height
-            val fitZoom = minOf(scaleX, scaleY).coerceIn(0.25f, 2.5f)
-            val centerViewport = Offset(viewportSize.width / 2f, viewportSize.height / 2f)
-            val centerContent = contentBounds.center
-            val newPan = centerViewport - (centerContent * fitZoom)
-            _viewportState.value = _viewportState.value.copy(zoom = fitZoom, panOffset = newPan)
-        } else {
-            _viewportState.value = _viewportState.value.zoomFit()
+        val targetSize = viewportSize ?: _viewportState.value.viewportSize
+        if (viewportSize != null && viewportSize != _viewportState.value.viewportSize) {
+            _viewportState.value = _viewportState.value.copy(viewportSize = viewportSize)
         }
+        _viewportState.value = _viewportState.value.copy(viewportSize = targetSize).zoomFit(contentBounds)
     }
 
     override fun resetZoom() {
-        _viewportState.value = _viewportState.value.copy(zoom = 1.0f, panOffset = Offset.Zero)
+        _viewportState.value = _viewportState.value.resetZoom()
     }
 
     override fun tidy() {
