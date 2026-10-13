@@ -167,4 +167,42 @@ class ProjectSessionDelegateTest {
         assertEquals("ChangedImmediately", repo.lastSavedProject?.name)
         assertFalse(delegate.isDirty.value, "isDirty must be cleared after flushSave")
     }
+
+    @Test
+    fun testProjectSessionDelegateCloseCancelsScopeAndPreventsAutosave() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        val initialProject = Project(
+            id = ProjectId("proj-1"),
+            name = "LoadedProject",
+            basePackage = "com.example.test",
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-1"),
+                    name = "Home",
+                    route = "/",
+                    root = DesignNode(id = NodeId("root"), kind = ComponentKind.Scaffold)
+                )
+            )
+        )
+        val repo = MockProjectRepo(projectToLoad = initialProject)
+        val context = EditorContext(idGen, repo, DummyCodeGen())
+
+        val delegate = ProjectSessionDelegate(context, testScope)
+        delegate.loadProject()
+        testScope.advanceUntilIdle()
+
+        // Close session delegate
+        delegate.close()
+
+        // Mutate projectFlow -> dirty
+        context.projectFlow.value = initialProject.copy(name = "MutatedAfterClose")
+        testScope.advanceTimeBy(2000)
+        testScope.advanceUntilIdle()
+
+        assertEquals(0, repo.saveCallCount, "No autosaves should run after session delegate is closed")
+    }
 }
+
