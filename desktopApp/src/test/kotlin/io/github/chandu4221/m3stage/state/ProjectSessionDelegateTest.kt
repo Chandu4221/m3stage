@@ -8,8 +8,10 @@ import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -35,7 +37,8 @@ class ProjectSessionDelegateTest {
     private class MockProjectRepo(
         var loadException: Exception? = null,
         var projectToLoad: Project? = null,
-        var onSaveDelayMs: Long = 0
+        var onSaveDelayMs: Long = 0,
+        var onLoadDelayMs: Long = 0
     ) : ProjectRepository {
         var saveCallCount = 0
         var concurrentSaveDetected = false
@@ -59,6 +62,9 @@ class ProjectSessionDelegateTest {
         }
 
         override suspend fun load(): Project? {
+            if (onLoadDelayMs > 0) {
+                delay(onLoadDelayMs)
+            }
             loadException?.let { throw it }
             return projectToLoad
         }
@@ -249,6 +255,116 @@ class ProjectSessionDelegateTest {
 
         assertFalse(repo.concurrentSaveDetected, "Concurrent saves must never interleave")
         assertEquals(2, repo.saveCallCount, "Both saves should complete serialized")
+    }
+
+    @Test
+    fun testStaleLoadDoesNotOverwriteUserModifications() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        fun createScreen(id: String, name: String) = Screen(
+            id = ScreenId(id),
+            name = name,
+            route = "/$name",
+            root = DesignNode(id = NodeId("r-$id"), kind = ComponentKind.Scaffold)
+        )
+        val diskProject = Project(
+            id = ProjectId("disk-1"),
+            name = "DiskProject",
+            basePackage = "com.disk",
+            screens = listOf(createScreen("s-disk", "ScreenDisk"))
+        )
+        val repo = MockProjectRepo(projectToLoad = diskProject, onLoadDelayMs = 1000)
+        val context = EditorContext(idGen, repo, DummyCodeGen())
+
+        val events = mutableListOf<EditorEvent>()
+        testScope.backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            context.eventFlow.collect { events.add(it) }
+        }
+
+        val delegate = ProjectSessionDelegate(context, testScope)
+
+        // Initial project in memory
+        val initialMemoryProject = Project(
+            id = ProjectId("init-1"),
+            name = "InitialMemory",
+            basePackage = "com.init",
+            screens = listOf(createScreen("s-init", "ScreenInit"))
+        )
+        context.projectFlow.value = initialMemoryProject
+
+        // Start loading from disk
+        delegate.loadProject()
+        testScheduler.runCurrent()
+
+        // User edits the project while load is in flight
+        val userEditedProject = initialMemoryProject.copy(name = "UserEditedDuringLoad")
+        context.projectFlow.value = userEditedProject
+
+        // Complete the in-flight load
+        testScope.advanceUntilIdle()
+
+        // The loaded disk project must NOT overwrite the user's modifications
+        assertEquals(userEditedProject, context.projectFlow.value)
+        assertTrue(events.any { it is EditorEvent.LoadFailed && it.reason.contains("modified while loading") })
+    }
+
+    @Test
+    fun testNewerLoadCancelsOlderInFlightLoad() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testScope = TestScope(testDispatcher)
+
+        val idGen = TestIdGen()
+        fun createScreen(id: String, name: String) = Screen(
+            id = ScreenId(id),
+            name = name,
+            route = "/$name",
+            root = DesignNode(id = NodeId("r-$id"), kind = ComponentKind.Scaffold)
+        )
+        val slowProject = Project(
+            id = ProjectId("p-slow"),
+            name = "SlowProject",
+            basePackage = "com.slow",
+            screens = listOf(createScreen("s-slow", "ScreenSlow"))
+        )
+        val fastProject = Project(
+            id = ProjectId("p-fast"),
+            name = "FastProject",
+            basePackage = "com.fast",
+            screens = listOf(createScreen("s-fast", "ScreenFast"))
+        )
+
+        var returnProject = slowProject
+        var delayMs = 1000L
+        val repo = object : ProjectRepository {
+            override suspend fun save(project: Project) {}
+            override suspend fun load(): Project? {
+                delay(delayMs)
+                return returnProject
+            }
+        }
+        val context = EditorContext(idGen, repo, DummyCodeGen())
+        val delegate = ProjectSessionDelegate(context, testScope)
+
+        // 1. Trigger first slow load
+        returnProject = slowProject
+        delayMs = 1000L
+        delegate.loadProject()
+        testScheduler.runCurrent()
+
+        // 2. Trigger second faster load
+        returnProject = fastProject
+        delayMs = 200L
+        delegate.loadProject()
+
+        // Advance 300ms -> fast load finishes
+        testScope.advanceTimeBy(300)
+        assertEquals("FastProject", context.projectFlow.value?.name)
+
+        // Advance remaining time -> slow load would finish, but its loadId is stale
+        testScope.advanceUntilIdle()
+        assertEquals("FastProject", context.projectFlow.value?.name, "Stale load must not overwrite newer load")
     }
 }
 

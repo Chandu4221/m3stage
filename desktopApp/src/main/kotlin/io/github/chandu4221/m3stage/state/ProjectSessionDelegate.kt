@@ -66,10 +66,23 @@ class ProjectSessionDelegate(
         }
     }
 
+    private var currentLoadId = 0L
+
     override fun loadProject() {
+        val loadId = ++currentLoadId
+        val initialProjectState = context.projectFlow.value
         scope.launch {
             try {
                 val loaded = context.repository.load()
+                if (loadId != currentLoadId) {
+                    return@launch
+                }
+                if (context.projectFlow.value != initialProjectState) {
+                    context.eventFlow.emit(
+                        EditorEvent.LoadFailed("Load aborted: project was modified while loading was in progress.")
+                    )
+                    return@launch
+                }
                 if (loaded != null) {
                     val validationErrors = ProjectValidation.validate(loaded)
                     if (validationErrors.isEmpty()) {
@@ -94,6 +107,9 @@ class ProjectSessionDelegate(
                     createNewProject()
                 }
             } catch (e: Exception) {
+                if (loadId != currentLoadId || context.projectFlow.value != initialProjectState) {
+                    return@launch
+                }
                 autosaveBlocked = true
                 _isDirty.value = false
                 context.eventFlow.emit(
@@ -122,6 +138,7 @@ class ProjectSessionDelegate(
     }
 
     override fun createNewProject() {
+        currentLoadId++
         val idGen = context.idGenerator
         val rootNode = ComponentCatalog[ComponentKind.Scaffold].createDefaultSubtree(idGen)
 
