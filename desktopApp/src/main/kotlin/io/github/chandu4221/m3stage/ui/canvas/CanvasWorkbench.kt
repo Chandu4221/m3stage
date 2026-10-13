@@ -75,6 +75,8 @@ fun CanvasWorkbench(
     onDeleteScreen: (ScreenId) -> Unit = {},
     onDuplicateScreen: (ScreenId) -> Unit = {},
     onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
+    onDeviceChange: (ScreenId, DevicePreset) -> Unit = { _, _ -> },
+    onOrientationToggle: (ScreenId) -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
@@ -184,10 +186,8 @@ fun CanvasWorkbench(
                 screens.forEachIndexed { index, screen ->
                     key(screen.id) {
                         val isActive = screen.id == activeScreenId
-                        var activeDevice by remember(screen.id) {
-                            mutableStateOf(screen.resolveDevice(projectDefaultDevice))
-                        }
-                        var orientation by remember(screen.id) { mutableStateOf(DeviceOrientation.Portrait) }
+                        val activeDevice = screen.resolveDevice(projectDefaultDevice)
+                        val orientation = screen.orientation
                         var showFrame by remember(screen.id) { mutableStateOf(true) }
 
                         val currentW = if (orientation == DeviceOrientation.Portrait) activeDevice.widthDp else activeDevice.heightDp
@@ -232,11 +232,8 @@ fun CanvasWorkbench(
                                     heightDp = currentH,
                                     canvasZoom = viewportState.value.zoom,
                                     onActivate = { onSelectScreen(screen.id) },
-                                    onDeviceChange = { activeDevice = it },
-                                    onOrientationToggle = {
-                                        orientation = if (orientation == DeviceOrientation.Portrait)
-                                            DeviceOrientation.Landscape else DeviceOrientation.Portrait
-                                    },
+                                    onDeviceChange = { onDeviceChange(screen.id, it) },
+                                    onOrientationToggle = { onOrientationToggle(screen.id) },
                                     onFrameToggle = { showFrame = it },
                                     canMoveLeft = canMoveLeft(index),
                                     canMoveRight = canMoveRight(index),

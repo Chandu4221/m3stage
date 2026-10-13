@@ -19,6 +19,7 @@ fun Screen.toDto(): ScreenDto = ScreenDto(
     name = this.name,
     route = this.route,
     device = this.device?.id,
+    orientation = this.orientation.name,
     canvasX = this.canvasX,
     canvasY = this.canvasY,
     root = this.root.toDto()
@@ -39,6 +40,11 @@ fun ScreenDto.toDomain(): Screen = Screen(
     name = this.name,
     route = this.route,
     device = this.device?.let { DevicePreset.fromId(it) },
+    orientation = try {
+        DeviceOrientation.valueOf(this.orientation)
+    } catch (_: Exception) {
+        DeviceOrientation.Portrait
+    },
     canvasX = this.canvasX,
     canvasY = this.canvasY,
     root = this.root.toDomain()

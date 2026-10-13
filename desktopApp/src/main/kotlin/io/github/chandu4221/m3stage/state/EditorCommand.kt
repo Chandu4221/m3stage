@@ -296,6 +296,29 @@ data class UpdateThemeCommand(
     }
 }
 
+/**
+ * Updates a screen's device preset and orientation metadata. Undo restores previous metadata.
+ */
+data class UpdateScreenMetaCommand(
+    val screenId: ScreenId,
+    val oldDevice: DevicePreset?,
+    val oldOrientation: DeviceOrientation,
+    val newDevice: DevicePreset?,
+    val newOrientation: DeviceOrientation
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val updatedScreen = screen.copy(device = newDevice, orientation = newOrientation)
+        return project.copy(screens = project.screens.map { if (it.id == screenId) updatedScreen else it })
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val revertedScreen = screen.copy(device = oldDevice, orientation = oldOrientation)
+        return project.copy(screens = project.screens.map { if (it.id == screenId) revertedScreen else it })
+    }
+}
+
 
 /**
  * Adds a modifier to a node. Undo removes it.

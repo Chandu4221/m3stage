@@ -18,10 +18,7 @@ import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.model.DeviceCategory
 import io.github.chandu4221.m3stage.model.DevicePreset
 
-enum class DeviceOrientation {
-    Portrait,
-    Landscape
-}
+typealias DeviceOrientation = io.github.chandu4221.m3stage.model.DeviceOrientation
 
 /**
  * Realistic hardware device frame wrapper.

@@ -236,4 +236,77 @@ class SerializationRoundTripTest {
 
         assertEquals(nodeWithAllModifiers, decodedNode, "DesignNode with all 21 modifiers and slots must round-trip losslessly")
     }
+
+    @Test
+    fun testScreenDeviceAndOrientationRoundTripLosslessly() {
+        val rootNode = DesignNode(
+            id = NodeId("root-scaffold"),
+            kind = ComponentKind.Scaffold
+        )
+        val originalProject = Project(
+            id = ProjectId("test-proj-orientation"),
+            name = "Orientation Test App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-1"),
+                    name = "Home",
+                    route = "/",
+                    device = DevicePreset.GalaxyS24,
+                    orientation = DeviceOrientation.Landscape,
+                    root = rootNode
+                )
+            )
+        )
+
+        val dto = originalProject.toDto()
+        assertEquals(2, dto.schemaVersion)
+        assertEquals("Landscape", dto.screens.first().orientation)
+
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<ProjectDto>(jsonString)
+        val restoredProject = decodedDto.toDomain()
+
+        assertEquals(originalProject, restoredProject)
+        assertEquals(DeviceOrientation.Landscape, restoredProject.screens.first().orientation)
+        assertEquals(DevicePreset.GalaxyS24, restoredProject.screens.first().device)
+    }
+
+    @Test
+    fun testSchemaV1BackwardsCompatibilityLoadsWithDefaultOrientation() {
+        val v1Json = """
+            {
+                "id": "proj-v1",
+                "name": "Legacy V1",
+                "basePackage": "com.example",
+                "schemaVersion": 1,
+                "defaultDevice": "pixel_8",
+                "screens": [
+                    {
+                        "id": "s-1",
+                        "name": "Main",
+                        "route": "/main",
+                        "device": "pixel_8",
+                        "root": {
+                            "id": "root",
+                            "type": "Scaffold",
+                            "props": {},
+                            "modifiers": [],
+                            "children": [],
+                            "slots": {},
+                            "isVisible": true
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val decodedDto = json.decodeFromString<ProjectDto>(v1Json)
+        val domainProject = decodedDto.toDomain()
+
+        assertEquals(1, domainProject.screens.size)
+        assertEquals(DeviceOrientation.Portrait, domainProject.screens.first().orientation)
+    }
 }
+

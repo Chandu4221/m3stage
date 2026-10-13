@@ -59,6 +59,8 @@ fun FloatingCanvasStudio(
     onMoveScreen: (ScreenId, Float, Float) -> Unit = { _, _, _ -> },
     onTidy: () -> Unit = {},
     onReorderScreens: (Int, Int) -> Unit = { _, _ -> },
+    onDeviceChange: (ScreenId, DevicePreset) -> Unit = { _, _ -> },
+    onOrientationToggle: (ScreenId) -> Unit = {},
     isCodePreviewOpen: Boolean = false,
     onToggleCodePreview: () -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
@@ -90,6 +92,8 @@ fun FloatingCanvasStudio(
                     onDuplicateScreen = onDuplicateScreen,
                     onMoveScreen = onMoveScreen,
                     onReorderScreens = onReorderScreens,
+                    onDeviceChange = onDeviceChange,
+                    onOrientationToggle = onOrientationToggle,
                     draggedComponentKind = draggedComponentKind,
                     onDropOnScreen = onDropOnScreen
                 )
