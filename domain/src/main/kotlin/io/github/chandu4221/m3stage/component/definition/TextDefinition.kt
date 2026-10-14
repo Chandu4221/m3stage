@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.*
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 import io.github.chandu4221.m3stage.theme.M3TypographyToken
@@ -20,7 +21,7 @@ object TextDefinition {
             PropertySpec.Text(
                 key = TextContent,
                 displayName = "Text Content",
-                defaultValue = PropertyValue.StringValue("Sample Text")
+                defaultValue = PropertyValue.StringValue("Text")
             ),
             PropertySpec.TypographyPicker(
                 key = Typography,
@@ -38,6 +39,13 @@ object TextDefinition {
                 options = TextOverflowOption.entries.map { it.name },
                 defaultValue = PropertyValue.EnumValue(TextOverflowOption.Clip.name)
             )
-        )
+        ),
+        defaultSubtreeFactory = { self, idGen ->
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Text,
+                props = self.createDefaultProps()
+            )
+        }
     )
 }

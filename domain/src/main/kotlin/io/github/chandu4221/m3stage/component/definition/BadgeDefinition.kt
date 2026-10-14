@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.*
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 
@@ -26,6 +27,21 @@ object BadgeDefinition {
                 defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnError)
             )
         ),
-        allowedChildren = setOf(ComponentKind.Text)
+        allowedChildren = setOf(ComponentKind.Text),
+        defaultSubtreeFactory = { self, idGen ->
+            val textNode = DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Text,
+                props = TextDefinition.definition.createDefaultProps().toMutableMap().apply {
+                    put(TextDefinition.TextContent.id, PropertyValue.StringValue("1"))
+                }
+            )
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Badge,
+                props = self.createDefaultProps(),
+                children = listOf(textNode)
+            )
+        }
     )
 }
