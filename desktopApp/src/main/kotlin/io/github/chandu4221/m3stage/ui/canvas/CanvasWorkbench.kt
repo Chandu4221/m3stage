@@ -43,6 +43,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -404,10 +405,10 @@ private fun FloatingArtboardToolbar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Left: Drag grip indicator & Screen Name
+                // Left: Drag grip indicator & Screen Name & Rename Button
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Icon(
@@ -423,6 +424,18 @@ private fun FloatingArtboardToolbar(
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                    ToolbarActionButton(
+                        icon = Icons.Default.Edit,
+                        contentDescription = "Rename Screen",
+                        tooltip = "Rename Screen",
+                        modifier = Modifier.size(24.dp),
+                        iconSize = 14.dp,
+                        tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            onActivate()
+                            showRenameDialog = true
+                        }
                     )
                 }
 
@@ -533,7 +546,7 @@ private fun FloatingArtboardToolbar(
                 VerticalDivider(
                     modifier = Modifier
                         .height(18.dp)
-                        .padding(horizontal = 2.dp),
+                        .padding(horizontal = 4.dp),
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
@@ -549,59 +562,14 @@ private fun FloatingArtboardToolbar(
                     }
                 )
 
-                // Hardware Bezel Toggle
-                TooltipArea(
-                    delayMillis = 500,
-                    tooltip = {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.inverseSurface,
-                            tonalElevation = 4.dp
-                        ) {
-                            Text(
-                                text = "Toggle Hardware Frame",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.inverseOnSurface,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                    },
-                    tooltipPlacement = TooltipPlacement.ComponentRect(
-                        anchor = Alignment.TopCenter,
-                        alignment = Alignment.TopCenter,
-                        offset = DpOffset(x = 0.dp, y = (-8).dp)
-                    )
-                ) {
-                    FilledIconToggleButton(
-                        checked = showFrame,
-                        onCheckedChange = {
-                            onActivate()
-                            onFrameToggle(it)
-                        },
-                        modifier = Modifier.size(32.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Frame", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-
                 VerticalDivider(
                     modifier = Modifier
                         .height(18.dp)
-                        .padding(horizontal = 2.dp),
+                        .padding(horizontal = 4.dp),
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                // Actions Group: Rename | Duplicate | Delete
-                ToolbarActionButton(
-                    icon = Icons.Default.Edit,
-                    contentDescription = "Rename Screen",
-                    tooltip = "Rename Screen",
-                    onClick = {
-                        onActivate()
-                        showRenameDialog = true
-                    }
-                )
+                // Actions Group: Duplicate | Delete
                 ToolbarActionButton(
                     icon = Icons.Default.ContentCopy,
                     contentDescription = "Duplicate Screen",
@@ -667,6 +635,7 @@ private fun ToolbarActionButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier.size(32.dp),
+    iconSize: Dp = 18.dp,
     enabled: Boolean = true,
     tint: Color = MaterialTheme.colorScheme.onSurface,
     disabledTint: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
@@ -681,7 +650,7 @@ private fun ToolbarActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(iconSize),
                 tint = if (enabled) tint else disabledTint
             )
         }
