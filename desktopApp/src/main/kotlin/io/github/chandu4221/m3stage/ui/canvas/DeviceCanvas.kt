@@ -124,7 +124,8 @@ fun DeviceCanvas(
                     onNodeClick = onSelectNode,
                     lockedNodeIds = lockedNodeIds,
                     registry = registry,
-                    artboardOrigin = { artboardOrigin }
+                    artboardOrigin = { artboardOrigin },
+                    zoomProvider = zoomProvider
                 )
 
                 // 2. Figma-style selection & hover chrome

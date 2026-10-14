@@ -15,12 +15,19 @@ import io.github.chandu4221.m3stage.model.NodeId
 fun Modifier.nodeBoundsReporter(
     nodeId: NodeId,
     registry: NodeBoundsRegistry,
-    artboardOrigin: () -> Offset
+    artboardOrigin: () -> Offset,
+    zoomProvider: () -> Float = { 1f }
 ): Modifier = this.onGloballyPositioned { coords ->
     if (!coords.isAttached) return@onGloballyPositioned
-    val origin = artboardOrigin()
-    val topLeftInArtboard = coords.positionInRoot() - origin
-    val size = coords.size.toSize()
+    // Ancestor graphicsLayer (parent canvas zoom) scales positionInRoot(); artboardOrigin
+    // subtraction cancels pan but NOT zoom, so divide the local delta back to unscaled px.
+    // IMPORTANT INVARIANT: this correction assumes the ONLY graphicsLayer between this node
+    // and the artboard origin box is the parent-canvas zoom/pan layer. If any scaled layer
+    // is ever introduced between them (e.g., a scaled preview surface), this reporter must
+    // be updated accordingly.
+    val zoom = zoomProvider().coerceAtLeast(0.01f)
+    val topLeftInArtboard = (coords.positionInRoot() - artboardOrigin()) / zoom
+    val size = coords.size.toSize() // layout size is NOT layer-scaled — do not divide
     registry.report(
         nodeId,
         Rect(

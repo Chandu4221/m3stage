@@ -33,14 +33,15 @@ object DesignRenderer {
         lockedNodeIds: Set<NodeId> = emptySet(),
         scheme: ColorScheme? = null,
         registry: NodeBoundsRegistry? = null,
-        artboardOrigin: () -> Offset = { Offset.Zero }
+        artboardOrigin: () -> Offset = { Offset.Zero },
+        zoomProvider: () -> Float = { 1f }
     ) {
         val content = @Composable {
             androidx.compose.runtime.CompositionLocalProvider(
                 androidx.compose.foundation.LocalIndication provides NoIndication,
                 androidx.compose.material3.LocalRippleConfiguration provides null
             ) {
-                RenderInternal(node, registry, artboardOrigin)
+                RenderInternal(node, registry, artboardOrigin, zoomProvider)
             }
         }
 
@@ -57,7 +58,8 @@ object DesignRenderer {
     private fun RenderInternal(
         node: DesignNode,
         registry: NodeBoundsRegistry?,
-        artboardOrigin: () -> Offset
+        artboardOrigin: () -> Offset,
+        zoomProvider: () -> Float = { 1f }
     ) {
         @Composable
         fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null, depth: Int = 0) {
@@ -67,7 +69,8 @@ object DesignRenderer {
                 Modifier.nodeBoundsReporter(
                     nodeId = currentNode.id,
                     registry = registry,
-                    artboardOrigin = artboardOrigin
+                    artboardOrigin = artboardOrigin,
+                    zoomProvider = zoomProvider
                 )
             } else {
                 Modifier
