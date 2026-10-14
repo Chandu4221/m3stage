@@ -16,6 +16,8 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.material.kolor)
     testImplementation(libs.kotlin.testJunit)
+    @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+    testImplementation(compose.desktop.uiTestJUnit4)
 }
 
 kotlin {

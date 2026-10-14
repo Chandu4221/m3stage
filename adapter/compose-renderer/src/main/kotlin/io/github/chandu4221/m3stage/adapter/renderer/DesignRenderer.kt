@@ -73,15 +73,28 @@ object DesignRenderer {
                 Modifier
             }
 
-            Box(modifier = baseModifier) {
-                val renderer = ComponentRendererRegistry[currentNode.kind]
+            val renderer = ComponentRendererRegistry[currentNode.kind]
+            val rowScope = io.github.chandu4221.m3stage.adapter.renderer.component.navigation.LocalRowScope.current
+
+            if (rowScope != null && currentNode.kind == io.github.chandu4221.m3stage.component.ComponentKind.NavigationBarItem) {
                 if (renderer != null) {
                     val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
-                    renderer.Render(currentNode, modifier = elementModifier) { child ->
+                    renderer.Render(currentNode, modifier = baseModifier.then(elementModifier)) { child ->
                         renderNode(child, currentNode, depth + 1)
                     }
                 } else {
                     Text(text = "Unsupported: ${currentNode.kind.displayName}")
+                }
+            } else {
+                Box(modifier = baseModifier) {
+                    if (renderer != null) {
+                        val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
+                        renderer.Render(currentNode, modifier = elementModifier) { child ->
+                            renderNode(child, currentNode, depth + 1)
+                        }
+                    } else {
+                        Text(text = "Unsupported: ${currentNode.kind.displayName}")
+                    }
                 }
             }
         }
