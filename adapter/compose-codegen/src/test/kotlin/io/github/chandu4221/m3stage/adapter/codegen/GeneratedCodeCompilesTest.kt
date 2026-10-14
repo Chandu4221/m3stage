@@ -2,12 +2,14 @@ package io.github.chandu4221.m3stage.adapter.codegen
 
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolver.requiredImport
+import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.definition.ButtonDefinition
 import io.github.chandu4221.m3stage.component.definition.TextDefinition
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.modifier.ModifierScope
 import io.github.chandu4221.m3stage.modifier.ModifierSpec
+import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 import kotlin.reflect.KClass
@@ -230,5 +232,127 @@ class GeneratedCodeCompilesTest {
         assertTrue(!code.contains("import androidx.compose.ui.Modifier"), "Must not import Modifier when no modifiers exist")
         assertTrue(!code.contains("import androidx.compose.foundation.layout"), "Must not import layout when no layout modifiers exist")
         assertTrue(!code.contains("import androidx.compose.ui.draw"), "Must not import draw when no draw modifiers exist")
+    }
+
+    @Test
+    fun testAllDefaultSubtreesGenerateValidComposeCode() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("proj-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("screen-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("node-${idCounter++}")
+        }
+
+        for (def in ComponentCatalog.all) {
+            val rootNode = if (def.kind == ComponentKind.NavigationBarItem) {
+                DesignNode(
+                    id = NodeId("row-container"),
+                    kind = ComponentKind.Row,
+                    children = listOf(def.createDefaultSubtree(idGen))
+                )
+            } else {
+                def.createDefaultSubtree(idGen)
+            }
+
+            val screen = Screen(
+                id = ScreenId("screen-${def.kind.name.lowercase()}"),
+                name = "${def.kind.name}Screen",
+                route = "/${def.kind.name.lowercase()}",
+                root = rootNode
+            )
+            val project = Project(
+                id = ProjectId("test-proj"),
+                name = "Test App",
+                basePackage = "com.m3stage.test",
+                defaultDevice = DevicePreset.Pixel8,
+                screens = listOf(screen)
+            )
+
+            val generatedProject = generator.generate(project)
+            val file = generatedProject.files.first()
+            val code = file.content
+
+            assertTrue(code.isNotBlank(), "Generated code for ${def.kind} must not be blank")
+            assertTrue(code.contains("@Composable"), "Generated code for ${def.kind} must contain @Composable")
+            assertTrue(
+                !code.contains("TODO: Unsupported component kind"),
+                "Generated code for ${def.kind} contains unsupported component kind placeholder"
+            )
+
+            // Assert that the generated code parses as valid Kotlin with ktfmt (no ParseError)
+            com.facebook.ktfmt.format.Formatter.format(
+                com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+                code
+            )
+        }
+    }
+
+    @Test
+    fun testScreenWithScaffoldAndAllComponentsGeneratesValidComposeCode() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("proj-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("screen-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("node-${idCounter++}")
+        }
+
+        val nonScreenKinds = ComponentCatalog.all
+            .map { it.kind }
+            .filter {
+                it != ComponentKind.Scaffold &&
+                it != ComponentKind.NavigationBarItem &&
+                it != ComponentKind.TopAppBar &&
+                it != ComponentKind.NavigationBar
+            }
+
+        val contentChildren = nonScreenKinds.map { kind ->
+            ComponentCatalog[kind].createDefaultSubtree(idGen)
+        }
+
+        val column = DesignNode(
+            id = NodeId("all-components-col"),
+            kind = ComponentKind.Column,
+            children = contentChildren
+        )
+
+        val scaffold = DesignNode(
+            id = NodeId("all-scaffold"),
+            kind = ComponentKind.Scaffold,
+            slots = mapOf(
+                ComponentCatalog.ScaffoldProps.TopBarSlot.id to listOf(
+                    ComponentCatalog[ComponentKind.TopAppBar].createDefaultSubtree(idGen)
+                ),
+                ComponentCatalog.ScaffoldProps.BottomBarSlot.id to listOf(
+                    ComponentCatalog[ComponentKind.NavigationBar].createDefaultSubtree(idGen)
+                ),
+                ComponentCatalog.ScaffoldProps.ContentSlot.id to listOf(column)
+            )
+        )
+
+        val project = Project(
+            id = ProjectId("test-proj"),
+            name = "All In One App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-all"),
+                    name = "AllComponentsScreen",
+                    route = "/all",
+                    root = scaffold
+                )
+            )
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+        assertTrue(code.isNotBlank(), "All-in-one screen code must not be blank")
+        assertTrue(!code.contains("TODO: Unsupported component kind"), "Generated code contains unsupported component kind")
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
     }
 }
