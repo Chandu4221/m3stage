@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.*
 
 object SliderDefinition {
@@ -26,6 +27,13 @@ object SliderDefinition {
                 displayName = "Enabled",
                 defaultValue = PropertyValue.BooleanValue(true)
             )
-        )
+        ),
+        defaultSubtreeFactory = { self, idGen ->
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Slider,
+                props = self.createDefaultProps()
+            )
+        }
     )
 }

@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.*
 
 object SwitchDefinition {
@@ -17,13 +18,20 @@ object SwitchDefinition {
             PropertySpec.Switch(
                 key = Checked,
                 displayName = "Checked",
-                defaultValue = PropertyValue.BooleanValue(true)
+                defaultValue = PropertyValue.BooleanValue(false)
             ),
             PropertySpec.Switch(
                 key = Enabled,
                 displayName = "Enabled",
                 defaultValue = PropertyValue.BooleanValue(true)
             )
-        )
+        ),
+        defaultSubtreeFactory = { self, idGen ->
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Switch,
+                props = self.createDefaultProps()
+            )
+        }
     )
 }

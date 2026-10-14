@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.*
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 
@@ -27,6 +28,13 @@ object HorizontalDividerDefinition {
                 displayName = "Color",
                 defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OutlineVariant)
             )
-        )
+        ),
+        defaultSubtreeFactory = { self, idGen ->
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.HorizontalDivider,
+                props = self.createDefaultProps()
+            )
+        }
     )
 }

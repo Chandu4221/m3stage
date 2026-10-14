@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.ContentAlignmentOption
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey
@@ -23,6 +24,21 @@ object BoxDefinition {
                 options = ContentAlignmentOption.entries.map { it.name },
                 defaultValue = PropertyValue.EnumValue(ContentAlignmentOption.Center.name)
             )
-        )
+        ),
+        defaultSubtreeFactory = { self, idGen ->
+            val textNode = DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Text,
+                props = TextDefinition.definition.createDefaultProps().toMutableMap().apply {
+                    put(TextDefinition.TextContent.id, PropertyValue.StringValue("Content"))
+                }
+            )
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.Box,
+                props = self.createDefaultProps(),
+                children = listOf(textNode)
+            )
+        }
     )
 }

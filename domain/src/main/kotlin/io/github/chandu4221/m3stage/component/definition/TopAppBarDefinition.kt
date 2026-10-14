@@ -22,7 +22,7 @@ object TopAppBarDefinition {
         id = SlotId("navigationIcon"),
         displayName = "Navigation Icon",
         maxChildren = 1,
-        allowedKinds = setOf(ComponentKind.Icon, ComponentKind.Button)
+        allowedKinds = setOf(ComponentKind.Icon, ComponentKind.IconButton, ComponentKind.Button)
     )
 
     val TitleSlot = SlotDefinition(
@@ -36,7 +36,7 @@ object TopAppBarDefinition {
     val ActionsSlot = SlotDefinition(
         id = SlotId("actions"),
         displayName = "Action Items",
-        allowedKinds = setOf(ComponentKind.Icon, ComponentKind.Button)
+        allowedKinds = setOf(ComponentKind.Icon, ComponentKind.IconButton, ComponentKind.Button)
     )
 
     val definition = ComponentDefinition(
@@ -61,9 +61,10 @@ object TopAppBarDefinition {
             )
         ),
         slots = listOf(NavigationIconSlot, TitleSlot, ActionsSlot),
-        allowedChildren = setOf(ComponentKind.Text, ComponentKind.Icon, ComponentKind.Button),
+        allowedChildren = setOf(ComponentKind.Text, ComponentKind.Icon, ComponentKind.IconButton, ComponentKind.Button),
         slotOnly = true,
         defaultSubtreeFactory = { self, idGen ->
+            val navIcon = IconButtonDefinition.definition.createDefaultSubtree(idGen)
             val titleNode = DesignNode(
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.Text,
@@ -76,7 +77,10 @@ object TopAppBarDefinition {
                 kind = ComponentKind.TopAppBar,
                 props = self.createDefaultProps(),
                 children = emptyList(),
-                slots = mapOf(TitleSlot.id to listOf(titleNode))
+                slots = mapOf(
+                    NavigationIconSlot.id to listOf(navIcon),
+                    TitleSlot.id to listOf(titleNode)
+                )
             )
         }
     )
