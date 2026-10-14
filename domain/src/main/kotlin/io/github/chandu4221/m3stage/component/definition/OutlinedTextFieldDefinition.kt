@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.*
 
 object OutlinedTextFieldDefinition {
@@ -42,6 +43,15 @@ object OutlinedTextFieldDefinition {
             TextFieldDefinition.TrailingIconSlot,
             TextFieldDefinition.SupportingTextSlot
         ),
-        allowedChildren = setOf(ComponentKind.Icon, ComponentKind.Text)
+        allowedChildren = setOf(ComponentKind.Icon, ComponentKind.Text),
+        defaultSubtreeFactory = { self, idGen ->
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.OutlinedTextField,
+                props = self.createDefaultProps().toMutableMap().apply {
+                    put(Value.id, PropertyValue.StringValue("Value"))
+                }
+            )
+        }
     )
 }

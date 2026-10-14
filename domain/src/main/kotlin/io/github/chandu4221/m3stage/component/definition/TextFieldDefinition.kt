@@ -5,6 +5,7 @@ import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.slot.SlotDefinition
 import io.github.chandu4221.m3stage.component.slot.SlotId
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyKey
 import io.github.chandu4221.m3stage.property.PropertySpec
@@ -66,6 +67,15 @@ object TextFieldDefinition {
             )
         ),
         slots = listOf(LeadingIconSlot, TrailingIconSlot, SupportingTextSlot),
-        allowedChildren = setOf(ComponentKind.Icon, ComponentKind.Text)
+        allowedChildren = setOf(ComponentKind.Icon, ComponentKind.Text),
+        defaultSubtreeFactory = { self, idGen ->
+            DesignNode(
+                id = idGen.nextNodeId(),
+                kind = ComponentKind.TextField,
+                props = self.createDefaultProps().toMutableMap().apply {
+                    put(Value.id, PropertyValue.StringValue("Value"))
+                }
+            )
+        }
     )
 }
