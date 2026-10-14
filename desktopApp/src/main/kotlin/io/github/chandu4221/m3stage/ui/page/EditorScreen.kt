@@ -1,6 +1,11 @@
 package io.github.chandu4221.m3stage.ui.page
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHost
@@ -14,6 +19,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
+import io.github.chandu4221.m3stage.state.rememberPanelStateHolder
 import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.query.canPlace
@@ -41,15 +47,8 @@ fun EditorScreen(store: EditorStore) {
     val redoStack by store.redoStack.collectAsState()
     val isDirty by store.isDirty.collectAsState()
 
-    var activeRailTab by remember { mutableStateOf<StudioRailTab?>(StudioRailTab.Parts) }
-    var lastActiveRailTab by remember { mutableStateOf(StudioRailTab.Parts) }
-    var isRightPanelOpen by remember { mutableStateOf(true) }
-    var leftPanelWidth by remember { mutableStateOf(280.dp) }
-    var rightPanelWidth by remember { mutableStateOf(320.dp) }
+    val panelState = rememberPanelStateHolder()
     var searchQuery by remember { mutableStateOf("") }
-
-    val isLeftPanelOpen = activeRailTab != null
-    val isFullWidth = !isLeftPanelOpen && !isRightPanelOpen
 
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
     val selectedNode = activeScreen?.root?.let { root ->
@@ -162,7 +161,7 @@ fun EditorScreen(store: EditorStore) {
         focusRequester.requestFocus()
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester)
@@ -273,57 +272,84 @@ fun EditorScreen(store: EditorStore) {
                 false
             }
     ) {
+        val totalWidth = maxWidth
+        val navRailWidth = 72.dp
+        val minCanvasWidth = 240.dp
+        val maxLeftWidth = (totalWidth - minCanvasWidth - navRailWidth - (if (panelState.isRightOpen) panelState.rightInspector.minWidth else 0.dp)).coerceAtLeast(200.dp)
+        val maxRightWidth = (totalWidth - minCanvasWidth - navRailWidth - (if (panelState.isLeftOpen) panelState.leftDrawer.minWidth else 0.dp)).coerceAtLeast(240.dp)
+
+        val resolvedLeftWidth = panelState.leftDrawer.resolvedWidth(maxLeftWidth)
+        val animatedLeftWidth by animateDpAsState(
+            targetValue = resolvedLeftWidth,
+            animationSpec = if (panelState.leftDrawer.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
+        )
+
+        val resolvedRightWidth = panelState.rightInspector.resolvedWidth(maxRightWidth)
+        val animatedRightWidth by animateDpAsState(
+            targetValue = resolvedRightWidth,
+            animationSpec = if (panelState.rightInspector.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
+        )
+
         EditorShellTemplate(
             project = project,
             // Rail
-            activeRailTab = activeRailTab,
-            onRailTabSelected = { tab ->
-                if (activeRailTab == tab) {
-                    activeRailTab = null
-                } else {
-                    activeRailTab = tab
-                    lastActiveRailTab = tab
-                }
-            },
+            activeRailTab = panelState.activeRailTab,
+            onRailTabSelected = { tab -> panelState.selectRailTab(tab) },
             isDarkMode = project?.isDarkMode ?: false,
             onToggleDarkMode = { store.toggleDarkMode() },
 
             // Panel Collapse & Resize
-            isLeftPanelOpen = isLeftPanelOpen,
-            onToggleLeftPanel = {
-                if (activeRailTab != null) {
-                    activeRailTab = null
-                } else {
-                    activeRailTab = lastActiveRailTab
+            isLeftPanelOpen = panelState.isLeftOpen,
+            onToggleLeftPanel = { panelState.toggleLeftDrawer() },
+            isRightPanelOpen = panelState.isRightOpen,
+            onToggleRightPanel = { panelState.toggleRightInspector() },
+            isFullWidth = panelState.isFullWidth,
+            onToggleFullWidth = { panelState.toggleFullWidth() },
+
+            leftPanelWidth = animatedLeftWidth,
+            onLeftDragStart = {
+                panelState.leftDrawer = panelState.leftDrawer.onDragStart()
+            },
+            onLeftDragDelta = { deltaDp ->
+                panelState.leftDrawer = panelState.leftDrawer.onDragDelta(deltaDp, maxLeftWidth)
+            },
+            onLeftDragEnd = {
+                panelState.leftDrawer = panelState.leftDrawer.onDragEnd(maxLeftWidth)
+                if (panelState.leftDrawer.isCollapsed) {
+                    panelState.activeRailTab = null
                 }
-            },
-            isRightPanelOpen = isRightPanelOpen,
-            onToggleRightPanel = {
-                isRightPanelOpen = !isRightPanelOpen
-            },
-            isFullWidth = isFullWidth,
-            onToggleFullWidth = {
-                if (isFullWidth) {
-                    activeRailTab = lastActiveRailTab
-                    isRightPanelOpen = true
-                } else {
-                    activeRailTab = null
-                    isRightPanelOpen = false
-                }
-            },
-            leftPanelWidth = leftPanelWidth,
-            onLeftPanelWidthChange = { width ->
-                leftPanelWidth = width.coerceIn(200.dp, 500.dp)
             },
             onResetLeftPanelWidth = {
-                leftPanelWidth = 280.dp
+                panelState.leftDrawer = panelState.leftDrawer.resetToDefault()
+                if (panelState.activeRailTab == null) {
+                    panelState.activeRailTab = panelState.lastActiveRailTab
+                }
             },
-            rightPanelWidth = rightPanelWidth,
-            onRightPanelWidthChange = { width ->
-                rightPanelWidth = width.coerceIn(240.dp, 600.dp)
+            onAdjustLeftWidth = { deltaDp ->
+                panelState.leftDrawer = panelState.leftDrawer.adjustWidthBy(deltaDp, maxLeftWidth)
+            },
+            onSnapLeftToMin = {
+                panelState.leftDrawer = panelState.leftDrawer.snapToMin()
+            },
+
+            rightPanelWidth = animatedRightWidth,
+            onRightDragStart = {
+                panelState.rightInspector = panelState.rightInspector.onDragStart()
+            },
+            onRightDragDelta = { deltaDp ->
+                panelState.rightInspector = panelState.rightInspector.onDragDelta(deltaDp, maxRightWidth)
+            },
+            onRightDragEnd = {
+                panelState.rightInspector = panelState.rightInspector.onDragEnd(maxRightWidth)
             },
             onResetRightPanelWidth = {
-                rightPanelWidth = 320.dp
+                panelState.rightInspector = panelState.rightInspector.resetToDefault()
+            },
+            onAdjustRightWidth = { deltaDp ->
+                panelState.rightInspector = panelState.rightInspector.adjustWidthBy(deltaDp, maxRightWidth)
+            },
+            onSnapRightToMin = {
+                panelState.rightInspector = panelState.rightInspector.snapToMin()
             },
             onUpdateProjectMetadata = { name, pkg ->
                 store.updateProjectMetadata(name, pkg)

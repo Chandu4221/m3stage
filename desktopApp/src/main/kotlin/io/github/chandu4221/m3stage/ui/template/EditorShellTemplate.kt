@@ -23,6 +23,8 @@ import io.github.chandu4221.m3stage.ui.organism.StudioNavRail
 import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import io.github.chandu4221.m3stage.ui.atom.PanelResizeHandle
+import io.github.chandu4221.m3stage.ui.atom.PanelResizeSide
 import io.github.chandu4221.m3stage.ui.atom.PanelSplitter
 import io.github.chandu4221.m3stage.ui.organism.ThemeDrawer
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
@@ -43,11 +45,21 @@ fun EditorShellTemplate(
     isFullWidth: Boolean = false,
     onToggleFullWidth: () -> Unit = {},
     leftPanelWidth: Dp = 280.dp,
+    onLeftDragStart: () -> Unit = {},
+    onLeftDragDelta: (Dp) -> Unit = {},
+    onLeftDragEnd: () -> Unit = {},
     onLeftPanelWidthChange: (Dp) -> Unit = {},
     onResetLeftPanelWidth: () -> Unit = {},
+    onAdjustLeftWidth: (Dp) -> Unit = {},
+    onSnapLeftToMin: () -> Unit = {},
     rightPanelWidth: Dp = 320.dp,
+    onRightDragStart: () -> Unit = {},
+    onRightDragDelta: (Dp) -> Unit = {},
+    onRightDragEnd: () -> Unit = {},
     onRightPanelWidthChange: (Dp) -> Unit = {},
     onResetRightPanelWidth: () -> Unit = {},
+    onAdjustRightWidth: (Dp) -> Unit = {},
+    onSnapRightToMin: () -> Unit = {},
     // Project metadata state
     onUpdateProjectMetadata: (String, String) -> Unit = { _, _ -> },
     // Drawer state
@@ -101,56 +113,64 @@ fun EditorShellTemplate(
 
         // 2. Expandable & Resizable Drawer
         if (isLeftPanelOpen && activeRailTab != null) {
-            val drawerModifier = Modifier
-                .width(leftPanelWidth)
-                .fillMaxHeight()
+            if (leftPanelWidth > 0.dp) {
+                val drawerModifier = Modifier
+                    .width(leftPanelWidth)
+                    .fillMaxHeight()
 
-            when (activeRailTab) {
-                StudioRailTab.Layers -> {
-                    val activeScreen = screens.firstOrNull { it.id == activeScreenId }
-                    LayersTreeDrawer(
-                        activeScreen = activeScreen,
-                        selectedNodeId = selectedNodeId,
-                        lockedNodeIds = lockedNodeIds,
-                        onSelectNode = onNodeClick,
-                        onToggleVisibility = onToggleVisibility,
-                        onToggleLock = onToggleNodeLock,
-                        onDeleteNode = onDeleteNode,
-                        modifier = drawerModifier
-                    )
-                }
-                StudioRailTab.Theme -> {
-                    ThemeDrawer(
-                        currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
-                        isDarkMode = isDarkMode,
-                        onSelectSeedColor = { store.updateSeedColor(it) },
-                        onToggleDarkMode = onToggleDarkMode,
-                        modifier = drawerModifier
-                    )
-                }
-                else -> {
-                    PartsDrawer(
-                        searchQuery = searchQuery,
-                        onSearchQueryChange = onSearchQueryChange,
-                        onComponentSelected = onComponentSelected,
-                        projectName = project?.name ?: "Untitled",
-                        basePackage = project?.basePackage ?: "com.example.app",
-                        onUpdateProjectMetadata = onUpdateProjectMetadata,
-                        disallowedKinds = disallowedKinds,
-                        onComponentDragStart = onComponentDragStart,
-                        onComponentDragEnd = onComponentDragEnd,
-                        modifier = drawerModifier
-                    )
+                when (activeRailTab) {
+                    StudioRailTab.Layers -> {
+                        val activeScreen = screens.firstOrNull { it.id == activeScreenId }
+                        LayersTreeDrawer(
+                            activeScreen = activeScreen,
+                            selectedNodeId = selectedNodeId,
+                            lockedNodeIds = lockedNodeIds,
+                            onSelectNode = onNodeClick,
+                            onToggleVisibility = onToggleVisibility,
+                            onToggleLock = onToggleNodeLock,
+                            onDeleteNode = onDeleteNode,
+                            modifier = drawerModifier
+                        )
+                    }
+                    StudioRailTab.Theme -> {
+                        ThemeDrawer(
+                            currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
+                            isDarkMode = isDarkMode,
+                            onSelectSeedColor = { store.updateSeedColor(it) },
+                            onToggleDarkMode = onToggleDarkMode,
+                            modifier = drawerModifier
+                        )
+                    }
+                    else -> {
+                        PartsDrawer(
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = onSearchQueryChange,
+                            onComponentSelected = onComponentSelected,
+                            projectName = project?.name ?: "Untitled",
+                            basePackage = project?.basePackage ?: "com.example.app",
+                            onUpdateProjectMetadata = onUpdateProjectMetadata,
+                            disallowedKinds = disallowedKinds,
+                            onComponentDragStart = onComponentDragStart,
+                            onComponentDragEnd = onComponentDragEnd,
+                            modifier = drawerModifier
+                        )
+                    }
                 }
             }
 
             // Left Splitter
-            PanelSplitter(
-                onDragDelta = { deltaPx ->
-                    val deltaDp = with(density) { deltaPx.toDp() }
+            PanelResizeHandle(
+                side = PanelResizeSide.Left,
+                onDragStart = onLeftDragStart,
+                onDragDelta = { deltaDp ->
+                    onLeftDragDelta(deltaDp)
                     onLeftPanelWidthChange(leftPanelWidth + deltaDp)
                 },
-                onDoubleClick = onResetLeftPanelWidth
+                onDragEnd = onLeftDragEnd,
+                onDoubleClick = onResetLeftPanelWidth,
+                onAdjustWidth = onAdjustLeftWidth,
+                onSnapToMin = onSnapLeftToMin,
+                onResetToDefault = onResetLeftPanelWidth
             )
         }
 
@@ -211,28 +231,36 @@ fun EditorShellTemplate(
         // 4. Right Inspector Surface & Splitter
         if (isRightPanelOpen) {
             // Right Splitter
-            PanelSplitter(
-                onDragDelta = { deltaPx ->
-                    val deltaDp = with(density) { deltaPx.toDp() }
-                    onRightPanelWidthChange(rightPanelWidth - deltaDp)
+            PanelResizeHandle(
+                side = PanelResizeSide.Right,
+                onDragStart = onRightDragStart,
+                onDragDelta = { deltaDp ->
+                    onRightDragDelta(deltaDp)
+                    onRightPanelWidthChange(rightPanelWidth + deltaDp)
                 },
-                onDoubleClick = onResetRightPanelWidth
+                onDragEnd = onRightDragEnd,
+                onDoubleClick = onResetRightPanelWidth,
+                onAdjustWidth = onAdjustRightWidth,
+                onSnapToMin = onSnapRightToMin,
+                onResetToDefault = onResetRightPanelWidth
             )
 
-            Surface(
-                modifier = Modifier
-                    .width(rightPanelWidth)
-                    .fillMaxHeight(),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                InspectorPanel(
-                    project = project,
-                    activeScreenId = activeScreenId?.value,
-                    selectedNodeId = selectedNodeId,
-                    isLocked = isNodeLocked,
-                    store = store
-                )
+            if (rightPanelWidth > 0.dp) {
+                Surface(
+                    modifier = Modifier
+                        .width(rightPanelWidth)
+                        .fillMaxHeight(),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    InspectorPanel(
+                        project = project,
+                        activeScreenId = activeScreenId?.value,
+                        selectedNodeId = selectedNodeId,
+                        isLocked = isNodeLocked,
+                        store = store
+                    )
+                }
             }
         }
     }
