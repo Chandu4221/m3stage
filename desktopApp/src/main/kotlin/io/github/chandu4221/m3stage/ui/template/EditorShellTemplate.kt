@@ -21,6 +21,7 @@ import io.github.chandu4221.m3stage.ui.organism.LayersTreeDrawer
 import io.github.chandu4221.m3stage.ui.organism.PartsDrawer
 import io.github.chandu4221.m3stage.ui.organism.StudioNavRail
 import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
+import io.github.chandu4221.m3stage.ui.organism.ThemeDrawer
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
 @Composable
@@ -92,6 +93,14 @@ fun EditorShellTemplate(
                     onToggleVisibility = onToggleVisibility,
                     onToggleLock = onToggleNodeLock,
                     onDeleteNode = onDeleteNode
+                )
+            }
+            StudioRailTab.Theme -> {
+                ThemeDrawer(
+                    currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
+                    isDarkMode = isDarkMode,
+                    onSelectSeedColor = { store.updateSeedColor(it) },
+                    onToggleDarkMode = onToggleDarkMode
                 )
             }
             else -> {
