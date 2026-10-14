@@ -40,7 +40,11 @@ object IconButtonDefinition {
         slots = listOf(IconSlot),
         allowedChildren = setOf(ComponentKind.Icon),
         defaultSubtreeFactory = { self, idGen ->
-            val iconNode = IconDefinition.definition.createDefaultSubtree(idGen)
+            val iconNode = IconDefinition.definition.createDefaultSubtree(idGen).let {
+                it.copy(props = it.props.toMutableMap().apply {
+                    put(IconDefinition.IconName.id, PropertyValue.StringValue("Menu"))
+                })
+            }
             DesignNode(
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.IconButton,

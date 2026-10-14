@@ -44,7 +44,7 @@ object OutlinedButtonDefinition {
                 id = idGen.nextNodeId(),
                 kind = ComponentKind.Text,
                 props = TextDefinition.definition.createDefaultProps().toMutableMap().apply {
-                    put(TextDefinition.TextContent.id, PropertyValue.StringValue("Outlined Button"))
+                    put(TextDefinition.TextContent.id, PropertyValue.StringValue("Outlined"))
                 }
             )
             DesignNode(
