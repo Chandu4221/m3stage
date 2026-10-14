@@ -21,6 +21,9 @@ import io.github.chandu4221.m3stage.ui.organism.LayersTreeDrawer
 import io.github.chandu4221.m3stage.ui.organism.PartsDrawer
 import io.github.chandu4221.m3stage.ui.organism.StudioNavRail
 import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import io.github.chandu4221.m3stage.ui.atom.PanelSplitter
 import io.github.chandu4221.m3stage.ui.organism.ThemeDrawer
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
@@ -28,10 +31,23 @@ import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 fun EditorShellTemplate(
     project: Project?,
     // Rail state
-    activeRailTab: StudioRailTab,
+    activeRailTab: StudioRailTab?,
     onRailTabSelected: (StudioRailTab) -> Unit,
     isDarkMode: Boolean,
     onToggleDarkMode: () -> Unit,
+    // Panel collapse & resize state
+    isLeftPanelOpen: Boolean = activeRailTab != null,
+    onToggleLeftPanel: () -> Unit = {},
+    isRightPanelOpen: Boolean = true,
+    onToggleRightPanel: () -> Unit = {},
+    isFullWidth: Boolean = false,
+    onToggleFullWidth: () -> Unit = {},
+    leftPanelWidth: Dp = 280.dp,
+    onLeftPanelWidthChange: (Dp) -> Unit = {},
+    onResetLeftPanelWidth: () -> Unit = {},
+    rightPanelWidth: Dp = 320.dp,
+    onRightPanelWidthChange: (Dp) -> Unit = {},
+    onResetRightPanelWidth: () -> Unit = {},
     // Drawer state
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -70,6 +86,8 @@ fun EditorShellTemplate(
     store: EditorStore,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+
     Row(
         modifier = modifier.fillMaxSize()
     ) {
@@ -79,38 +97,56 @@ fun EditorShellTemplate(
             onTabSelected = onRailTabSelected
         )
 
-        // 2. Expandable Drawer
-        when (activeRailTab) {
-            StudioRailTab.Layers -> {
-                val activeScreen = screens.firstOrNull { it.id == activeScreenId }
-                LayersTreeDrawer(
-                    activeScreen = activeScreen,
-                    selectedNodeId = selectedNodeId,
-                    lockedNodeIds = lockedNodeIds,
-                    onSelectNode = onNodeClick,
-                    onToggleVisibility = onToggleVisibility,
-                    onToggleLock = onToggleNodeLock,
-                    onDeleteNode = onDeleteNode
-                )
+        // 2. Expandable & Resizable Drawer
+        if (isLeftPanelOpen && activeRailTab != null) {
+            val drawerModifier = Modifier
+                .width(leftPanelWidth)
+                .fillMaxHeight()
+
+            when (activeRailTab) {
+                StudioRailTab.Layers -> {
+                    val activeScreen = screens.firstOrNull { it.id == activeScreenId }
+                    LayersTreeDrawer(
+                        activeScreen = activeScreen,
+                        selectedNodeId = selectedNodeId,
+                        lockedNodeIds = lockedNodeIds,
+                        onSelectNode = onNodeClick,
+                        onToggleVisibility = onToggleVisibility,
+                        onToggleLock = onToggleNodeLock,
+                        onDeleteNode = onDeleteNode,
+                        modifier = drawerModifier
+                    )
+                }
+                StudioRailTab.Theme -> {
+                    ThemeDrawer(
+                        currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
+                        isDarkMode = isDarkMode,
+                        onSelectSeedColor = { store.updateSeedColor(it) },
+                        onToggleDarkMode = onToggleDarkMode,
+                        modifier = drawerModifier
+                    )
+                }
+                else -> {
+                    PartsDrawer(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = onSearchQueryChange,
+                        onComponentSelected = onComponentSelected,
+                        disallowedKinds = disallowedKinds,
+                        onComponentDragStart = onComponentDragStart,
+                        onComponentDragEnd = onComponentDragEnd,
+                        modifier = drawerModifier
+                    )
+                }
             }
-            StudioRailTab.Theme -> {
-                ThemeDrawer(
-                    currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
-                    isDarkMode = isDarkMode,
-                    onSelectSeedColor = { store.updateSeedColor(it) },
-                    onToggleDarkMode = onToggleDarkMode
-                )
-            }
-            else -> {
-                PartsDrawer(
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = onSearchQueryChange,
-                    onComponentSelected = onComponentSelected,
-                    disallowedKinds = disallowedKinds,
-                    onComponentDragStart = onComponentDragStart,
-                    onComponentDragEnd = onComponentDragEnd
-                )
-            }
+
+            // Left Splitter
+            PanelSplitter(
+                onDragDelta = { deltaPx ->
+                    val deltaDp = with(density) { deltaPx.toDp() }
+                    onLeftPanelWidthChange(leftPanelWidth + deltaDp)
+                },
+                onDoubleClick = onResetLeftPanelWidth
+            )
         }
 
         // 3. Central Canvas
@@ -147,7 +183,13 @@ fun EditorShellTemplate(
                 isCodePreviewOpen = isCodePreviewOpen,
                 onToggleCodePreview = onToggleCodePreview,
                 draggedComponentKind = draggedComponentKind,
-                onDropOnScreen = onDropOnScreen
+                onDropOnScreen = onDropOnScreen,
+                isLeftPanelOpen = isLeftPanelOpen,
+                onToggleLeftPanel = onToggleLeftPanel,
+                isRightPanelOpen = isRightPanelOpen,
+                onToggleRightPanel = onToggleRightPanel,
+                isFullWidth = isFullWidth,
+                onToggleFullWidth = onToggleFullWidth
             )
 
             if (isCodePreviewOpen) {
@@ -161,21 +203,32 @@ fun EditorShellTemplate(
             }
         }
 
-        // 4. Right Inspector Surface
-        Surface(
-            modifier = Modifier
-                .width(320.dp)
-                .fillMaxHeight(),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-        ) {
-            InspectorPanel(
-                project = project,
-                activeScreenId = activeScreenId?.value,
-                selectedNodeId = selectedNodeId,
-                isLocked = isNodeLocked,
-                store = store
+        // 4. Right Inspector Surface & Splitter
+        if (isRightPanelOpen) {
+            // Right Splitter
+            PanelSplitter(
+                onDragDelta = { deltaPx ->
+                    val deltaDp = with(density) { deltaPx.toDp() }
+                    onRightPanelWidthChange(rightPanelWidth - deltaDp)
+                },
+                onDoubleClick = onResetRightPanelWidth
             )
+
+            Surface(
+                modifier = Modifier
+                    .width(rightPanelWidth)
+                    .fillMaxHeight(),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                InspectorPanel(
+                    project = project,
+                    activeScreenId = activeScreenId?.value,
+                    selectedNodeId = selectedNodeId,
+                    isLocked = isNodeLocked,
+                    store = store
+                )
+            }
         }
     }
 }

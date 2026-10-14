@@ -41,8 +41,15 @@ fun EditorScreen(store: EditorStore) {
     val redoStack by store.redoStack.collectAsState()
     val isDirty by store.isDirty.collectAsState()
 
-    var activeRailTab by remember { mutableStateOf(StudioRailTab.Parts) }
+    var activeRailTab by remember { mutableStateOf<StudioRailTab?>(StudioRailTab.Parts) }
+    var lastActiveRailTab by remember { mutableStateOf(StudioRailTab.Parts) }
+    var isRightPanelOpen by remember { mutableStateOf(true) }
+    var leftPanelWidth by remember { mutableStateOf(280.dp) }
+    var rightPanelWidth by remember { mutableStateOf(320.dp) }
     var searchQuery by remember { mutableStateOf("") }
+
+    val isLeftPanelOpen = activeRailTab != null
+    val isFullWidth = !isLeftPanelOpen && !isRightPanelOpen
 
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
     val selectedNode = activeScreen?.root?.let { root ->
@@ -270,9 +277,54 @@ fun EditorScreen(store: EditorStore) {
             project = project,
             // Rail
             activeRailTab = activeRailTab,
-            onRailTabSelected = { activeRailTab = it },
+            onRailTabSelected = { tab ->
+                if (activeRailTab == tab) {
+                    activeRailTab = null
+                } else {
+                    activeRailTab = tab
+                    lastActiveRailTab = tab
+                }
+            },
             isDarkMode = project?.isDarkMode ?: false,
             onToggleDarkMode = { store.toggleDarkMode() },
+
+            // Panel Collapse & Resize
+            isLeftPanelOpen = isLeftPanelOpen,
+            onToggleLeftPanel = {
+                if (activeRailTab != null) {
+                    activeRailTab = null
+                } else {
+                    activeRailTab = lastActiveRailTab
+                }
+            },
+            isRightPanelOpen = isRightPanelOpen,
+            onToggleRightPanel = {
+                isRightPanelOpen = !isRightPanelOpen
+            },
+            isFullWidth = isFullWidth,
+            onToggleFullWidth = {
+                if (isFullWidth) {
+                    activeRailTab = lastActiveRailTab
+                    isRightPanelOpen = true
+                } else {
+                    activeRailTab = null
+                    isRightPanelOpen = false
+                }
+            },
+            leftPanelWidth = leftPanelWidth,
+            onLeftPanelWidthChange = { width ->
+                leftPanelWidth = width.coerceIn(200.dp, 500.dp)
+            },
+            onResetLeftPanelWidth = {
+                leftPanelWidth = 280.dp
+            },
+            rightPanelWidth = rightPanelWidth,
+            onRightPanelWidthChange = { width ->
+                rightPanelWidth = width.coerceIn(240.dp, 600.dp)
+            },
+            onResetRightPanelWidth = {
+                rightPanelWidth = 320.dp
+            },
 
             // Parts Drawer
             searchQuery = searchQuery,

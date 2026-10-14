@@ -42,14 +42,12 @@ fun ThemeDrawer(
     isDarkMode: Boolean,
     onSelectSeedColor: (Long) -> Unit,
     onToggleDarkMode: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier.width(280.dp)
 ) {
     var activeTab by remember { mutableStateOf(ThemeTab.Palettes) }
 
     Surface(
-        modifier = modifier
-            .width(280.dp)
-            .fillMaxHeight(),
+        modifier = modifier.fillMaxHeight(),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {

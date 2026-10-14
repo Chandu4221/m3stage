@@ -27,15 +27,15 @@ fun PartsDrawer(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
-    modifier: Modifier = Modifier,
     activeCategory: ComponentCategory? = null,
     onCategorySelected: (ComponentCategory?) -> Unit = {},
     disallowedKinds: Set<ComponentKind> = emptySet(),
     onComponentDragStart: (ComponentKind) -> Unit = {},
-    onComponentDragEnd: () -> Unit = {}
+    onComponentDragEnd: () -> Unit = {},
+    modifier: Modifier = Modifier.width(280.dp)
 ) {
     Surface(
-        modifier = modifier.width(280.dp).fillMaxHeight(),
+        modifier = modifier.fillMaxHeight(),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {

@@ -38,7 +38,7 @@ fun LayersTreeDrawer(
     onToggleVisibility: (NodeId) -> Unit,
     onToggleLock: (NodeId) -> Unit,
     onDeleteNode: (NodeId) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier.width(280.dp)
 ) {
     var expandedNodeIds by remember { mutableStateOf(setOf<NodeId>()) }
 
@@ -62,7 +62,7 @@ fun LayersTreeDrawer(
     }
 
     Surface(
-        modifier = modifier.width(280.dp).fillMaxHeight(),
+        modifier = modifier.fillMaxHeight(),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {

@@ -33,6 +33,7 @@ dependencies {
 
 tasks.test {
     useJUnit()
+    systemProperty("java.awt.headless", "true")
 }
 
 compose.desktop {

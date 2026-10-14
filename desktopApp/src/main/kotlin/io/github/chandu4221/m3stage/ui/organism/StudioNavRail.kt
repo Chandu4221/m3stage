@@ -29,7 +29,7 @@ enum class StudioRailTab(val title: String, val icon: ImageVector) {
  */
 @Composable
 fun StudioNavRail(
-    activeTab: StudioRailTab,
+    activeTab: StudioRailTab?,
     onTabSelected: (StudioRailTab) -> Unit,
     modifier: Modifier = Modifier
 ) {

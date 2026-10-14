@@ -29,6 +29,7 @@ import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportController
 import io.github.chandu4221.m3stage.state.CanvasViewportDelegate
 import io.github.chandu4221.m3stage.ui.atom.DimensionBadge
+import io.github.chandu4221.m3stage.ui.atom.StageIcons
 import io.github.chandu4221.m3stage.ui.atom.ToolIconButton
 import io.github.chandu4221.m3stage.ui.molecule.CapsuleToolbar
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
@@ -66,6 +67,12 @@ fun FloatingCanvasStudio(
     onToggleCodePreview: () -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
+    isLeftPanelOpen: Boolean = true,
+    onToggleLeftPanel: () -> Unit = {},
+    isRightPanelOpen: Boolean = true,
+    onToggleRightPanel: () -> Unit = {},
+    isFullWidth: Boolean = false,
+    onToggleFullWidth: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val viewportState = viewportController.viewportState
@@ -195,6 +202,51 @@ fun FloatingCanvasStudio(
                         isEnabled = canRedo,
                         onClick = onRedo,
                         tooltip = "Redo (Ctrl+Y)"
+                    )
+                }
+
+                // Island 4: Full Width View
+                CapsuleToolbar {
+                    ToolIconButton(
+                        icon = StageIcons.WidthFull,
+                        contentDescription = "Full Width",
+                        isSelected = isFullWidth,
+                        onClick = onToggleFullWidth,
+                        tooltip = if (isFullWidth) "Exit Full Width" else "Full Width Canvas"
+                    )
+                }
+            }
+
+            // Top-Left Floating Button: Toggle Left Panel
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 16.dp, start = 16.dp)
+            ) {
+                CapsuleToolbar {
+                    ToolIconButton(
+                        icon = if (isLeftPanelOpen) StageIcons.LeftPanelClose else StageIcons.LeftPanelOpen,
+                        contentDescription = if (isLeftPanelOpen) "Collapse Left Panel" else "Open Left Panel",
+                        isSelected = isLeftPanelOpen,
+                        onClick = onToggleLeftPanel,
+                        tooltip = if (isLeftPanelOpen) "Collapse Left Panel" else "Open Left Panel"
+                    )
+                }
+            }
+
+            // Top-Right Floating Button: Toggle Right Panel
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 16.dp, end = 16.dp)
+            ) {
+                CapsuleToolbar {
+                    ToolIconButton(
+                        icon = if (isRightPanelOpen) StageIcons.RightPanelClose else StageIcons.RightPanelOpen,
+                        contentDescription = if (isRightPanelOpen) "Collapse Inspector" else "Open Inspector",
+                        isSelected = isRightPanelOpen,
+                        onClick = onToggleRightPanel,
+                        tooltip = if (isRightPanelOpen) "Collapse Inspector" else "Open Inspector"
                     )
                 }
             }
