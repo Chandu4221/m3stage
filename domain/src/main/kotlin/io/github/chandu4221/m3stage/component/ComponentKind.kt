@@ -149,6 +149,15 @@ enum class ComponentKind(
         isContainer = true
     ),
 
+    NavigationBarItem(
+        id = "NavigationBarItem",
+        displayName = "Navigation Bar Item",
+        category = ComponentCategory.Navigation,
+        module = ComposePackage.Material3,
+        isContainer = true
+    ),
+    // Reserved for future: NavigationRailItem, TabRow, Tab
+
     Spacer(
         id = "Spacer",
         displayName = "Spacer",

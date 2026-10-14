@@ -20,6 +20,7 @@ data class ComponentDefinition(
     val allowedChildren: Set<ComponentKind>? = null,
     val isContainer: Boolean = kind.isContainer,
     val slotOnly: Boolean = false,
+    val showInPalette: Boolean = true,
     val defaultSubtreeFactory: ((self: ComponentDefinition, idGen: IdGenerator) -> DesignNode)? = null
 ) {
     /**

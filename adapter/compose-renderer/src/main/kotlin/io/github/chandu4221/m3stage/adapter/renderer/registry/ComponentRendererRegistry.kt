@@ -32,6 +32,7 @@ object ComponentRendererRegistry {
         ComponentKind.FloatingActionButton to FloatingActionButtonRenderer(),
         ComponentKind.IconButton to IconButtonRenderer(),
         ComponentKind.NavigationBar to NavigationBarRenderer(),
+        ComponentKind.NavigationBarItem to NavigationBarItemRenderer(),
         ComponentKind.RadioButton to RadioButtonRenderer(),
         ComponentKind.OutlinedButton to OutlinedButtonRenderer(),
         ComponentKind.OutlinedTextField to OutlinedTextFieldRenderer(),

@@ -89,7 +89,7 @@ fun PartsDrawer(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             // Filtered Items List
-            val allComponents: List<ComponentDefinition> = remember { ComponentCatalog.all }
+            val allComponents: List<ComponentDefinition> = remember { ComponentCatalog.all.filter { it.showInPalette } }
             val filteredComponents = remember(searchQuery, activeCategory) {
                 allComponents.filter { def ->
                     val matchesSearch = searchQuery.isBlank() ||
@@ -176,6 +176,7 @@ private fun resolveComponentIcon(kind: ComponentKind): ImageVector = when (kind)
     // Navigation
     ComponentKind.TopAppBar -> Icons.AutoMirrored.Filled.MenuOpen
     ComponentKind.NavigationBar -> Icons.Default.Navigation
+    ComponentKind.NavigationBarItem -> Icons.Default.Navigation
 
     // Selection
     ComponentKind.Switch -> Icons.Default.ToggleOn

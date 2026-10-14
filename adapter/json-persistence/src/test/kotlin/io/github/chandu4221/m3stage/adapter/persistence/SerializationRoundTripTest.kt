@@ -308,5 +308,22 @@ class SerializationRoundTripTest {
         assertEquals(1, domainProject.screens.size)
         assertEquals(DeviceOrientation.Portrait, domainProject.screens.first().orientation)
     }
+
+    @Test
+    fun testNavigationBarAndItemsRoundTripLosslessly() {
+        val idGen = object : io.github.chandu4221.m3stage.port.IdGenerator {
+            private var c = 1
+            override fun nextNodeId(): NodeId = NodeId("node_${c++}")
+            override fun nextScreenId(): ScreenId = ScreenId("s_${c++}")
+            override fun nextProjectId(): ProjectId = ProjectId("p_${c++}")
+        }
+        val navBar = io.github.chandu4221.m3stage.component.ComponentCatalog[ComponentKind.NavigationBar].createDefaultSubtree(idGen)
+        val dto = navBar.toDto()
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<io.github.chandu4221.m3stage.adapter.persistence.dto.DesignNodeDto>(jsonString)
+        val decoded = decodedDto.toDomain()
+
+        assertEquals(navBar, decoded, "NavigationBar with prefilled NavigationBarItems must round trip losslessly")
+    }
 }
 

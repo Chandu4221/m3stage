@@ -213,6 +213,7 @@ fun resolveTreeIcon(kind: ComponentKind): ImageVector = when (kind) {
     ComponentKind.HorizontalDivider -> Icons.Default.HorizontalRule
     ComponentKind.TopAppBar -> Icons.AutoMirrored.Filled.MenuOpen
     ComponentKind.NavigationBar -> Icons.Default.Navigation
+    ComponentKind.NavigationBarItem -> Icons.Default.Navigation
     ComponentKind.Switch -> Icons.Default.ToggleOn
     ComponentKind.Checkbox -> Icons.Default.CheckBox
     ComponentKind.RadioButton -> Icons.Default.RadioButtonChecked

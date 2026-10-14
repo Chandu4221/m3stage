@@ -33,13 +33,16 @@ class NavigationBarCodegen : ComponentCodegen {
         }
 
         builder.unindent()
-        val children = node.allDirectChildren
-        if (children.isEmpty()) {
+        val items = node.slots[NavigationBarDefinition.ItemsSlot.id]
+            ?.ifEmpty { null }
+            ?: node.allDirectChildren.filter { it.kind == ComponentKind.NavigationBarItem }
+
+        if (items.isEmpty()) {
             builder.add(")\n")
         } else {
             builder.add(") {\n")
             builder.indent()
-            children.forEach { child ->
+            items.forEach { child ->
                 builder.add(walk(child))
             }
             builder.unindent()

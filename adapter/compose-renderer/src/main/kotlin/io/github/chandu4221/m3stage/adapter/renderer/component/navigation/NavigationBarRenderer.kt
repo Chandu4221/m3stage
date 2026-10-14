@@ -1,14 +1,19 @@
 package io.github.chandu4221.m3stage.adapter.renderer.component.navigation
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import io.github.chandu4221.m3stage.adapter.renderer.EmptyContainerPlaceholder
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
 import io.github.chandu4221.m3stage.component.definition.NavigationBarDefinition
 import io.github.chandu4221.m3stage.model.DesignNode
+
+val LocalRowScope = compositionLocalOf<RowScope?> { null }
 
 class NavigationBarRenderer : NodeRenderer {
     @Composable
@@ -27,8 +32,10 @@ class NavigationBarRenderer : NodeRenderer {
             if (children.isEmpty()) {
                 EmptyContainerPlaceholder("NavigationBar")
             } else {
-                children.forEach { child ->
-                    renderChild(child)
+                CompositionLocalProvider(LocalRowScope provides this) {
+                    children.forEach { child ->
+                        renderChild(child)
+                    }
                 }
             }
         }

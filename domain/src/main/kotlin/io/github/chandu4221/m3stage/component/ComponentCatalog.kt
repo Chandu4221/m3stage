@@ -41,6 +41,7 @@ object ComponentCatalog {
     val SliderProps = SliderDefinition
 
     val NavigationBarProps = NavigationBarDefinition
+    val NavigationBarItemProps = NavigationBarItemDefinition
     val BadgeProps = BadgeDefinition
     val OutlinedTextFieldProps = OutlinedTextFieldDefinition
 
@@ -67,6 +68,7 @@ object ComponentCatalog {
         RadioButtonDefinition.definition,
         SliderDefinition.definition,
         NavigationBarDefinition.definition,
+        NavigationBarItemDefinition.definition,
         BadgeDefinition.definition,
         OutlinedTextFieldDefinition.definition,
     )
@@ -85,8 +87,8 @@ object ComponentCatalog {
     fun find(kind: ComponentKind): ComponentDefinition? = byKind[kind]
 
     /**
-     * Grouped by Material 3 category for palette presentation.
+     * Grouped by Material 3 category for palette presentation (palette-visible only).
      */
     val groupedByCategory: Map<ComponentCategory, List<ComponentDefinition>> =
-        all.groupBy { it.category }
+        all.filter { it.showInPalette }.groupBy { it.category }
 }

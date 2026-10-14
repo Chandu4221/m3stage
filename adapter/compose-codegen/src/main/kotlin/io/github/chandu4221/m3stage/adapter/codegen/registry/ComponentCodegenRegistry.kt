@@ -32,6 +32,7 @@ object ComponentCodegenRegistry {
         ComponentKind.FloatingActionButton to FloatingActionButtonCodegen(),
         ComponentKind.IconButton to IconButtonCodegen(),
         ComponentKind.NavigationBar to NavigationBarCodegen(),
+        ComponentKind.NavigationBarItem to NavigationBarItemCodegen(),
         ComponentKind.RadioButton to RadioButtonCodegen(),
         ComponentKind.OutlinedButton to OutlinedButtonCodegen(),
         ComponentKind.OutlinedTextField to OutlinedTextFieldCodegen(),
