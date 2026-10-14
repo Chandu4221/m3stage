@@ -18,7 +18,8 @@ data class DesignNode(
     val modifiers: List<ModifierSpec> = emptyList(),
     val children: List<DesignNode> = emptyList(),
     val slots: Map<SlotId, List<DesignNode>> = emptyMap(),
-    val isVisible: Boolean = true
+    val isVisible: Boolean = true,
+    val isPrefilled: Boolean = false
 ) {
     /**
      * Typed property lookup.

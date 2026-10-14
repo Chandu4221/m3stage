@@ -43,10 +43,19 @@ data class ComponentDefinition(
      * Instantiates a concrete [DesignNode] with this component's canonical default anatomy.
      */
     fun createDefaultSubtree(idGen: IdGenerator): DesignNode {
-        return defaultSubtreeFactory?.invoke(this, idGen) ?: DesignNode(
+        val root = defaultSubtreeFactory?.invoke(this, idGen) ?: DesignNode(
             id = idGen.nextNodeId(),
             kind = kind,
             props = createDefaultProps()
+        )
+        return root.markSubtreePrefilled()
+    }
+
+    private fun DesignNode.markSubtreePrefilled(): DesignNode {
+        return this.copy(
+            isPrefilled = true,
+            children = children.map { it.markSubtreePrefilled() },
+            slots = slots.mapValues { (_, nodes) -> nodes.map { it.markSubtreePrefilled() } }
         )
     }
 

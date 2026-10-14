@@ -261,7 +261,7 @@ class SerializationRoundTripTest {
         )
 
         val dto = originalProject.toDto()
-        assertEquals(2, dto.schemaVersion)
+        assertEquals(io.github.chandu4221.m3stage.adapter.persistence.dto.CURRENT_SCHEMA_VERSION, dto.schemaVersion)
         assertEquals("Landscape", dto.screens.first().orientation)
 
         val jsonString = json.encodeToString(dto)
@@ -324,6 +324,49 @@ class SerializationRoundTripTest {
         val decoded = decodedDto.toDomain()
 
         assertEquals(navBar, decoded, "NavigationBar with prefilled NavigationBarItems must round trip losslessly")
+        kotlin.test.assertTrue(decoded.isPrefilled, "Root NavigationBar must be marked isPrefilled")
+        val items = decoded.slots[io.github.chandu4221.m3stage.component.slot.SlotId("items")]
+        kotlin.test.assertNotNull(items)
+        items.forEach { item ->
+            kotlin.test.assertTrue(item.isPrefilled, "Item ${item.id.value} must be marked isPrefilled")
+        }
+    }
+
+    @Test
+    fun testSchemaV2BackwardsCompatibilityLoadsWithDefaultIsPrefilledFalse() {
+        val v2Json = """
+            {
+                "id": "proj-v2",
+                "name": "Legacy V2",
+                "basePackage": "com.example",
+                "schemaVersion": 2,
+                "defaultDevice": "pixel_8",
+                "screens": [
+                    {
+                        "id": "s-1",
+                        "name": "Main",
+                        "route": "/main",
+                        "device": "pixel_8",
+                        "root": {
+                            "id": "root",
+                            "type": "Scaffold",
+                            "props": {},
+                            "modifiers": [],
+                            "children": [],
+                            "slots": {},
+                            "isVisible": true
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val decodedDto = json.decodeFromString<ProjectDto>(v2Json)
+        val domainProject = decodedDto.toDomain()
+
+        assertEquals(1, domainProject.screens.size)
+        val rootNode = domainProject.screens.first().root
+        kotlin.test.assertFalse(rootNode.isPrefilled, "V2 node without isPrefilled must deserialize as isPrefilled = false")
     }
 }
 

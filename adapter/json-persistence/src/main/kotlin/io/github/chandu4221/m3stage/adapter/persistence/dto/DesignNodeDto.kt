@@ -13,5 +13,6 @@ data class DesignNodeDto(
     val modifiers: List<ModifierNodeDto> = emptyList(),
     val children: List<DesignNodeDto> = emptyList(),
     val slots: Map<String, List<DesignNodeDto>> = emptyMap(),
-    val isVisible: Boolean = true
+    val isVisible: Boolean = true,
+    val isPrefilled: Boolean = false
 )

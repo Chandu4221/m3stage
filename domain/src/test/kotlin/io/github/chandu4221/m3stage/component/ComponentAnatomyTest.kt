@@ -175,4 +175,30 @@ class ComponentAnatomyTest {
             collectIds(rootNode)
         }
     }
+
+    @Test
+    fun testAllNodesInDefaultSubtreeAreMarkedPrefilled() {
+        for (def in ComponentCatalog.all) {
+            val rootNode = def.createDefaultSubtree(idGen)
+
+            fun assertPrefilled(node: io.github.chandu4221.m3stage.model.DesignNode) {
+                assertTrue(
+                    node.isPrefilled,
+                    "Node ${node.kind} (${node.id.value}) in default subtree of ${def.kind} must have isPrefilled = true"
+                )
+                node.allDirectChildren.forEach { assertPrefilled(it) }
+            }
+
+            assertPrefilled(rootNode)
+        }
+    }
+
+    @Test
+    fun testExplicitNodeConstructorDefaultsToPrefilledFalse() {
+        val bareNode = io.github.chandu4221.m3stage.model.DesignNode(
+            id = NodeId("bare-node"),
+            kind = ComponentKind.Button
+        )
+        assertFalse(bareNode.isPrefilled, "Bare DesignNode constructor must default isPrefilled to false")
+    }
 }

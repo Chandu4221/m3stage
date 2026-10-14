@@ -14,7 +14,8 @@ fun DesignNode.toDto(): DesignNodeDto = DesignNodeDto(
     modifiers = this.modifiers.map { it.toDto() },
     children = this.children.map { it.toDto() },
     slots = this.slots.map { (slotId, nodes) -> slotId.value to nodes.map { it.toDto() } }.toMap(),
-    isVisible = this.isVisible
+    isVisible = this.isVisible,
+    isPrefilled = this.isPrefilled
 )
 
 fun DesignNodeDto.toDomain(): DesignNode {
@@ -27,6 +28,7 @@ fun DesignNodeDto.toDomain(): DesignNode {
         modifiers = this.modifiers.map { it.toDomain() },
         children = this.children.map { it.toDomain() },
         slots = this.slots.map { (slotKey, nodes) -> SlotId(slotKey) to nodes.map { it.toDomain() } }.toMap(),
-        isVisible = this.isVisible
+        isVisible = this.isVisible,
+        isPrefilled = this.isPrefilled
     )
 }
