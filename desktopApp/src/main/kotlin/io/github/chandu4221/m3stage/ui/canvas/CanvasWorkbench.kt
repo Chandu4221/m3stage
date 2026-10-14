@@ -1,6 +1,9 @@
 package io.github.chandu4221.m3stage.ui.canvas
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -14,6 +17,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.DpOffset
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -29,6 +33,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isCtrlPressed
 import androidx.compose.ui.input.pointer.isTertiaryPressed
@@ -252,6 +257,7 @@ fun CanvasWorkbench(
                                     onFrameToggle = { showFrame = it },
                                     canMoveLeft = canMoveLeft(index),
                                     canMoveRight = canMoveRight(index),
+                                    canDeleteScreen = screens.size > 1,
                                     onMoveLeft = { onMoveLeft(index) },
                                     onMoveRight = { onMoveRight(index) },
                                     onRename = { onRenameScreen(screen.id, it) },
@@ -303,7 +309,7 @@ fun CanvasWorkbench(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun FloatingArtboardToolbar(
     screen: Screen,
@@ -320,6 +326,7 @@ private fun FloatingArtboardToolbar(
     onFrameToggle: (Boolean) -> Unit,
     canMoveLeft: Boolean,
     canMoveRight: Boolean,
+    canDeleteScreen: Boolean = true,
     onMoveLeft: () -> Unit,
     onMoveRight: () -> Unit,
     onRename: (String) -> Unit,
@@ -339,7 +346,6 @@ private fun FloatingArtboardToolbar(
     val currentDensity by rememberUpdatedState(LocalDensity.current)
 
     var deviceDropdownExpanded by remember { mutableStateOf(false) }
-    var actionsMenuExpanded by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
 
     Surface(
@@ -386,9 +392,9 @@ private fun FloatingArtboardToolbar(
             }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Drag grip indicator & Screen Name Badge
             Icon(
@@ -404,7 +410,7 @@ private fun FloatingArtboardToolbar(
                 fontWeight = FontWeight.Bold
             )
 
-            VerticalDivider(modifier = Modifier.height(18.dp))
+            VerticalDivider(modifier = Modifier.height(18.dp), color = MaterialTheme.colorScheme.outlineVariant)
 
             // Device Preset Dropdown
             Box {
@@ -413,7 +419,7 @@ private fun FloatingArtboardToolbar(
                         onActivate()
                         deviceDropdownExpanded = true
                     },
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Icon(
@@ -451,32 +457,51 @@ private fun FloatingArtboardToolbar(
             }
 
             // Orientation Toggle
-            IconButton(
+            ToolbarActionButton(
+                icon = if (orientation == DeviceOrientation.Portrait)
+                    Icons.Default.CropPortrait else Icons.Default.CropLandscape,
+                contentDescription = "Toggle Orientation",
+                tooltip = "Toggle Orientation",
                 onClick = {
                     onActivate()
                     onOrientationToggle()
-                },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = if (orientation == DeviceOrientation.Portrait)
-                        Icons.Default.CropPortrait else Icons.Default.CropLandscape,
-                    contentDescription = "Toggle Orientation",
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+                }
+            )
 
             // Hardware Bezel Toggle
-            FilledIconToggleButton(
-                checked = showFrame,
-                onCheckedChange = {
-                    onActivate()
-                    onFrameToggle(it)
+            TooltipArea(
+                delayMillis = 500,
+                tooltip = {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.inverseSurface,
+                        tonalElevation = 4.dp
+                    ) {
+                        Text(
+                            text = "Toggle Hardware Frame",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.inverseOnSurface,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 },
-                modifier = Modifier.size(32.dp),
-                shape = RoundedCornerShape(8.dp)
+                tooltipPlacement = TooltipPlacement.ComponentRect(
+                    anchor = Alignment.TopCenter,
+                    alignment = Alignment.TopCenter,
+                    offset = DpOffset(x = 0.dp, y = (-8).dp)
+                )
             ) {
-                Text("Frame", style = MaterialTheme.typography.labelSmall)
+                FilledIconToggleButton(
+                    checked = showFrame,
+                    onCheckedChange = {
+                        onActivate()
+                        onFrameToggle(it)
+                    },
+                    modifier = Modifier.size(32.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Frame", style = MaterialTheme.typography.labelSmall)
+                }
             }
 
             // Dimension Badge
@@ -492,75 +517,65 @@ private fun FloatingArtboardToolbar(
                 )
             }
 
-            VerticalDivider(modifier = Modifier.height(18.dp))
+            // Separator 1: Identity | Reorder
+            VerticalDivider(modifier = Modifier.height(18.dp), color = MaterialTheme.colorScheme.outlineVariant)
 
-            // Screen Actions Menu
-            Box {
-                IconButton(
-                    onClick = {
-                        onActivate()
-                        actionsMenuExpanded = true
-                    },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Screen actions",
-                        modifier = Modifier.size(16.dp)
-                    )
+            // Reorder Group: Move Left | Move Right
+            ToolbarActionButton(
+                icon = Icons.Default.ChevronLeft,
+                contentDescription = "Move Left",
+                tooltip = if (canMoveLeft) "Move Left" else null,
+                enabled = canMoveLeft,
+                onClick = {
+                    onActivate()
+                    onMoveLeft()
                 }
+            )
+            ToolbarActionButton(
+                icon = Icons.Default.ChevronRight,
+                contentDescription = "Move Right",
+                tooltip = if (canMoveRight) "Move Right" else null,
+                enabled = canMoveRight,
+                onClick = {
+                    onActivate()
+                    onMoveRight()
+                }
+            )
 
-                DropdownMenu(
-                    expanded = actionsMenuExpanded,
-                    onDismissRequest = { actionsMenuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Rename Screen") },
-                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        onClick = {
-                            actionsMenuExpanded = false
-                            showRenameDialog = true
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Duplicate Screen") },
-                        leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        onClick = {
-                            actionsMenuExpanded = false
-                            onDuplicate()
-                        }
-                    )
-                    if (canMoveLeft) {
-                        DropdownMenuItem(
-                            text = { Text("Move Left") },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            onClick = {
-                                actionsMenuExpanded = false
-                                onMoveLeft()
-                            }
-                        )
-                    }
-                    if (canMoveRight) {
-                        DropdownMenuItem(
-                            text = { Text("Move Right") },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            onClick = {
-                                actionsMenuExpanded = false
-                                onMoveRight()
-                            }
-                        )
-                    }
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text("Delete Screen", color = MaterialTheme.colorScheme.error) },
-                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp)) },
-                        onClick = {
-                            actionsMenuExpanded = false
-                            onDelete()
-                        }
-                    )
+            // Separator 2: Reorder | Actions
+            VerticalDivider(modifier = Modifier.height(18.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Actions Group: Rename | Duplicate | Delete
+            ToolbarActionButton(
+                icon = Icons.Default.Edit,
+                contentDescription = "Rename Screen",
+                tooltip = "Rename Screen",
+                onClick = {
+                    onActivate()
+                    showRenameDialog = true
                 }
-            }
+            )
+            ToolbarActionButton(
+                icon = Icons.Default.ContentCopy,
+                contentDescription = "Duplicate Screen",
+                tooltip = "Duplicate Screen",
+                onClick = {
+                    onActivate()
+                    onDuplicate()
+                }
+            )
+            ToolbarActionButton(
+                icon = Icons.Default.Delete,
+                contentDescription = "Delete Screen",
+                tooltip = if (canDeleteScreen) "Delete Screen" else "Can't delete the last screen",
+                enabled = canDeleteScreen,
+                tint = MaterialTheme.colorScheme.error,
+                disabledTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                onClick = {
+                    onActivate()
+                    onDelete()
+                }
+            )
 
             if (showRenameDialog) {
                 var newNameText by remember { mutableStateOf(screen.name) }
@@ -594,5 +609,62 @@ private fun FloatingArtboardToolbar(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ToolbarActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier.size(32.dp),
+    enabled: Boolean = true,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    disabledTint: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+    tooltip: String? = null
+) {
+    val button = @Composable {
+        IconButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(18.dp),
+                tint = if (enabled) tint else disabledTint
+            )
+        }
+    }
+
+    if (tooltip != null) {
+        TooltipArea(
+            delayMillis = 500,
+            tooltip = {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.inverseSurface,
+                    tonalElevation = 4.dp
+                ) {
+                    Text(
+                        text = tooltip,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            },
+            tooltipPlacement = TooltipPlacement.ComponentRect(
+                anchor = Alignment.TopCenter,
+                alignment = Alignment.TopCenter,
+                offset = DpOffset(x = 0.dp, y = (-8).dp)
+            )
+        ) {
+            button()
+        }
+    } else {
+        button()
     }
 }
