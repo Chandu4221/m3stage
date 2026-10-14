@@ -72,7 +72,12 @@ class EditorStore(
     override val isDirty = sessionDelegate.isDirty
     override fun loadProject() = sessionDelegate.loadProject()
     override fun saveProject() = sessionDelegate.saveProject()
-    override fun createNewProject() = sessionDelegate.createNewProject()
+    override fun createNewProject() {
+        sessionDelegate.createNewProject()
+        project.value?.let { proj ->
+            lastObservedProjectId = proj.id
+        }
+    }
     override fun exportCode(customPackageName: String?) = sessionDelegate.exportCode(customPackageName)
 
     fun notifyUser(message: String) {

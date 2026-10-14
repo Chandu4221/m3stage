@@ -1,7 +1,5 @@
 package io.github.chandu4221.m3stage.adapter.renderer.component.containment
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
@@ -29,13 +27,11 @@ class CardRenderer : NodeRenderer {
             elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp),
             shape = shape
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (children.isEmpty()) {
-                    EmptyContainerPlaceholder("Card")
-                } else {
-                    children.forEach { child ->
-                        renderChild(child)
-                    }
+            if (children.isEmpty()) {
+                EmptyContainerPlaceholder("Card")
+            } else {
+                children.forEach { child ->
+                    renderChild(child)
                 }
             }
         }
