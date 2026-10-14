@@ -330,6 +330,24 @@ data class UpdateThemeCommand(
 }
 
 /**
+ * Updates the project's name and base package. Undo restores previous metadata.
+ */
+data class UpdateProjectMetaCommand(
+    val oldName: String,
+    val oldBasePackage: String,
+    val newName: String,
+    val newBasePackage: String
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        return project.updateMetadata(newName, newBasePackage)
+    }
+
+    override fun undo(project: Project): Project {
+        return project.updateMetadata(oldName, oldBasePackage)
+    }
+}
+
+/**
  * Updates a screen's device preset and orientation metadata. Undo restores previous metadata.
  */
 data class UpdateScreenMetaCommand(

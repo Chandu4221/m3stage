@@ -20,6 +20,7 @@ import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.ui.atom.SearchTextField
 import io.github.chandu4221.m3stage.ui.molecule.ComponentTile
+import io.github.chandu4221.m3stage.ui.molecule.ProjectMetaSection
 import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
 @Composable
@@ -27,6 +28,9 @@ fun PartsDrawer(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
+    projectName: String = "Untitled",
+    basePackage: String = "com.example.app",
+    onUpdateProjectMetadata: (name: String, basePackage: String) -> Unit = { _, _ -> },
     disallowedKinds: Set<ComponentKind> = emptySet(),
     onComponentDragStart: (ComponentKind) -> Unit = {},
     onComponentDragEnd: () -> Unit = {},
@@ -40,18 +44,25 @@ fun PartsDrawer(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Header: Title & Search
+            // Header: Project Metadata & Search
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Project Metadata Card
+                ProjectMetaSection(
+                    projectName = projectName,
+                    basePackage = basePackage,
+                    onUpdateProjectMetadata = onUpdateProjectMetadata
+                )
+
                 Text(
                     text = "Components",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 SearchTextField(
                     query = searchQuery,
                     onQueryChange = onSearchQueryChange,

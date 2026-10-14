@@ -48,6 +48,8 @@ fun EditorShellTemplate(
     rightPanelWidth: Dp = 320.dp,
     onRightPanelWidthChange: (Dp) -> Unit = {},
     onResetRightPanelWidth: () -> Unit = {},
+    // Project metadata state
+    onUpdateProjectMetadata: (String, String) -> Unit = { _, _ -> },
     // Drawer state
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -131,6 +133,9 @@ fun EditorShellTemplate(
                         searchQuery = searchQuery,
                         onSearchQueryChange = onSearchQueryChange,
                         onComponentSelected = onComponentSelected,
+                        projectName = project?.name ?: "Untitled",
+                        basePackage = project?.basePackage ?: "com.example.app",
+                        onUpdateProjectMetadata = onUpdateProjectMetadata,
                         disallowedKinds = disallowedKinds,
                         onComponentDragStart = onComponentDragStart,
                         onComponentDragEnd = onComponentDragEnd,

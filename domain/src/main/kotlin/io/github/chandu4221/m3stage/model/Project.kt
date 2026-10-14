@@ -60,10 +60,26 @@ data class Project(
         }
         return null
     }
-}
+    companion object {
+        private val PACKAGE_REGEX = Regex("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*$")
 
-private fun isValidPackageName(value: String): Boolean {
-    if (value.isBlank()) return false
-    val packageRegex = Regex("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*$")
-    return packageRegex.matches(value)
+        /**
+         * Validates standard Java/Kotlin package naming convention:
+         * - Non-blank
+         * - Segments separated by dots
+         * - Each segment starts with letter/underscore followed by letters/digits/underscores
+         */
+        fun isValidPackageName(value: String): Boolean {
+            val trimmed = value.trim()
+            if (trimmed.isBlank()) return false
+            return PACKAGE_REGEX.matches(trimmed)
+        }
+
+        /**
+         * Validates project name: must not be blank.
+         */
+        fun isValidProjectName(value: String): Boolean {
+            return value.isNotBlank()
+        }
+    }
 }

@@ -325,6 +325,9 @@ fun EditorScreen(store: EditorStore) {
             onResetRightPanelWidth = {
                 rightPanelWidth = 320.dp
             },
+            onUpdateProjectMetadata = { name, pkg ->
+                store.updateProjectMetadata(name, pkg)
+            },
 
             // Parts Drawer
             searchQuery = searchQuery,

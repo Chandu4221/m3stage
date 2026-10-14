@@ -33,3 +33,11 @@ fun Project.addScreen(screen: Screen): Project {
 fun Project.removeScreen(screenId: ScreenId): Project {
     return copy(screens = screens.filter { it.id != screenId })
 }
+
+/**
+ * Updates the project name and base package.
+ * Returns a new immutable Project.
+ */
+fun Project.updateMetadata(name: String, basePackage: String): Project {
+    return copy(name = name.trim(), basePackage = basePackage.trim())
+}

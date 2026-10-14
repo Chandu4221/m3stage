@@ -476,6 +476,36 @@ class EditorStore(
         )
     }
 
+    // --- Bridge: Update Project Metadata ---
+    fun updateProjectMetadata(name: String, basePackage: String) {
+        val current = project.value
+        if (current == null) {
+            notifyUser("Cannot update project metadata: no project open.")
+            return
+        }
+        val trimmedName = name.trim()
+        val trimmedPackage = basePackage.trim()
+        if (!Project.isValidProjectName(trimmedName)) {
+            notifyUser("Project name cannot be blank.")
+            return
+        }
+        if (!Project.isValidPackageName(trimmedPackage)) {
+            notifyUser("Invalid base package '$trimmedPackage'. Must follow standard Java/Kotlin package naming rules.")
+            return
+        }
+        if (current.name == trimmedName && current.basePackage == trimmedPackage) {
+            return
+        }
+        execute(
+            UpdateProjectMetaCommand(
+                oldName = current.name,
+                oldBasePackage = current.basePackage,
+                newName = trimmedName,
+                newBasePackage = trimmedPackage
+            )
+        )
+    }
+
     // --- Bridge: Modifier Operations ---
     fun addModifier(nodeId: NodeId, modifier: ModifierSpec) {
         val screenId = activeScreenId.value
