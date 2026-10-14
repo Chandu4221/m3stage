@@ -27,8 +27,6 @@ fun PartsDrawer(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onComponentSelected: (ComponentKind) -> Unit,
-    activeCategory: ComponentCategory? = null,
-    onCategorySelected: (ComponentCategory?) -> Unit = {},
     disallowedKinds: Set<ComponentKind> = emptySet(),
     onComponentDragStart: (ComponentKind) -> Unit = {},
     onComponentDragEnd: () -> Unit = {},
@@ -64,39 +62,13 @@ fun PartsDrawer(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // Category Filter Row
-            ScrollableTabRow(
-                selectedTabIndex = if (activeCategory == null) 0 else ComponentCategory.entries.indexOf(activeCategory) + 1,
-                edgePadding = 12.dp,
-                divider = {},
-                containerColor = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Tab(
-                    selected = activeCategory == null,
-                    onClick = { onCategorySelected(null) },
-                    text = { Text("All") }
-                )
-                ComponentCategory.entries.forEach { category ->
-                    Tab(
-                        selected = activeCategory == category,
-                        onClick = { onCategorySelected(category) },
-                        text = { Text(category.displayName) }
-                    )
-                }
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
             // Filtered Items List
             val allComponents: List<ComponentDefinition> = remember { ComponentCatalog.all.filter { it.showInPalette } }
-            val filteredComponents = remember(searchQuery, activeCategory) {
+            val filteredComponents = remember(searchQuery) {
                 allComponents.filter { def ->
-                    val matchesSearch = searchQuery.isBlank() ||
+                    searchQuery.isBlank() ||
                         def.displayName.contains(searchQuery, ignoreCase = true) ||
                         def.category.displayName.contains(searchQuery, ignoreCase = true)
-                    val matchesCategory = activeCategory == null || def.category == activeCategory
-                    matchesSearch && matchesCategory
                 }
             }
 

@@ -119,40 +119,6 @@ fun FloatingCanvasStudio(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Island 0: Project Name & Unsaved Changes Status
-                projectName?.let { name ->
-                    CapsuleToolbar(
-                        modifier = Modifier.padding(end = 4.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = name,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            // Dirty Indicator Dot / Pill
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(
-                                        color = if (isDirty) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                        shape = CircleShape
-                                    )
-                            )
-                            Text(
-                                text = if (isDirty) "Unsaved" else "Saved",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isDirty) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
                 // Island 1: Pointer Modes (Select vs. Pan)
                 CapsuleToolbar {
                     ToolIconButton(
