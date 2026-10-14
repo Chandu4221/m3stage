@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -41,6 +42,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -391,191 +393,237 @@ private fun FloatingArtboardToolbar(
                 )
             }
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        Column(
+            modifier = Modifier.width(IntrinsicSize.Max)
         ) {
-            // Drag grip indicator & Screen Name Badge
-            Icon(
-                imageVector = Icons.Default.DragIndicator,
-                contentDescription = "Move Screen",
-                modifier = Modifier.size(16.dp),
-                tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
-            Text(
-                text = screen.name,
-                style = MaterialTheme.typography.titleSmall,
-                color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )
-
-            VerticalDivider(modifier = Modifier.height(18.dp), color = MaterialTheme.colorScheme.outlineVariant)
-
-            // Device Preset Dropdown
-            Box {
-                FilledTonalButton(
-                    onClick = {
-                        onActivate()
-                        deviceDropdownExpanded = true
-                    },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(8.dp)
+            // Row 1: Screen & Device Info (Header, center-aligned vertically)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 10.dp, top = 8.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left: Drag grip indicator & Screen Name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Devices,
-                        contentDescription = "Device",
-                        modifier = Modifier.size(15.dp)
+                        imageVector = Icons.Default.DragIndicator,
+                        contentDescription = "Move Screen",
+                        modifier = Modifier.size(16.dp),
+                        tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(activeDevice.displayName, style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = screen.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                DropdownMenu(
-                    expanded = deviceDropdownExpanded,
-                    onDismissRequest = { deviceDropdownExpanded = false }
-                ) {
-                    DevicePreset.entries.forEach { preset ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(preset.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(
-                                        "${preset.widthDp} × ${preset.heightDp} dp",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onDeviceChange(preset)
-                                deviceDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
+                Spacer(modifier = Modifier.width(12.dp))
 
-            // Orientation Toggle
-            ToolbarActionButton(
-                icon = if (orientation == DeviceOrientation.Portrait)
-                    Icons.Default.CropPortrait else Icons.Default.CropLandscape,
-                contentDescription = "Toggle Orientation",
-                tooltip = "Toggle Orientation",
-                onClick = {
-                    onActivate()
-                    onOrientationToggle()
-                }
-            )
-
-            // Hardware Bezel Toggle
-            TooltipArea(
-                delayMillis = 500,
-                tooltip = {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.inverseSurface,
-                        tonalElevation = 4.dp
+                // Right: Stacked text (Device Preset + Dimensions)
+                Box(contentAlignment = Alignment.CenterEnd) {
+                    Column(
+                        horizontalAlignment = Alignment.End
                     ) {
+                        // Device Name with Dropdown Trigger
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable {
+                                    onActivate()
+                                    deviceDropdownExpanded = true
+                                }
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = activeDevice.displayName,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Device",
+                                modifier = Modifier.size(16.dp),
+                                tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Dimensions: labelSmall
                         Text(
-                            text = "Toggle Hardware Frame",
+                            text = "$widthDp × $heightDp dp",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.inverseOnSurface,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 4.dp)
                         )
                     }
-                },
-                tooltipPlacement = TooltipPlacement.ComponentRect(
-                    anchor = Alignment.TopCenter,
-                    alignment = Alignment.TopCenter,
-                    offset = DpOffset(x = 0.dp, y = (-8).dp)
-                )
+
+                    DropdownMenu(
+                        expanded = deviceDropdownExpanded,
+                        onDismissRequest = { deviceDropdownExpanded = false }
+                    ) {
+                        DevicePreset.entries.forEach { preset ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(preset.displayName, style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            "${preset.widthDp} × ${preset.heightDp} dp",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    onDeviceChange(preset)
+                                    deviceDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Subtle Horizontal Divider
+            HorizontalDivider(
+                color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                thickness = 1.dp
+            )
+
+            // Row 2: All Control Buttons here
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                FilledIconToggleButton(
-                    checked = showFrame,
-                    onCheckedChange = {
+                // Reorder Group: Move Left | Move Right
+                ToolbarActionButton(
+                    icon = Icons.Default.ChevronLeft,
+                    contentDescription = "Move Left",
+                    tooltip = if (canMoveLeft) "Move Left" else null,
+                    enabled = canMoveLeft,
+                    onClick = {
                         onActivate()
-                        onFrameToggle(it)
-                    },
-                    modifier = Modifier.size(32.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Frame", style = MaterialTheme.typography.labelSmall)
-                }
-            }
+                        onMoveLeft()
+                    }
+                )
+                ToolbarActionButton(
+                    icon = Icons.Default.ChevronRight,
+                    contentDescription = "Move Right",
+                    tooltip = if (canMoveRight) "Move Right" else null,
+                    enabled = canMoveRight,
+                    onClick = {
+                        onActivate()
+                        onMoveRight()
+                    }
+                )
 
-            // Dimension Badge
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest
-            ) {
-                Text(
-                    text = "$widthDp × $heightDp dp",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(18.dp)
+                        .padding(horizontal = 2.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+
+                // Orientation Toggle
+                ToolbarActionButton(
+                    icon = if (orientation == DeviceOrientation.Portrait)
+                        Icons.Default.CropPortrait else Icons.Default.CropLandscape,
+                    contentDescription = "Toggle Orientation",
+                    tooltip = "Toggle Orientation",
+                    onClick = {
+                        onActivate()
+                        onOrientationToggle()
+                    }
+                )
+
+                // Hardware Bezel Toggle
+                TooltipArea(
+                    delayMillis = 500,
+                    tooltip = {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.inverseSurface,
+                            tonalElevation = 4.dp
+                        ) {
+                            Text(
+                                text = "Toggle Hardware Frame",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.inverseOnSurface,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    },
+                    tooltipPlacement = TooltipPlacement.ComponentRect(
+                        anchor = Alignment.TopCenter,
+                        alignment = Alignment.TopCenter,
+                        offset = DpOffset(x = 0.dp, y = (-8).dp)
+                    )
+                ) {
+                    FilledIconToggleButton(
+                        checked = showFrame,
+                        onCheckedChange = {
+                            onActivate()
+                            onFrameToggle(it)
+                        },
+                        modifier = Modifier.size(32.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Frame", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(18.dp)
+                        .padding(horizontal = 2.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+
+                // Actions Group: Rename | Duplicate | Delete
+                ToolbarActionButton(
+                    icon = Icons.Default.Edit,
+                    contentDescription = "Rename Screen",
+                    tooltip = "Rename Screen",
+                    onClick = {
+                        onActivate()
+                        showRenameDialog = true
+                    }
+                )
+                ToolbarActionButton(
+                    icon = Icons.Default.ContentCopy,
+                    contentDescription = "Duplicate Screen",
+                    tooltip = "Duplicate Screen",
+                    onClick = {
+                        onActivate()
+                        onDuplicate()
+                    }
+                )
+                ToolbarActionButton(
+                    icon = Icons.Default.Delete,
+                    contentDescription = "Delete Screen",
+                    tooltip = if (canDeleteScreen) "Delete Screen" else "Can't delete the last screen",
+                    enabled = canDeleteScreen,
+                    tint = MaterialTheme.colorScheme.error,
+                    disabledTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                    onClick = {
+                        onActivate()
+                        onDelete()
+                    }
                 )
             }
-
-            // Separator 1: Identity | Reorder
-            VerticalDivider(modifier = Modifier.height(18.dp), color = MaterialTheme.colorScheme.outlineVariant)
-
-            // Reorder Group: Move Left | Move Right
-            ToolbarActionButton(
-                icon = Icons.Default.ChevronLeft,
-                contentDescription = "Move Left",
-                tooltip = if (canMoveLeft) "Move Left" else null,
-                enabled = canMoveLeft,
-                onClick = {
-                    onActivate()
-                    onMoveLeft()
-                }
-            )
-            ToolbarActionButton(
-                icon = Icons.Default.ChevronRight,
-                contentDescription = "Move Right",
-                tooltip = if (canMoveRight) "Move Right" else null,
-                enabled = canMoveRight,
-                onClick = {
-                    onActivate()
-                    onMoveRight()
-                }
-            )
-
-            // Separator 2: Reorder | Actions
-            VerticalDivider(modifier = Modifier.height(18.dp), color = MaterialTheme.colorScheme.outlineVariant)
-
-            // Actions Group: Rename | Duplicate | Delete
-            ToolbarActionButton(
-                icon = Icons.Default.Edit,
-                contentDescription = "Rename Screen",
-                tooltip = "Rename Screen",
-                onClick = {
-                    onActivate()
-                    showRenameDialog = true
-                }
-            )
-            ToolbarActionButton(
-                icon = Icons.Default.ContentCopy,
-                contentDescription = "Duplicate Screen",
-                tooltip = "Duplicate Screen",
-                onClick = {
-                    onActivate()
-                    onDuplicate()
-                }
-            )
-            ToolbarActionButton(
-                icon = Icons.Default.Delete,
-                contentDescription = "Delete Screen",
-                tooltip = if (canDeleteScreen) "Delete Screen" else "Can't delete the last screen",
-                enabled = canDeleteScreen,
-                tint = MaterialTheme.colorScheme.error,
-                disabledTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                onClick = {
-                    onActivate()
-                    onDelete()
-                }
-            )
 
             if (showRenameDialog) {
                 var newNameText by remember { mutableStateOf(screen.name) }
