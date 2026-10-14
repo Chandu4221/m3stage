@@ -1,79 +1,32 @@
 package io.github.chandu4221.m3stage.ui.atom
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
-import java.awt.Cursor
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 
 /**
  * Draggable vertical splitter divider separating studio panels from the canvas.
- * - Supports horizontal dragging to resize adjacent panels.
- * - Double-click resets the panel width to its default size.
- * - Displays horizontal resize cursor on hover (⟷).
- * - Highlights with primary color on hover or active drag.
+ * Delegates to [PanelResizeHandle] for unified gesture handling, keyboard accessibility,
+ * and double-click reset.
  */
 @Composable
 fun PanelSplitter(
     onDragDelta: (Float) -> Unit,
     onDoubleClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    side: PanelResizeSide = PanelResizeSide.Left
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    var isDragging by remember { mutableStateOf(false) }
-
-    val resizeCursor = remember {
-        PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR))
-    }
-
-    Box(
+    val density = LocalDensity.current
+    PanelResizeHandle(
+        side = side,
+        onDragStart = {},
+        onDragDelta = { deltaDp ->
+            val deltaPx = with(density) { deltaDp.toPx() }
+            onDragDelta(deltaPx)
+        },
+        onDragEnd = {},
+        onDoubleClick = onDoubleClick,
         modifier = modifier
-            .width(6.dp)
-            .fillMaxHeight()
-            .pointerHoverIcon(resizeCursor)
-            .hoverable(interactionSource)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onDoubleTap = { onDoubleClick() }
-                )
-            }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { isDragging = true },
-                    onDragEnd = { isDragging = false },
-                    onDragCancel = { isDragging = false },
-                    onHorizontalDrag = { _, dragAmount ->
-                        onDragDelta(dragAmount)
-                    }
-                )
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        // Visual indicator line
-        Box(
-            modifier = Modifier
-                .width(if (isHovered || isDragging) 2.dp else 1.dp)
-                .fillMaxHeight()
-                .background(
-                    if (isHovered || isDragging) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    }
-                )
-        )
-    }
+    )
 }
