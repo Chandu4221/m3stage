@@ -90,6 +90,14 @@ fun EditorShellTemplate(
     codePreviewContent: String = "",
     isGeneratingCode: Boolean = false,
     onToggleCodePreview: () -> Unit = {},
+    bottomPanelHeight: Dp = 280.dp,
+    onBottomDragStart: () -> Unit = {},
+    onBottomDragDelta: (Dp) -> Unit = {},
+    onBottomDragEnd: () -> Unit = {},
+    onBottomPanelHeightChange: (Dp) -> Unit = {},
+    onResetBottomPanelHeight: () -> Unit = {},
+    onAdjustBottomHeight: (Dp) -> Unit = {},
+    onSnapBottomToMin: () -> Unit = {},
     // Inspector state
     selectedNode: DesignNode?,
     isNodeLocked: Boolean,
@@ -217,14 +225,36 @@ fun EditorShellTemplate(
                 onToggleFullWidth = onToggleFullWidth
             )
 
-            if (isCodePreviewOpen) {
-                io.github.chandu4221.m3stage.ui.organism.CodePreviewPanel(
-                    fileName = codePreviewFileName,
-                    code = codePreviewContent,
-                    isGenerating = isGeneratingCode,
-                    onClose = onToggleCodePreview,
-                    modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter)
-                )
+            if (isCodePreviewOpen && bottomPanelHeight > 0.dp) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                ) {
+                    PanelResizeHandle(
+                        side = PanelResizeSide.Bottom,
+                        onDragStart = onBottomDragStart,
+                        onDragDelta = { deltaDp ->
+                            onBottomDragDelta(deltaDp)
+                            onBottomPanelHeightChange(bottomPanelHeight + deltaDp)
+                        },
+                        onDragEnd = onBottomDragEnd,
+                        onDoubleClick = onResetBottomPanelHeight,
+                        onAdjustWidth = onAdjustBottomHeight,
+                        onSnapToMin = onSnapBottomToMin,
+                        onResetToDefault = onResetBottomPanelHeight
+                    )
+
+                    io.github.chandu4221.m3stage.ui.organism.CodePreviewPanel(
+                        fileName = codePreviewFileName,
+                        code = codePreviewContent,
+                        isGenerating = isGeneratingCode,
+                        onClose = onToggleCodePreview,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(bottomPanelHeight)
+                    )
+                }
             }
         }
 

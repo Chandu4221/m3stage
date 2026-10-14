@@ -155,6 +155,13 @@ data class PanelUiState(
             rememberedWidth = minWidth
         )
     }
+
+    val targetHeight: Dp get() = targetWidth
+    val minHeight: Dp get() = minWidth
+    val defaultHeight: Dp get() = defaultWidth
+    val rememberedHeight: Dp get() = rememberedWidth
+    val dragHeight: Dp get() = dragWidth
+    fun resolvedHeight(maxHeight: Dp = Dp.Infinity): Dp = resolvedWidth(maxHeight)
 }
 
 /**
@@ -173,10 +180,17 @@ class PanelStateHolder(
         minWidth = 240.dp,
         defaultWidth = 320.dp
     ),
+    initialBottom: PanelUiState = PanelUiState(
+        targetWidth = 280.dp,
+        minWidth = 140.dp,
+        defaultWidth = 280.dp,
+        isCollapsed = true
+    ),
     initialActiveRailTab: StudioRailTab? = StudioRailTab.Parts
 ) {
     var leftDrawer by mutableStateOf(initialLeft)
     var rightInspector by mutableStateOf(initialRight)
+    var bottomCodePreview by mutableStateOf(initialBottom)
     var activeRailTab by mutableStateOf(initialActiveRailTab)
     var lastActiveRailTab by mutableStateOf(initialActiveRailTab ?: StudioRailTab.Parts)
 
@@ -185,6 +199,9 @@ class PanelStateHolder(
 
     val isRightOpen: Boolean
         get() = !rightInspector.isCollapsed
+
+    val isBottomOpen: Boolean
+        get() = !bottomCodePreview.isCollapsed
 
     val isFullWidth: Boolean
         get() = !isLeftOpen && !isRightOpen
@@ -213,6 +230,10 @@ class PanelStateHolder(
 
     fun toggleRightInspector() {
         rightInspector = rightInspector.toggleCollapsed()
+    }
+
+    fun toggleBottomCodePreview() {
+        bottomCodePreview = bottomCodePreview.toggleCollapsed()
     }
 
     fun toggleFullWidth() {

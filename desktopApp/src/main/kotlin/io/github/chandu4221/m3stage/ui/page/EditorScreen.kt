@@ -72,7 +72,7 @@ fun EditorScreen(store: EditorStore) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Live Code Preview State
-    var isCodePreviewOpen by remember { mutableStateOf(false) }
+    val isCodePreviewOpen = panelState.isBottomOpen
     var codePreviewContent by remember { mutableStateOf("") }
     var isGeneratingCode by remember { mutableStateOf(false) }
 
@@ -273,10 +273,13 @@ fun EditorScreen(store: EditorStore) {
             }
     ) {
         val totalWidth = maxWidth
+        val totalHeight = maxHeight
         val navRailWidth = 72.dp
         val minCanvasWidth = 240.dp
         val maxLeftWidth = (totalWidth - minCanvasWidth - navRailWidth - (if (panelState.isRightOpen) panelState.rightInspector.minWidth else 0.dp)).coerceAtLeast(200.dp)
         val maxRightWidth = (totalWidth - minCanvasWidth - navRailWidth - (if (panelState.isLeftOpen) panelState.leftDrawer.minWidth else 0.dp)).coerceAtLeast(240.dp)
+        val minCanvasHeight = 160.dp
+        val maxBottomHeight = (totalHeight - minCanvasHeight).coerceAtLeast(140.dp)
 
         val resolvedLeftWidth = panelState.leftDrawer.resolvedWidth(maxLeftWidth)
         val animatedLeftWidth by animateDpAsState(
@@ -288,6 +291,12 @@ fun EditorScreen(store: EditorStore) {
         val animatedRightWidth by animateDpAsState(
             targetValue = resolvedRightWidth,
             animationSpec = if (panelState.rightInspector.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
+        )
+
+        val resolvedBottomHeight = panelState.bottomCodePreview.resolvedWidth(maxBottomHeight)
+        val animatedBottomHeight by animateDpAsState(
+            targetValue = resolvedBottomHeight,
+            animationSpec = if (panelState.bottomCodePreview.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
         )
 
         EditorShellTemplate(
@@ -422,7 +431,26 @@ fun EditorScreen(store: EditorStore) {
             codePreviewFileName = activeScreenFileName,
             codePreviewContent = codePreviewContent,
             isGeneratingCode = isGeneratingCode,
-            onToggleCodePreview = { isCodePreviewOpen = !isCodePreviewOpen },
+            onToggleCodePreview = { panelState.toggleBottomCodePreview() },
+            bottomPanelHeight = animatedBottomHeight,
+            onBottomDragStart = {
+                panelState.bottomCodePreview = panelState.bottomCodePreview.onDragStart()
+            },
+            onBottomDragDelta = { deltaDp ->
+                panelState.bottomCodePreview = panelState.bottomCodePreview.onDragDelta(deltaDp, maxBottomHeight)
+            },
+            onBottomDragEnd = {
+                panelState.bottomCodePreview = panelState.bottomCodePreview.onDragEnd(maxBottomHeight)
+            },
+            onResetBottomPanelHeight = {
+                panelState.bottomCodePreview = panelState.bottomCodePreview.resetToDefault()
+            },
+            onAdjustBottomHeight = { deltaDp ->
+                panelState.bottomCodePreview = panelState.bottomCodePreview.adjustWidthBy(deltaDp, maxBottomHeight)
+            },
+            onSnapBottomToMin = {
+                panelState.bottomCodePreview = panelState.bottomCodePreview.snapToMin()
+            },
             // Inspector & Tree Actions
             selectedNode = selectedNode,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,

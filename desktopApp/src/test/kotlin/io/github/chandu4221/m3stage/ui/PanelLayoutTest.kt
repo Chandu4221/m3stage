@@ -267,4 +267,115 @@ class PanelLayoutTest {
         assertTrue(holder.isLeftOpen)
         assertEquals(StudioRailTab.Layers, holder.activeRailTab)
     }
+
+    @Test
+    fun testBottomPanelClampingConstraints() {
+        val defaultBottomHeight: Dp = 280.dp
+        val minBottomHeight: Dp = 140.dp
+        val maxBottomHeight: Dp = 600.dp
+        var bottomHeight = defaultBottomHeight
+
+        // Normal delta expansion
+        bottomHeight = (bottomHeight + 50.dp).coerceIn(minBottomHeight, maxBottomHeight)
+        assertEquals(330.dp, bottomHeight)
+
+        // Max constraint clamping
+        bottomHeight = (bottomHeight + 500.dp).coerceIn(minBottomHeight, maxBottomHeight)
+        assertEquals(maxBottomHeight, bottomHeight)
+
+        // Min constraint clamping
+        bottomHeight = (bottomHeight - 600.dp).coerceIn(minBottomHeight, maxBottomHeight)
+        assertEquals(minBottomHeight, bottomHeight)
+    }
+
+    @Test
+    fun testBottomPanelDragIntoCollapseZoneAndRestore() {
+        var state = PanelUiState(
+            targetWidth = 280.dp,
+            minWidth = 140.dp,
+            defaultWidth = 280.dp,
+            collapseZoneOffset = 24.dp,
+            isCollapsed = false
+        )
+        // collapse threshold = 140 - 24 = 116dp
+        assertEquals(116.dp, state.collapseThreshold)
+
+        // Start drag
+        state = state.onDragStart()
+        assertTrue(state.isDragging)
+
+        // Drag down into collapse zone (dragWidth = 100dp < 116dp)
+        state = state.onDragDelta((-180).dp)
+        assertEquals(100.dp, state.dragWidth)
+        assertTrue(state.isGhostCollapsed)
+        assertEquals(0.dp, state.resolvedWidth())
+
+        // Release -> collapsed, remembers 280dp
+        state = state.onDragEnd()
+        assertTrue(state.isCollapsed)
+        assertEquals(280.dp, state.rememberedWidth)
+        assertEquals(0.dp, state.resolvedWidth())
+
+        // Expand restores remembered height
+        state = state.expand()
+        assertFalse(state.isCollapsed)
+        assertEquals(280.dp, state.targetWidth)
+        assertEquals(280.dp, state.resolvedWidth())
+    }
+
+    @Test
+    fun testBottomPanelDoubleClickReset() {
+        var state = PanelUiState(
+            targetWidth = 400.dp,
+            minWidth = 140.dp,
+            defaultWidth = 280.dp,
+            isCollapsed = false
+        )
+        state = state.resetToDefault()
+        assertEquals(280.dp, state.targetWidth)
+        assertEquals(280.dp, state.resolvedWidth())
+    }
+
+    @Test
+    fun testBottomPanelKeyboardAccessibility() {
+        var state = PanelUiState(
+            targetWidth = 280.dp,
+            minWidth = 140.dp,
+            defaultWidth = 280.dp
+        )
+        // Arrow up increases height by 8dp
+        state = state.adjustWidthBy(8.dp)
+        assertEquals(288.dp, state.targetWidth)
+
+        // Arrow down decreases height
+        state = state.adjustWidthBy((-16).dp)
+        assertEquals(272.dp, state.targetWidth)
+
+        // Snap to min
+        state = state.snapToMin()
+        assertEquals(140.dp, state.targetWidth)
+
+        // Further down clamps at min
+        state = state.adjustWidthBy((-8).dp)
+        assertEquals(140.dp, state.targetWidth)
+    }
+
+    @Test
+    fun testPanelStateHolderBottomCodePreview() {
+        val holder = PanelStateHolder()
+        // Starts collapsed by default
+        assertFalse(holder.isBottomOpen)
+        assertTrue(holder.bottomCodePreview.isCollapsed)
+
+        // Toggle opens it to default 280dp
+        holder.toggleBottomCodePreview()
+        assertTrue(holder.isBottomOpen)
+        assertFalse(holder.bottomCodePreview.isCollapsed)
+        assertEquals(280.dp, holder.bottomCodePreview.targetWidth)
+
+        // Toggle again collapses it
+        holder.toggleBottomCodePreview()
+        assertFalse(holder.isBottomOpen)
+        assertTrue(holder.bottomCodePreview.isCollapsed)
+    }
 }

@@ -50,9 +50,7 @@ fun CodePreviewPanel(
     }
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(280.dp),
+        modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shadowElevation = 8.dp
@@ -137,7 +135,7 @@ fun CodePreviewPanel(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceDim)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                     .padding(8.dp)
             ) {
                 if (isGenerating && code.isEmpty()) {
@@ -167,12 +165,15 @@ fun CodePreviewPanel(
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 12.sp,
                                 lineHeight = 18.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                                 modifier = Modifier.padding(end = 12.dp)
                             )
 
                             // Highlighted code
-                            val highlighted = remember(code) { highlightKotlinCode(code) }
+                            val colorScheme = MaterialTheme.colorScheme
+                            val highlighted = remember(code, colorScheme) {
+                                highlightKotlinCode(code, colorScheme)
+                            }
                             Text(
                                 text = highlighted,
                                 fontFamily = FontFamily.Monospace,
@@ -189,9 +190,9 @@ fun CodePreviewPanel(
 
 /**
  * Lightweight regex-based syntax highlighter for Kotlin/Compose code.
- * Highlights keywords, strings, annotations, and comments without external dependencies.
+ * Highlights keywords, strings, annotations, and comments using MaterialTheme colorScheme tokens.
  */
-private fun highlightKotlinCode(raw: String): AnnotatedString {
+private fun highlightKotlinCode(raw: String, colorScheme: ColorScheme): AnnotatedString {
     val keywords = setOf(
         "package", "import", "class", "fun", "val", "var", "if", "else", "when",
         "for", "while", "return", "true", "false", "null", "is", "in", "object",
@@ -199,11 +200,11 @@ private fun highlightKotlinCode(raw: String): AnnotatedString {
         "override", "by"
     )
 
-    val keywordColor = Color(0xFFCF6679) // Pink / Coral
-    val annotationColor = Color(0xFFE5C07B) // Gold / Yellow
-    val stringColor = Color(0xFF98C379) // Green
-    val commentColor = Color(0xFF7F848E) // Grey
-    val defaultColor = Color(0xFFABB2BF) // Light grey
+    val keywordColor = colorScheme.primary
+    val annotationColor = colorScheme.tertiary
+    val stringColor = colorScheme.secondary
+    val commentColor = colorScheme.outline
+    val defaultColor = colorScheme.onSurface
 
     val builder = AnnotatedString.Builder()
 

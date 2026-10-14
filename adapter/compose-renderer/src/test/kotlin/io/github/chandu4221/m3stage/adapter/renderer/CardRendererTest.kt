@@ -28,12 +28,12 @@ class CardRendererTest {
         val text1 = DesignNode(
             id = NodeId("text_1"),
             kind = ComponentKind.Text,
-            props = mapOf(TextDefinition.Text to PropertyValue.StringValue("Title"))
+            props = mapOf(TextDefinition.TextContent.id to PropertyValue.StringValue("Title"))
         )
         val text2 = DesignNode(
             id = NodeId("text_2"),
             kind = ComponentKind.Text,
-            props = mapOf(TextDefinition.Text to PropertyValue.StringValue("Body"))
+            props = mapOf(TextDefinition.TextContent.id to PropertyValue.StringValue("Body"))
         )
         val card = DesignNode(
             id = NodeId("card_node"),
