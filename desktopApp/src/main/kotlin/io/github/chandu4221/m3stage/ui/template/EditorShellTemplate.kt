@@ -76,9 +76,7 @@ fun EditorShellTemplate(
         // 1. Far-Left Studio Navigation Rail
         StudioNavRail(
             activeTab = activeRailTab,
-            onTabSelected = onRailTabSelected,
-            isDarkMode = isDarkMode,
-            onToggleDarkMode = onToggleDarkMode
+            onTabSelected = onRailTabSelected
         )
 
         // 2. Expandable Drawer
