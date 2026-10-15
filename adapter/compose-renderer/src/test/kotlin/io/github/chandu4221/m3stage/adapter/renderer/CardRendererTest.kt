@@ -163,4 +163,57 @@ class CardRendererTest {
         assertNotNull(registry.get(unsetCard.id), "Unset card must compose and have registered bounds")
         assertNotNull(registry.get(explicitCard.id), "Explicit card must compose and have registered bounds")
     }
+
+    @Test
+    fun testAllCardVariantsComposeSuccessfully() {
+        val elevatedCard = DesignNode(
+            id = NodeId("card_elevated"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.CardVariant.Elevated.name),
+                CardDefinition.Elevation.id to PropertyValue.DpValue(4f)
+            )
+        )
+        val filledCard = DesignNode(
+            id = NodeId("card_filled"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.CardVariant.Filled.name)
+            )
+        )
+        val outlinedCard = DesignNode(
+            id = NodeId("card_outlined"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.CardVariant.Outlined.name),
+                CardDefinition.BorderColor.id to PropertyValue.ColorValue.Token(io.github.chandu4221.m3stage.theme.M3ColorToken.Outline),
+                CardDefinition.BorderWidth.id to PropertyValue.DpValue(2f)
+            )
+        )
+        val container = DesignNode(
+            id = NodeId("container_col"),
+            kind = ComponentKind.Column,
+            children = listOf(elevatedCard, filledCard, outlinedCard)
+        )
+
+        val registry = NodeBoundsRegistry()
+        composeTestRule.setContent {
+            MaterialTheme(colorScheme = lightColorScheme()) {
+                Box(modifier = Modifier.size(400.dp, 800.dp)) {
+                    DesignRenderer.Render(
+                        node = container,
+                        selectedNodeId = null,
+                        onNodeClick = {},
+                        registry = registry
+                    )
+                }
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        assertNotNull(registry.get(elevatedCard.id), "Elevated card must compose and have registered bounds")
+        assertNotNull(registry.get(filledCard.id), "Filled card must compose and have registered bounds")
+        assertNotNull(registry.get(outlinedCard.id), "Outlined card must compose and have registered bounds")
+    }
 }
+
