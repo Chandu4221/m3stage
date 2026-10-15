@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -14,6 +16,7 @@ import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasViewportController
+import io.github.chandu4221.m3stage.state.CodeGenUiState
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.state.ShellPanelsController
 import io.github.chandu4221.m3stage.ui.atom.PanelResizeHandle
@@ -61,9 +64,7 @@ fun EditorShellTemplate(
     onAddScreen: () -> Unit,
     onExportCode: () -> Unit,
     // Code preview state
-    codePreviewFileName: String = "",
-    codePreviewContent: String = "",
-    isGeneratingCode: Boolean = false,
+    codeGenState: kotlinx.coroutines.flow.StateFlow<CodeGenUiState>,
     // Inspector & Tree Actions
     isNodeLocked: Boolean,
     viewportController: CanvasViewportController,
@@ -207,10 +208,18 @@ fun EditorShellTemplate(
                         side = PanelResizeSide.Bottom
                     )
 
+                    val previewState by codeGenState.collectAsState()
+                    val (fileName, code, isGenerating) = when (val state = previewState) {
+                        is CodeGenUiState.Idle -> Triple("Screen.kt", "", false)
+                        is CodeGenUiState.Generating -> Triple(state.fileName ?: "Screen.kt", state.content ?: "", true)
+                        is CodeGenUiState.Ready -> Triple(state.fileName, state.content, false)
+                        is CodeGenUiState.Error -> Triple("Screen.kt", "// Generation error: ${state.message}", false)
+                    }
+
                     CodePreviewPanel(
-                        fileName = codePreviewFileName,
-                        code = codePreviewContent,
-                        isGenerating = isGeneratingCode,
+                        fileName = fileName,
+                        code = code,
+                        isGenerating = isGenerating,
                         onClose = { panels.toggleBottom() },
                         modifier = Modifier
                             .fillMaxWidth()

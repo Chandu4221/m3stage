@@ -14,20 +14,17 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer
 import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
+import io.github.chandu4221.m3stage.state.CodeGenDelegate
 import io.github.chandu4221.m3stage.state.EditorEvent
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.state.rememberCanvasViewportController
 import io.github.chandu4221.m3stage.state.rememberShellPanelsController
 import io.github.chandu4221.m3stage.ui.molecule.ExportDialog
 import io.github.chandu4221.m3stage.ui.template.EditorShellTemplate
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 /**
  * Smart Page: The ONLY stateful mediator between EditorStore and the dumb UI template.
@@ -44,64 +41,32 @@ fun EditorScreen(store: EditorStore) {
 
     val panels = rememberShellPanelsController()
     var searchQuery by remember { mutableStateOf("") }
-
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
+
     val disallowedKinds by remember {
         derivedStateOf {
-            computeDisallowedKinds(
-                project = projectState.value,
-                activeScreenId = store.activeScreenId.value,
-                selectedNodeId = store.selectedNodeId.value
-            )
+            computeDisallowedKinds(projectState.value, store.activeScreenId.value, store.selectedNodeId.value)
         }
     }
 
     val viewportController = rememberCanvasViewportController()
-
     var showExportDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Live Code Preview State
-    val isCodePreviewOpen = panels.isBottomOpen
-    var codePreviewContent by remember { mutableStateOf("") }
-    var isGeneratingCode by remember { mutableStateOf(false) }
-
-    // Drag-and-drop palette state (T3.6)
     var draggedComponentKind by remember { mutableStateOf<ComponentKind?>(null) }
 
-    val activeScreenFileName = remember(activeScreen) {
-        if (activeScreen != null) {
-            "${KotlinIdentifierSanitizer.toPascalCase(activeScreen.name)}.kt"
-        } else {
-            "Screen.kt"
-        }
-    }
+    val coroutineScope = rememberCoroutineScope()
+    val codeGen = remember(store.codeGenerator) { CodeGenDelegate(store.codeGenerator, coroutineScope) }
+    DisposableEffect(codeGen) { onDispose { codeGen.close() } }
 
-    // Debounced code generation when code preview is open
-    LaunchedEffect(isCodePreviewOpen, project, activeScreenId) {
-        if (!isCodePreviewOpen) return@LaunchedEffect
+    LaunchedEffect(panels.isBottomOpen, project, activeScreenId) {
+        if (!panels.isBottomOpen) {
+            codeGen.close()
+            return@LaunchedEffect
+        }
         val currentProject = project ?: return@LaunchedEffect
         val currentActiveScreenId = activeScreenId ?: return@LaunchedEffect
         val targetScreen = currentProject.screens.firstOrNull { it.id == currentActiveScreenId } ?: return@LaunchedEffect
-
-        isGeneratingCode = true
-        delay(500) // 500ms debounce
-        try {
-            val generatedProject = withContext(Dispatchers.Default) {
-                store.codeGenerator.generate(currentProject)
-            }
-            val pascalName = KotlinIdentifierSanitizer.toPascalCase(targetScreen.name)
-            val matchingFile = generatedProject.files.firstOrNull { it.fileName.startsWith(pascalName) }
-                ?: generatedProject.files.firstOrNull()
-
-            if (matchingFile != null) {
-                codePreviewContent = matchingFile.content
-            }
-        } catch (e: Exception) {
-            codePreviewContent = "// Generation error: ${e.message}"
-        } finally {
-            isGeneratingCode = false
-        }
+        codeGen.request(targetScreen, currentProject)
     }
 
     LaunchedEffect(Unit) {
@@ -109,14 +74,8 @@ fun EditorScreen(store: EditorStore) {
             when (event) {
                 is EditorEvent.ExportSuccess -> snackbarHostState.showSnackbar("Exported ZIP to: ${event.path}")
                 is EditorEvent.ExportFailed -> snackbarHostState.showSnackbar("Export failed: ${event.message}")
-                is EditorEvent.LoadFailed -> snackbarHostState.showSnackbar(
-                    message = "Failed to load project: ${event.reason}",
-                    duration = SnackbarDuration.Long
-                )
-                is EditorEvent.ShowError -> snackbarHostState.showSnackbar(
-                    message = event.message,
-                    duration = SnackbarDuration.Long
-                )
+                is EditorEvent.LoadFailed -> snackbarHostState.showSnackbar("Failed to load project: ${event.reason}", duration = SnackbarDuration.Long)
+                is EditorEvent.ShowError -> snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Long)
                 else -> {}
             }
         }
@@ -127,17 +86,12 @@ fun EditorScreen(store: EditorStore) {
             initialPackageName = project?.basePackage ?: "com.example.app",
             screens = project?.screens ?: emptyList(),
             onDismiss = { showExportDialog = false },
-            onConfirm = { customPackage ->
-                showExportDialog = false
-                store.exportCode(customPackage)
-            }
+            onConfirm = { customPackage -> showExportDialog = false; store.exportCode(customPackage) }
         )
     }
 
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     val shortcutActions = remember(draggedComponentKind) {
         EditorShortcutActions(
@@ -147,16 +101,8 @@ fun EditorScreen(store: EditorStore) {
     }
 
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .focusRequester(focusRequester)
-            .focusable()
-            .editorKeyboardShortcuts(
-                store = store,
-                panels = panels,
-                viewportController = viewportController,
-                actions = shortcutActions
-            )
+        modifier = Modifier.fillMaxSize().focusRequester(focusRequester).focusable()
+            .editorKeyboardShortcuts(store = store, panels = panels, viewportController = viewportController, actions = shortcutActions)
     ) {
         LaunchedEffect(maxWidth, maxHeight) {
             panels.updateAvailableSpace(maxWidth.value, maxHeight.value)
@@ -170,30 +116,21 @@ fun EditorScreen(store: EditorStore) {
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
             onComponentSelected = { kind ->
-                val active = activeScreen
-                if (active == null) {
-                    store.notifyUser("No active screen. Create or select a screen first.")
-                    return@EditorShellTemplate
-                }
-                val startNode = (selectedNodeId?.let { active.root.findNode(it) }) ?: active.root
-                val targetAncestor = startNode.findNearestAcceptingAncestor(active.root, kind)
-                if (targetAncestor != null) {
-                    store.addNodeToActiveScreen(targetAncestor.id, kind)
-                } else {
-                    store.addNodeToActiveScreen(startNode.id, kind)
-                }
+                val active = activeScreen ?: return@EditorShellTemplate store.notifyUser("No active screen. Create or select a screen first.")
+                val start = (selectedNodeId?.let { active.root.findNode(it) }) ?: active.root
+                val target = start.findNearestAcceptingAncestor(active.root, kind) ?: start
+                store.addNodeToActiveScreen(target.id, kind)
             },
             disallowedKinds = disallowedKinds,
             draggedComponentKind = draggedComponentKind,
-            onComponentDragStart = { kind -> draggedComponentKind = kind },
+            onComponentDragStart = { draggedComponentKind = it },
             onComponentDragEnd = { draggedComponentKind = null },
             onDropOnScreen = { screenId, kind ->
                 store.setActiveScreen(screenId)
-                val targetScreen = project?.screens?.firstOrNull { it.id == screenId }
-                if (targetScreen != null) {
-                    val targetNode = (selectedNodeId?.let { targetScreen.root.findNode(it) }) ?: targetScreen.root
-                    val ancestor = targetNode.findNearestAcceptingAncestor(targetScreen.root, kind) ?: targetScreen.root
-                    store.addNodeToActiveScreen(ancestor.id, kind)
+                project?.screens?.firstOrNull { it.id == screenId }?.let { targetScreen ->
+                    val start = (selectedNodeId?.let { targetScreen.root.findNode(it) }) ?: targetScreen.root
+                    val target = start.findNearestAcceptingAncestor(targetScreen.root, kind) ?: targetScreen.root
+                    store.addNodeToActiveScreen(target.id, kind)
                 }
                 draggedComponentKind = null
             },
@@ -204,12 +141,7 @@ fun EditorScreen(store: EditorStore) {
             onNodeClick = { nodeId ->
                 store.selectNode(nodeId)
                 if (nodeId != null) {
-                    val root = activeScreen?.root
-                    if (root != null) {
-                        val treeInfo = root.toTreeInfo()
-                        val parentId = treeInfo[nodeId]?.parent ?: root.id
-                        store.setDrillAnchor(parentId)
-                    }
+                    activeScreen?.root?.let { root -> store.setDrillAnchor(root.toTreeInfo()[nodeId]?.parent ?: root.id) }
                 }
             },
             lockedNodeIds = lockedNodeIds,
@@ -218,15 +150,12 @@ fun EditorScreen(store: EditorStore) {
             onAddScreen = {
                 val count = (project?.screens?.size ?: 0) + 1
                 store.addNewScreen("Screen$count", "/screen$count")
-                val newlyAddedScreen = store.project.value?.screens?.lastOrNull()
-                val targetX = newlyAddedScreen?.canvasX ?: 0f
+                val targetX = store.project.value?.screens?.lastOrNull()?.canvasX ?: 0f
                 val currentPan = viewportController.viewportState.value.panOffset
                 viewportController.panBy(Offset(-targetX - currentPan.x, 0f))
             },
             onExportCode = { showExportDialog = true },
-            codePreviewFileName = activeScreenFileName,
-            codePreviewContent = codePreviewContent,
-            isGeneratingCode = isGeneratingCode,
+            codeGenState = codeGen.previewState,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
             viewportController = viewportController,
             store = store,
@@ -234,25 +163,7 @@ fun EditorScreen(store: EditorStore) {
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)
         )
     }
-}
-
-/**
- * Computes disallowed component kinds for palette tiles based on active screen and selection.
- */
-fun computeDisallowedKinds(
-    project: io.github.chandu4221.m3stage.model.Project?,
-    activeScreenId: io.github.chandu4221.m3stage.model.ScreenId?,
-    selectedNodeId: io.github.chandu4221.m3stage.model.NodeId?
-): Set<ComponentKind> {
-    val screen = project?.screens?.firstOrNull { it.id == activeScreenId }
-    val root = screen?.root ?: return emptySet()
-    val targetNode = (selectedNodeId?.let { root.findNode(it) }) ?: root
-    return ComponentKind.entries.filterNot { kind ->
-        targetNode.findNearestAcceptingAncestor(root, kind) != null
-    }.toSet()
 }
