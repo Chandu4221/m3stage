@@ -6,6 +6,7 @@ import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.slot.SlotDefinition
 import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.IconGlyph
 import io.github.chandu4221.m3stage.property.*
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 
@@ -35,10 +36,10 @@ object NavigationBarDefinition {
         allowedChildren = setOf(ComponentKind.NavigationBarItem),
         slotOnly = true,
         defaultSubtreeFactory = { self, idGen ->
-            val homeItem = NavigationBarItemDefinition.createItem(idGen, "Home", "Home", selected = true)
-            val searchItem = NavigationBarItemDefinition.createItem(idGen, "Search", "Search", selected = false)
-            val settingsItem = NavigationBarItemDefinition.createItem(idGen, "Settings", "Settings", selected = false)
-            val profileItem = NavigationBarItemDefinition.createItem(idGen, "Profile", "Person", selected = false)
+            val homeItem = NavigationBarItemDefinition.createItem(idGen, "Home", IconGlyph.Home, selected = true)
+            val searchItem = NavigationBarItemDefinition.createItem(idGen, "Search", IconGlyph.Search, selected = false)
+            val settingsItem = NavigationBarItemDefinition.createItem(idGen, "Settings", IconGlyph.Settings, selected = false)
+            val profileItem = NavigationBarItemDefinition.createItem(idGen, "Profile", IconGlyph.Person, selected = false)
 
             DesignNode(
                 id = idGen.nextNodeId(),

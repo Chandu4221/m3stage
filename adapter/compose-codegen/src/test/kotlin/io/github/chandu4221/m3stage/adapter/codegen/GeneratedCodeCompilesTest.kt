@@ -465,5 +465,94 @@ class GeneratedCodeCompilesTest {
             code
         )
     }
+
+    @Test
+    fun testIconWithGlyphGeneratesValidCodeWithMatchingVectorAndDescription() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("p-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("s-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("n-${idCounter++}")
+        }
+
+        val iconNode = DesignNode(
+            id = idGen.nextNodeId(),
+            kind = ComponentKind.Icon,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.IconDefinition.Glyph.id to PropertyValue.EnumValue(IconGlyph.Search.name)
+            )
+        )
+        val screen = Screen(
+            id = ScreenId("screen-icon"),
+            name = "IconScreen",
+            route = "/icon",
+            root = iconNode
+        )
+        val project = Project(
+            id = ProjectId("test-proj-icon"),
+            name = "Icon App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(screen)
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(
+            code.contains("imageVector = androidx.compose.material.icons.Icons.Default.Search"),
+            "Generated icon must reference Search icon. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("contentDescription = \"Search\""),
+            "Generated icon must include accessible contentDescription. Code:\n$code"
+        )
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
+
+    @Test
+    fun testNavigationBarPrefillGeneratesCompilableCodeWithFourDistinctGlyphs() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("p-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("s-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("n-${idCounter++}")
+        }
+
+        val navBarSubtree = ComponentCatalog[ComponentKind.NavigationBar].createDefaultSubtree(idGen)
+        val screen = Screen(
+            id = ScreenId("screen-nav"),
+            name = "NavScreen",
+            route = "/nav",
+            root = navBarSubtree
+        )
+        val project = Project(
+            id = ProjectId("test-proj-nav"),
+            name = "Nav App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(screen)
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("Icons.Default.Home"), "Code must contain Home icon")
+        assertTrue(code.contains("Icons.Default.Search"), "Code must contain Search icon")
+        assertTrue(code.contains("Icons.Default.Settings"), "Code must contain Settings icon")
+        assertTrue(code.contains("Icons.Default.Person"), "Code must contain Person icon")
+        assertTrue(code.contains("contentDescription = \"Home\""), "Code must contain Home description")
+        assertTrue(code.contains("contentDescription = \"Search\""), "Code must contain Search description")
+
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
 }
 

@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -280,7 +282,11 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
 
     val def = ComponentCatalog.find(node.kind)
     val textProps = def?.properties?.filterIsInstance<PropertySpec.Text>().orEmpty()
-    if (textProps.isNotEmpty()) {
+    val enumProps = def?.properties?.filterIsInstance<PropertySpec.EnumDropdown>().orEmpty()
+    val isTextNodeWithInheritColor = node.kind == io.github.chandu4221.m3stage.component.ComponentKind.Text &&
+        (node.props[io.github.chandu4221.m3stage.component.definition.TextDefinition.Color.id] as? PropertyValue.ColorValue.Token)?.token == io.github.chandu4221.m3stage.theme.M3ColorToken.Inherit
+
+    if (textProps.isNotEmpty() || enumProps.isNotEmpty() || isTextNodeWithInheritColor) {
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedCard(
             modifier = Modifier.fillMaxWidth(),
@@ -310,6 +316,66 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
                         enabled = !isLocked,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                for (prop in enumProps) {
+                    val currentVal = (node.props[prop.key.id] as? PropertyValue.EnumValue)?.name
+                        ?: prop.defaultValue.name
+                    var expanded by remember(node.id, prop.key.id) { mutableStateOf(false) }
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = currentVal,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(prop.displayName) },
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = { if (!isLocked) expanded = !expanded },
+                                    enabled = !isLocked
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Expand ${prop.displayName}"
+                                    )
+                                }
+                            },
+                            enabled = !isLocked,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            for (option in prop.options) {
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        expanded = false
+                                        store.updateProp(node.id, prop.key.id, PropertyValue.EnumValue(option))
+                                        if (node.kind == io.github.chandu4221.m3stage.component.ComponentKind.Icon &&
+                                            prop.key.id == io.github.chandu4221.m3stage.component.definition.IconDefinition.Glyph.id
+                                        ) {
+                                            store.updateProp(
+                                                node.id,
+                                                io.github.chandu4221.m3stage.component.definition.IconDefinition.IconName.id,
+                                                PropertyValue.StringValue(option)
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (isTextNodeWithInheritColor) {
+                    Text(
+                        text = "Color: Inherit (LocalContentColor)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

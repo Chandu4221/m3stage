@@ -42,6 +42,7 @@ object FloatingActionButtonDefinition {
         defaultSubtreeFactory = { self, idGen ->
             val iconNode = IconDefinition.definition.createDefaultSubtree(idGen).let {
                 it.copy(props = it.props.toMutableMap().apply {
+                    put(IconDefinition.Glyph.id, PropertyValue.EnumValue("Add"))
                     put(IconDefinition.IconName.id, PropertyValue.StringValue("Add"))
                 })
             }

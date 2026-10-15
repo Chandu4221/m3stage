@@ -6,6 +6,7 @@ import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.slot.SlotDefinition
 import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.IconGlyph
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.property.*
 import io.github.chandu4221.m3stage.theme.M3ColorToken
@@ -34,14 +35,15 @@ object NavigationBarItemDefinition {
     internal fun createItem(
         idGen: IdGenerator,
         label: String,
-        iconName: String,
+        glyph: IconGlyph = IconGlyph.Star,
         selected: Boolean = false
     ): DesignNode {
         val iconNode = DesignNode(
             id = idGen.nextNodeId(),
             kind = ComponentKind.Icon,
             props = IconDefinition.definition.createDefaultProps().toMutableMap().apply {
-                put(IconDefinition.IconName.id, PropertyValue.StringValue(iconName))
+                put(IconDefinition.Glyph.id, PropertyValue.EnumValue(glyph.name))
+                put(IconDefinition.IconName.id, PropertyValue.StringValue(glyph.name))
             }
         )
 
@@ -50,6 +52,7 @@ object NavigationBarItemDefinition {
             kind = ComponentKind.Text,
             props = TextDefinition.definition.createDefaultProps().toMutableMap().apply {
                 put(TextDefinition.TextContent.id, PropertyValue.StringValue(label))
+                put(TextDefinition.Color.id, PropertyValue.ColorValue.Token(M3ColorToken.Inherit))
             }
         )
 
@@ -64,6 +67,16 @@ object NavigationBarItemDefinition {
                 LabelSlot.id to listOf(labelNode)
             )
         )
+    }
+
+    internal fun createItem(
+        idGen: IdGenerator,
+        label: String,
+        iconName: String,
+        selected: Boolean = false
+    ): DesignNode {
+        val glyph = IconGlyph.entries.find { it.name.equals(iconName, ignoreCase = true) } ?: IconGlyph.Star
+        return createItem(idGen, label, glyph, selected)
     }
 
     val definition = ComponentDefinition(
@@ -92,7 +105,7 @@ object NavigationBarItemDefinition {
         slots = listOf(IconSlot, LabelSlot),
         allowedChildren = emptySet(),
         defaultSubtreeFactory = { _, idGen ->
-            createItem(idGen, label = "Item", iconName = "Star", selected = false)
+            createItem(idGen, label = "Item", glyph = IconGlyph.Star, selected = false)
         }
     )
 }

@@ -238,5 +238,34 @@ class ComponentAnatomyTest {
         val badgeText = badge.children.firstOrNull()
         assertNotNull(badgeText)
         assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), badgeText[TextDefinition.Color])
+
+        // NavigationBarItem label
+        val navItem = ComponentCatalog[ComponentKind.NavigationBarItem].createDefaultSubtree(idGen)
+        val navItemLabel = navItem.slots[SlotId("label")]?.first()
+        assertNotNull(navItemLabel)
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), navItemLabel[TextDefinition.Color])
+    }
+
+    @Test
+    fun testNavigationBarDefaultItemsHaveDistinctGlyphs() {
+        val navBar = ComponentCatalog[ComponentKind.NavigationBar].createDefaultSubtree(idGen)
+        val items = navBar.slots[SlotId("items")]
+        assertNotNull(items)
+        assertEquals(4, items.size)
+
+        val expectedGlyphs = listOf(IconGlyph.Home, IconGlyph.Search, IconGlyph.Settings, IconGlyph.Person)
+        items.forEachIndexed { index, itemNode ->
+            val iconNode = itemNode.slots[SlotId("icon")]?.first()
+            assertNotNull(iconNode)
+            assertEquals(expectedGlyphs[index], IconDefinition.resolveGlyph(iconNode))
+        }
+    }
+
+    @Test
+    fun testFloatingActionButtonDefaultIconHasAddGlyph() {
+        val fab = ComponentCatalog[ComponentKind.FloatingActionButton].createDefaultSubtree(idGen)
+        val iconNode = fab.slots[SlotId("icon")]?.first()
+        assertNotNull(iconNode)
+        assertEquals(IconGlyph.Add, IconDefinition.resolveGlyph(iconNode))
     }
 }

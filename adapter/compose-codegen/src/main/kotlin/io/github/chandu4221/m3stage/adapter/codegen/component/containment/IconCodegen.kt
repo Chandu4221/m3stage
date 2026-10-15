@@ -18,15 +18,15 @@ class IconCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
-        val iconName = node[IconDefinition.IconName]?.value ?: "Default"
+        val glyph = IconDefinition.resolveGlyph(node)
         val tintCode = ThemeCodeResolver.resolveColor(node[IconDefinition.Tint])
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
-            .add("imageVector = androidx.compose.material.icons.Icons.Default.%L,\n", iconName)
-            .add("contentDescription = null,\n")
+            .add("imageVector = androidx.compose.material.icons.Icons.Default.%L,\n", glyph.name)
+            .add("contentDescription = %S,\n", glyph.name)
 
         if (modifierCode != null) {
             builder.add("modifier = %L,\n", modifierCode)
