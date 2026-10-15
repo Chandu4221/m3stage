@@ -42,7 +42,7 @@ fun InspectorPanel(
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        if (selectedNodeId == null || project == null || activeScreenId == null) {
+        if (project == null || activeScreenId == null) {
             OutlinedCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -69,6 +69,59 @@ fun InspectorPanel(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
+                }
+            }
+            return
+        }
+
+        if (selectedNodeId == null) {
+            val activeScreen = project.findScreen(io.github.chandu4221.m3stage.model.ScreenId(activeScreenId))
+            if (activeScreen != null) {
+                OutlinedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Screen Settings",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Adaptive Layout",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Adapt UI components to window size class breakpoints",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = activeScreen.adaptive,
+                                onCheckedChange = { isChecked ->
+                                    store.setScreenAdaptive(activeScreen.id, isChecked)
+                                }
+                            )
+                        }
+                    }
                 }
             }
             return

@@ -380,6 +380,27 @@ data class UpdateScreenMetaCommand(
     }
 }
 
+/**
+ * Updates a screen's adaptive layout flag. Undo restores previous adaptive flag.
+ */
+data class UpdateScreenAdaptiveCommand(
+    val screenId: ScreenId,
+    val oldAdaptive: Boolean,
+    val newAdaptive: Boolean
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val updatedScreen = screen.copy(adaptive = newAdaptive)
+        return project.copy(screens = project.screens.map { if (it.id == screenId) updatedScreen else it })
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val revertedScreen = screen.copy(adaptive = oldAdaptive)
+        return project.copy(screens = project.screens.map { if (it.id == screenId) revertedScreen else it })
+    }
+}
+
 
 /**
  * Adds a modifier to a node. Undo removes it.

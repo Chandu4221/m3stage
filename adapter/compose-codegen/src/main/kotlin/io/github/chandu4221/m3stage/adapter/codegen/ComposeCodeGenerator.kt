@@ -40,49 +40,61 @@ class ComposeCodeGenerator : CodeGenerator {
     }
 
     private fun exportScreen(screen: Screen, screenIdentifier: String, packageName: String): String {
-        val usedClassNames = collectUsedClassNames(screen.root)
-        val parentKindMap = mutableMapOf<io.github.chandu4221.m3stage.model.NodeId, io.github.chandu4221.m3stage.component.ComponentKind>()
-        fun buildParentMap(node: DesignNode) {
-            node.allDirectChildren.forEach { child ->
-                parentKindMap[child.id] = node.kind
-                buildParentMap(child)
+        return io.github.chandu4221.m3stage.adapter.codegen.resolver.AdaptiveCodegenContext.withAdaptive(screen.adaptive) {
+            val usedClassNames = collectUsedClassNames(screen.root, screen.adaptive)
+            val parentKindMap = mutableMapOf<io.github.chandu4221.m3stage.model.NodeId, io.github.chandu4221.m3stage.component.ComponentKind>()
+            fun buildParentMap(node: DesignNode) {
+                node.allDirectChildren.forEach { child ->
+                    parentKindMap[child.id] = node.kind
+                    buildParentMap(child)
+                }
             }
-        }
-        buildParentMap(screen.root)
+            buildParentMap(screen.root)
 
-        fun walk(node: DesignNode): CodeBlock {
-            if (!node.isVisible) return CodeBlock.builder().build()
-            val codegen = ComponentCodegenRegistry.get(node.kind)
-                ?: return CodeBlock.of("// TODO: Unsupported component kind %L\n", node.kind)
-            return ModifierCodeResolver.withParentKind(parentKindMap[node.id]) {
-                codegen.generate(node, ::walk)
+            fun walk(node: DesignNode): CodeBlock {
+                if (!node.isVisible) return CodeBlock.builder().build()
+                val codegen = ComponentCodegenRegistry.get(node.kind)
+                    ?: return CodeBlock.of("// TODO: Unsupported component kind %L\n", node.kind)
+                return ModifierCodeResolver.withParentKind(parentKindMap[node.id]) {
+                    codegen.generate(node, ::walk)
+                }
             }
-        }
 
-        val optInAnnotation = AnnotationSpec.builder(ClassName("kotlin", "OptIn"))
-            .addMember("%T::class", ComposeSymbols.ExperimentalMaterial3Api)
-            .build()
+            val optInAnnotation = AnnotationSpec.builder(ClassName("kotlin", "OptIn"))
+                .addMember("%T::class", ComposeSymbols.ExperimentalMaterial3Api)
+                .build()
 
-        val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
-        val functionName = KotlinIdentifierSanitizer.toFunctionName(screenIdentifier)
+            val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
+            val functionName = KotlinIdentifierSanitizer.toFunctionName(screenIdentifier)
 
-        val fileSpecBuilder = FileSpec.builder(packageName, screenIdentifier)
-            .addFunction(
-                FunSpec.builder(functionName)
-                    .addAnnotation(composableAnnotation)
-                    .addAnnotation(optInAnnotation)
-                    .addCode(walk(screen.root))
-                    .build()
-            )
-        usedClassNames.forEach { className ->
-            fileSpecBuilder.addImport(className.packageName, className.simpleName)
-        }
+            val functionBuilder = FunSpec.builder(functionName)
+                .addAnnotation(composableAnnotation)
+                .addAnnotation(optInAnnotation)
 
-        val usedModifiers = collectUsedModifiers(screen.root)
-        if (usedModifiers.isNotEmpty()) {
-            fileSpecBuilder.addImport("androidx.compose.ui", "Modifier")
-            val modifierPackages = usedModifiers.mapNotNull { it.requiredImport() }.toSortedSet()
-            for (pkg in modifierPackages) {
+            val fileSpecBuilder = FileSpec.builder(packageName, screenIdentifier)
+
+            if (screen.adaptive) {
+                val windowSizeClassType = ClassName("io.github.chandu4221.m3stage.model", "WindowSizeClass")
+                functionBuilder.addParameter(
+                    ParameterSpec.builder("windowSizeClass", windowSizeClassType)
+                        .defaultValue("%T.Compact", windowSizeClassType)
+                        .build()
+                )
+                fileSpecBuilder.addImport("io.github.chandu4221.m3stage.model", "WindowSizeClass")
+            }
+
+            functionBuilder.addCode(walk(screen.root))
+            fileSpecBuilder.addFunction(functionBuilder.build())
+
+            usedClassNames.forEach { className ->
+                fileSpecBuilder.addImport(className.packageName, className.simpleName)
+            }
+
+            val usedModifiers = collectUsedModifiers(screen.root)
+            if (usedModifiers.isNotEmpty()) {
+                fileSpecBuilder.addImport("androidx.compose.ui", "Modifier")
+                val modifierPackages = usedModifiers.mapNotNull { it.requiredImport() }.toSortedSet()
+                for (pkg in modifierPackages) {
                 when (pkg) {
                     "androidx.compose.ui" -> {
                         fileSpecBuilder.addImport("androidx.compose.ui", "zIndex")
@@ -130,28 +142,34 @@ class ComposeCodeGenerator : CodeGenerator {
 
         val fileSpec = fileSpecBuilder.build()
         val rawCode = fileSpec.toString()
-        return try {
+        try {
             Formatter.format(Formatter.GOOGLE_FORMAT, rawCode)
         } catch (e: Exception) {
             System.err.println("ktfmt formatting fallback for screen '$screenIdentifier': ${e.message}")
             rawCode
         }
     }
+}
 
-    private fun collectUsedClassNames(node: DesignNode): Set<ClassName> {
+    private fun collectUsedClassNames(node: DesignNode, isAdaptive: Boolean = false): Set<ClassName> {
         val result = mutableSetOf<ClassName>()
-        collectUsedClassNamesRecursive(node, result)
+        collectUsedClassNamesRecursive(node, result, isAdaptive)
         return result
     }
 
-    private fun collectUsedClassNamesRecursive(node: DesignNode, result: MutableSet<ClassName>) {
+    private fun collectUsedClassNamesRecursive(node: DesignNode, result: MutableSet<ClassName>, isAdaptive: Boolean) {
         if (!node.isVisible) return
         val codegen = ComponentCodegenRegistry.get(node.kind)
         if (codegen != null) {
             result.add(codegen.className)
+            if (isAdaptive && node.kind == io.github.chandu4221.m3stage.component.ComponentKind.NavigationBar) {
+                result.add(ClassName("androidx.compose.material3", "NavigationRail"))
+                result.add(ClassName("androidx.compose.material3", "NavigationRailItem"))
+                result.add(ClassName("io.github.chandu4221.m3stage.model", "WindowSizeClass"))
+            }
         }
         node.allDirectChildren.forEach { child ->
-            collectUsedClassNamesRecursive(child, result)
+            collectUsedClassNamesRecursive(child, result, isAdaptive)
         }
     }
 

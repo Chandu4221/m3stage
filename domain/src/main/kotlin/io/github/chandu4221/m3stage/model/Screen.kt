@@ -12,6 +12,7 @@ data class Screen(
     val orientation: DeviceOrientation = DeviceOrientation.Portrait,
     val canvasX: Float = 0f,
     val canvasY: Float = 0f,
+    val adaptive: Boolean = false,
 ) {
     init {
         require(name.isNotBlank()) { "Screen name cannot be blank" }

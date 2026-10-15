@@ -355,4 +355,75 @@ class GeneratedCodeCompilesTest {
             code
         )
     }
+
+    @Test
+    fun testAdaptiveScreenWithNavigationBarGeneratesCompilableComposeCode() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("proj-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("screen-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("node-${idCounter++}")
+        }
+
+        val navBarSubtree = ComponentCatalog[ComponentKind.NavigationBar].createDefaultSubtree(idGen)
+        val adaptiveScreen = Screen(
+            id = ScreenId("screen-adaptive-nav"),
+            name = "AdaptiveNavScreen",
+            route = "/adaptive-nav",
+            adaptive = true,
+            root = navBarSubtree
+        )
+
+        val project = Project(
+            id = ProjectId("test-proj-adaptive"),
+            name = "Adaptive Nav App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(adaptiveScreen)
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.isNotBlank(), "Adaptive screen code must not be blank")
+        assertTrue(
+            code.contains("windowSizeClass: WindowSizeClass = WindowSizeClass.Compact"),
+            "Adaptive screen must accept windowSizeClass parameter with Compact default. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("when (windowSizeClass)"),
+            "Adaptive screen must contain when (windowSizeClass) switch. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("WindowSizeClass.Expanded ->"),
+            "Adaptive screen must handle WindowSizeClass.Expanded branch. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("NavigationRail"),
+            "Adaptive screen must emit NavigationRail in expanded branch. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("NavigationRailItem"),
+            "Adaptive screen must emit NavigationRailItem in expanded branch. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("NavigationBar"),
+            "Adaptive screen must emit NavigationBar in else branch. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("NavigationBarItem"),
+            "Adaptive screen must emit NavigationBarItem in else branch. Code:\n$code"
+        )
+        assertTrue(
+            code.contains("import io.github.chandu4221.m3stage.model.WindowSizeClass"),
+            "Adaptive screen must import WindowSizeClass. Code:\n$code"
+        )
+
+        // Verify valid Kotlin syntax via ktfmt Google format parser
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
 }

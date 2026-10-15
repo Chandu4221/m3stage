@@ -22,6 +22,7 @@ fun Screen.toDto(): ScreenDto = ScreenDto(
     orientation = this.orientation.name,
     canvasX = this.canvasX,
     canvasY = this.canvasY,
+    adaptive = this.adaptive,
     root = this.root.toDto()
 )
 
@@ -47,5 +48,6 @@ fun ScreenDto.toDomain(): Screen = Screen(
     },
     canvasX = this.canvasX,
     canvasY = this.canvasY,
+    adaptive = this.adaptive,
     root = this.root.toDomain()
 )

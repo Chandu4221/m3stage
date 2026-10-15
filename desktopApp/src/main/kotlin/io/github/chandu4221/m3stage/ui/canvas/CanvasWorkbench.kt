@@ -52,6 +52,8 @@ import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.model.WindowSizeClass
+import io.github.chandu4221.m3stage.model.effectiveWindowSizeClass
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportController
 import io.github.chandu4221.m3stage.state.EditorStore
@@ -451,6 +453,10 @@ private fun FloatingArtboardToolbar(
                             showRenameDialog = true
                         }
                     )
+                    if (screen.adaptive) {
+                        val windowSizeClass = screen.effectiveWindowSizeClass(widthDp)
+                        BreakpointBadge(windowSizeClass = windowSizeClass)
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -699,3 +705,24 @@ private fun ToolbarActionButton(
         button()
     }
 }
+
+@Composable
+fun BreakpointBadge(
+    windowSizeClass: WindowSizeClass,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Text(
+            text = windowSizeClass.displayName,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+

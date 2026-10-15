@@ -16,6 +16,11 @@ class NavigationBarItemCodegen : ComponentCodegen {
         "NavigationBarItem"
     )
 
+    private val railItemClassName = ClassName(
+        "androidx.compose.material3",
+        "NavigationRailItem"
+    )
+
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val selected = node[NavigationBarItemDefinition.Selected]?.value ?: false
         val enabled = node[NavigationBarItemDefinition.Enabled]?.value ?: true
@@ -25,8 +30,16 @@ class NavigationBarItemCodegen : ComponentCodegen {
         val iconNodes = node.slots[NavigationBarItemDefinition.IconSlot.id] ?: emptyList()
         val labelNodes = node.slots[NavigationBarItemDefinition.LabelSlot.id] ?: emptyList()
 
+        val isRail = io.github.chandu4221.m3stage.adapter.codegen.resolver.AdaptiveCodegenContext.isRail
+        val targetClassName = if (isRail) railItemClassName else className
+        val defaultsClassName = if (isRail) {
+            ClassName("androidx.compose.material3", "NavigationRailItemDefaults")
+        } else {
+            ClassName("androidx.compose.material3", "NavigationBarItemDefaults")
+        }
+
         val builder = CodeBlock.builder()
-            .add("%T(\n", className)
+            .add("%T(\n", targetClassName)
             .indent()
             .add("selected = %L,\n", selected)
             .add("onClick = { },\n")
@@ -42,7 +55,7 @@ class NavigationBarItemCodegen : ComponentCodegen {
         if (indicatorColorCode != null) {
             builder.add(
                 "colors = %T.colors(indicatorColor = %L),\n",
-                ClassName("androidx.compose.material3", "NavigationBarItemDefaults"),
+                defaultsClassName,
                 indicatorColorCode
             )
         }

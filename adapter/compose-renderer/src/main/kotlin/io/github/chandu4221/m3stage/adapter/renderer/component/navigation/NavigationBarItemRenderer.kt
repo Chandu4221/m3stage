@@ -7,6 +7,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,15 +30,15 @@ class NavigationBarItemRenderer : NodeRenderer {
         val iconNodes = node.slots[NavigationBarItemDefinition.IconSlot.id] ?: emptyList()
         val labelNodes = node.slots[NavigationBarItemDefinition.LabelSlot.id] ?: emptyList()
 
-        val colors = if (indicatorColor != null && indicatorColor != Color.Unspecified) {
-            NavigationBarItemDefaults.colors(indicatorColor = indicatorColor)
-        } else {
-            NavigationBarItemDefaults.colors()
-        }
+        val isRail = LocalNavigationRailActive.current
+        if (isRail) {
+            val colors = if (indicatorColor != Color.Unspecified) {
+                NavigationRailItemDefaults.colors(indicatorColor = indicatorColor)
+            } else {
+                NavigationRailItemDefaults.colors()
+            }
 
-        @Composable
-        fun RowScope.RenderItem() {
-            NavigationBarItem(
+            NavigationRailItem(
                 selected = selected,
                 onClick = {},
                 enabled = enabled,
@@ -55,17 +57,47 @@ class NavigationBarItemRenderer : NodeRenderer {
                     }
                 } else null
             )
-        }
-
-        val rowScope = LocalRowScope.current
-        if (rowScope != null) {
-            with(rowScope) {
-                RenderItem()
-            }
         } else {
-            Row {
-                RenderItem()
+            val colors = if (indicatorColor != Color.Unspecified) {
+                NavigationBarItemDefaults.colors(indicatorColor = indicatorColor)
+            } else {
+                NavigationBarItemDefaults.colors()
+            }
+
+            @Composable
+            fun RowScope.RenderItem() {
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = {},
+                    enabled = enabled,
+                    modifier = modifier,
+                    colors = colors,
+                    icon = {
+                        if (iconNodes.isNotEmpty()) {
+                            iconNodes.forEach { renderChild(it) }
+                        } else {
+                            Icon(imageVector = Icons.Default.Star, contentDescription = null)
+                        }
+                    },
+                    label = if (labelNodes.isNotEmpty()) {
+                        {
+                            labelNodes.forEach { renderChild(it) }
+                        }
+                    } else null
+                )
+            }
+
+            val rowScope = LocalRowScope.current
+            if (rowScope != null) {
+                with(rowScope) {
+                    RenderItem()
+                }
+            } else {
+                Row {
+                    RenderItem()
+                }
             }
         }
     }
 }
+

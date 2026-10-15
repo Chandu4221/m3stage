@@ -423,5 +423,72 @@ class SerializationRoundTripTest {
         val rootNode = domainProject.screens.first().root
         kotlin.test.assertNull(rootNode.label, "V3 node without label must deserialize as label = null")
     }
+
+    @Test
+    fun testScreenAdaptiveRoundTrip() {
+        val screen = Screen(
+            id = ScreenId("screen-adaptive"),
+            name = "AdaptiveScreen",
+            route = "/adaptive",
+            adaptive = true,
+            root = DesignNode(
+                id = NodeId("root-box"),
+                kind = ComponentKind.Box
+            )
+        )
+        val project = Project(
+            id = ProjectId("proj-adaptive"),
+            name = "Adaptive Project",
+            basePackage = "com.example",
+            screens = listOf(screen)
+        )
+
+        val dto = project.toDto()
+        assertEquals(true, dto.screens.first().adaptive)
+
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<ProjectDto>(jsonString)
+        val decodedDomain = decodedDto.toDomain()
+
+        assertEquals(true, decodedDomain.screens.first().adaptive)
+    }
+
+    @Test
+    fun testSchemaV4BackwardsCompatibilityLoadsWithDefaultAdaptiveFalse() {
+        val v4Json = """
+            {
+                "id": "proj-v4",
+                "name": "Legacy V4",
+                "basePackage": "com.example",
+                "schemaVersion": 4,
+                "defaultDevice": "pixel_8",
+                "screens": [
+                    {
+                        "id": "s-1",
+                        "name": "Main",
+                        "route": "/main",
+                        "device": "pixel_8",
+                        "root": {
+                            "id": "root",
+                            "type": "Box",
+                            "props": {},
+                            "modifiers": [],
+                            "children": [],
+                            "slots": {},
+                            "isVisible": true,
+                            "isPrefilled": false,
+                            "label": null
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val decodedDto = json.decodeFromString<ProjectDto>(v4Json)
+        val domainProject = decodedDto.toDomain()
+
+        val screen = domainProject.screens.first()
+        assertEquals(false, screen.adaptive, "V4 screen without adaptive property must deserialize as adaptive = false")
+    }
 }
 

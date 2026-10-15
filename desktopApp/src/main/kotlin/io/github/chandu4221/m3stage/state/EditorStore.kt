@@ -31,6 +31,22 @@ class EditorStore(
     private val sessionDelegate = ProjectSessionDelegate(context)
     val clipboardDelegate = ClipboardDelegate()
 
+    // --- SelectionState ---
+    override val selectedNodeId = selectionDelegate.selectedNodeId
+    override val selectedNodeIds = selectionDelegate.selectedNodeIds
+    override val activeScreenId = selectionDelegate.activeScreenId
+    override val lockedNodeIds = selectionDelegate.lockedNodeIds
+    override val drillAnchorNodeId = selectionDelegate.drillAnchorNodeId
+
+    // --- HistoryState ---
+    override val undoStack = historyDelegate.undoStack
+    override val redoStack = historyDelegate.redoStack
+
+    // --- ProjectSession ---
+    override val project = sessionDelegate.project
+    override val events = sessionDelegate.events
+    override val isDirty = sessionDelegate.isDirty
+
     // Scope for observing state changes
     private val storeScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var lastObservedProjectId: ProjectId? = null
@@ -51,12 +67,6 @@ class EditorStore(
         }
     }
 
-    // --- SelectionState ---
-    override val selectedNodeId = selectionDelegate.selectedNodeId
-    override val selectedNodeIds = selectionDelegate.selectedNodeIds
-    override val activeScreenId = selectionDelegate.activeScreenId
-    override val lockedNodeIds = selectionDelegate.lockedNodeIds
-    override val drillAnchorNodeId = selectionDelegate.drillAnchorNodeId
     override fun selectNode(id: NodeId?) = selectionDelegate.selectNode(id)
     override fun toggleNodeInSelection(id: NodeId) = selectionDelegate.toggleNodeInSelection(id)
     override fun selectNodes(ids: Set<NodeId>) = selectionDelegate.selectNodes(ids)
@@ -80,17 +90,10 @@ class EditorStore(
         selectAllNodes(screen)
     }
 
-    // --- HistoryState ---
-    override val undoStack = historyDelegate.undoStack
-    override val redoStack = historyDelegate.redoStack
     override fun execute(command: EditorCommand) = historyDelegate.execute(command)
     override fun undo() = historyDelegate.undo()
     override fun redo() = historyDelegate.redo()
 
-    // --- ProjectSession ---
-    override val project = sessionDelegate.project
-    override val events = sessionDelegate.events
-    override val isDirty = sessionDelegate.isDirty
     override fun loadProject() = sessionDelegate.loadProject()
     override fun saveProject() = sessionDelegate.saveProject()
     override fun createNewProject() {
@@ -557,6 +560,19 @@ class EditorStore(
                 oldOrientation = screen.orientation,
                 newDevice = screen.device,
                 newOrientation = newOrientation
+            )
+        )
+    }
+
+    // --- Bridge: Update Screen Adaptive Layout ---
+    fun setScreenAdaptive(screenId: ScreenId, adaptive: Boolean) {
+        val screen = project.value?.findScreen(screenId) ?: return
+        if (screen.adaptive == adaptive) return
+        execute(
+            UpdateScreenAdaptiveCommand(
+                screenId = screenId,
+                oldAdaptive = screen.adaptive,
+                newAdaptive = adaptive
             )
         )
     }

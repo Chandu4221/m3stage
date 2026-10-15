@@ -34,6 +34,7 @@ import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
+import io.github.chandu4221.m3stage.model.effectiveWindowSizeClass
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findParent
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
@@ -137,6 +138,9 @@ fun DeviceCanvas(
                     }
             ) {
                 // 1. Rendered components (below pointer input layer)
+                val widthDp = screen.resolveWidthDp(projectDefault = device)
+                val windowSizeClass = screen.effectiveWindowSizeClass(widthDp)
+
                 DesignRenderer.Render(
                     node = screen.root,
                     selectedNodeId = selectedNodeId,
@@ -144,7 +148,9 @@ fun DeviceCanvas(
                     lockedNodeIds = lockedNodeIds,
                     registry = registry,
                     artboardOrigin = { artboardOrigin },
-                    zoomProvider = zoomProvider
+                    zoomProvider = zoomProvider,
+                    windowSizeClass = windowSizeClass,
+                    isAdaptive = screen.adaptive
                 )
 
                 // 2. Figma-style selection & hover chrome

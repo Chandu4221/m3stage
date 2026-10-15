@@ -23,6 +23,9 @@ private object NoIndication : androidx.compose.foundation.IndicationNodeFactory 
     override fun equals(other: Any?): Boolean = other === this
 }
 
+val LocalWindowSizeClass = androidx.compose.runtime.compositionLocalOf { io.github.chandu4221.m3stage.model.WindowSizeClass.Compact }
+val LocalIsAdaptiveScreen = androidx.compose.runtime.compositionLocalOf { false }
+
 object DesignRenderer {
 
     @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -35,12 +38,16 @@ object DesignRenderer {
         scheme: ColorScheme? = null,
         registry: NodeBoundsRegistry? = null,
         artboardOrigin: () -> Offset = { Offset.Zero },
-        zoomProvider: () -> Float = { 1f }
+        zoomProvider: () -> Float = { 1f },
+        windowSizeClass: io.github.chandu4221.m3stage.model.WindowSizeClass = io.github.chandu4221.m3stage.model.WindowSizeClass.Compact,
+        isAdaptive: Boolean = false
     ) {
         val content = @Composable {
             androidx.compose.runtime.CompositionLocalProvider(
                 androidx.compose.foundation.LocalIndication provides NoIndication,
-                androidx.compose.material3.LocalRippleConfiguration provides null
+                androidx.compose.material3.LocalRippleConfiguration provides null,
+                LocalWindowSizeClass provides windowSizeClass,
+                LocalIsAdaptiveScreen provides isAdaptive
             ) {
                 RenderInternal(node, registry, artboardOrigin, zoomProvider)
             }
@@ -79,6 +86,7 @@ object DesignRenderer {
 
             val renderer = ComponentRendererRegistry[currentNode.kind]
             val rowScope = io.github.chandu4221.m3stage.adapter.renderer.component.navigation.LocalRowScope.current
+            val isRail = io.github.chandu4221.m3stage.adapter.renderer.component.navigation.LocalNavigationRailActive.current
 
             val resolvedModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
             val elementModifier = if (currentNode.isPrefilled) {
@@ -87,7 +95,7 @@ object DesignRenderer {
                 resolvedModifier
             }
 
-            if (rowScope != null && currentNode.kind == io.github.chandu4221.m3stage.component.ComponentKind.NavigationBarItem) {
+            if ((rowScope != null || isRail) && currentNode.kind == io.github.chandu4221.m3stage.component.ComponentKind.NavigationBarItem) {
                 if (renderer != null) {
                     renderer.Render(currentNode, modifier = baseModifier.then(elementModifier)) { child ->
                         renderNode(child, currentNode, depth + 1)

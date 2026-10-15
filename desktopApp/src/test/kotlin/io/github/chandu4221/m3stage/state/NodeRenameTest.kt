@@ -37,54 +37,62 @@ class NodeRenameTest {
     @Test
     fun testRenameNodeRoundTripAndUndoRedo() {
         val store = createStore()
-        val screenId = store.project.value!!.screens.first().id
-        store.setActiveScreen(screenId)
+        try {
+            val screenId = store.project.value!!.screens.first().id
+            store.setActiveScreen(screenId)
 
-        val screen = store.project.value!!.findScreen(screenId)!!
-        store.addNodeToActiveScreen(screen.root.id, ComponentKind.Column)
-        val col = store.project.value!!.findScreen(screenId)!!.root.allDirectChildren.first { it.kind == ComponentKind.Column }
+            val screen = store.project.value!!.findScreen(screenId)!!
+            store.addNodeToActiveScreen(screen.root.id, ComponentKind.Column)
+            val col = store.project.value!!.findScreen(screenId)!!.root.allDirectChildren.first { it.kind == ComponentKind.Column }
 
-        // Initial label should be null and display fallback to displayName
-        assertNull(col.label)
-        assertEquals("Column", col.label ?: col.kind.displayName)
+            // Initial label should be null and display fallback to displayName
+            assertNull(col.label)
+            assertEquals("Column", col.label ?: col.kind.displayName)
 
-        // Rename to "Main Content Flow"
-        store.renameNode(col.id, "Main Content Flow")
+            // Rename to "Main Content Flow"
+            store.renameNode(col.id, "Main Content Flow")
 
-        val renamedCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
-        assertEquals("Main Content Flow", renamedCol.label)
-        assertEquals("Main Content Flow", renamedCol.label ?: renamedCol.kind.displayName)
+            val renamedCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
+            assertEquals("Main Content Flow", renamedCol.label)
+            assertEquals("Main Content Flow", renamedCol.label ?: renamedCol.kind.displayName)
 
-        // Undo restores null
-        store.undo()
-        val undoneCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
-        assertNull(undoneCol.label)
-        assertEquals("Column", undoneCol.label ?: undoneCol.kind.displayName)
+            // Undo restores null
+            store.undo()
+            val undoneCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
+            assertNull(undoneCol.label)
+            assertEquals("Column", undoneCol.label ?: undoneCol.kind.displayName)
 
-        // Redo reapplies label
-        store.redo()
-        val redoneCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
-        assertEquals("Main Content Flow", redoneCol.label)
+            // Redo reapplies label
+            store.redo()
+            val redoneCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
+            assertEquals("Main Content Flow", redoneCol.label)
+        } finally {
+            store.close()
+        }
     }
 
     @Test
     fun testBlankOrWhitespaceInputResetsLabelToNull() {
         val store = createStore()
-        val screenId = store.project.value!!.screens.first().id
-        store.setActiveScreen(screenId)
+        try {
+            val screenId = store.project.value!!.screens.first().id
+            store.setActiveScreen(screenId)
 
-        val screen = store.project.value!!.findScreen(screenId)!!
-        store.addNodeToActiveScreen(screen.root.id, ComponentKind.Column)
-        val col = store.project.value!!.findScreen(screenId)!!.root.allDirectChildren.first { it.kind == ComponentKind.Column }
+            val screen = store.project.value!!.findScreen(screenId)!!
+            store.addNodeToActiveScreen(screen.root.id, ComponentKind.Column)
+            val col = store.project.value!!.findScreen(screenId)!!.root.allDirectChildren.first { it.kind == ComponentKind.Column }
 
-        // Set initial label
-        store.renameNode(col.id, "Sidebar")
-        assertEquals("Sidebar", store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!.label)
+            // Set initial label
+            store.renameNode(col.id, "Sidebar")
+            assertEquals("Sidebar", store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!.label)
 
-        // Rename with blank string "   "
-        store.renameNode(col.id, "   ")
-        val resetCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
-        assertNull(resetCol.label, "Blank whitespace must reset label to null")
-        assertEquals("Column", resetCol.label ?: resetCol.kind.displayName)
+            // Rename with blank string "   "
+            store.renameNode(col.id, "   ")
+            val resetCol = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
+            assertNull(resetCol.label, "Blank whitespace must reset label to null")
+            assertEquals("Column", resetCol.label ?: resetCol.kind.displayName)
+        } finally {
+            store.close()
+        }
     }
 }
