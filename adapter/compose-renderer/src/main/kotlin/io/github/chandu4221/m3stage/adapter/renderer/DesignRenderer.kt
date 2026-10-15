@@ -12,6 +12,7 @@ import io.github.chandu4221.m3stage.adapter.renderer.registry.ComponentRendererR
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.resolveModifiers
 import io.github.chandu4221.m3stage.adapter.renderer.selection.NodeBoundsRegistry
 import io.github.chandu4221.m3stage.adapter.renderer.selection.nodeBoundsReporter
+import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 
@@ -62,6 +63,7 @@ object DesignRenderer {
         }
     }
 
+
     @Composable
     private fun RenderInternal(
         node: DesignNode,
@@ -70,7 +72,12 @@ object DesignRenderer {
         zoomProvider: () -> Float = { 1f }
     ) {
         @Composable
-        fun renderNode(currentNode: DesignNode, parentNode: DesignNode? = null, depth: Int = 0) {
+        fun renderNode(
+            currentNode: DesignNode,
+            parentNode: DesignNode? = null,
+            ancestors: List<ComponentKind> = emptyList(),
+            depth: Int = 0
+        ) {
             if (!currentNode.isVisible) return
 
             val baseModifier = if (registry != null) {
@@ -89,16 +96,18 @@ object DesignRenderer {
             val isRail = io.github.chandu4221.m3stage.adapter.renderer.component.navigation.LocalNavigationRailActive.current
 
             val resolvedModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
-            val elementModifier = if (currentNode.isPrefilled) {
+            val elementModifier = if (shouldRenderAsPlaceholder(currentNode, ancestors)) {
                 resolvedModifier.alpha(0.55f)
             } else {
                 resolvedModifier
             }
 
+            val currentAncestors = ancestors + currentNode.kind
+
             if ((rowScope != null || isRail) && currentNode.kind == io.github.chandu4221.m3stage.component.ComponentKind.NavigationBarItem) {
                 if (renderer != null) {
                     renderer.Render(currentNode, modifier = baseModifier.then(elementModifier)) { child ->
-                        renderNode(child, currentNode, depth + 1)
+                        renderNode(child, currentNode, currentAncestors, depth + 1)
                     }
                 } else {
                     Text(text = "Unsupported: ${currentNode.kind.displayName}")
@@ -107,7 +116,7 @@ object DesignRenderer {
                 Box(modifier = baseModifier) {
                     if (renderer != null) {
                         renderer.Render(currentNode, modifier = elementModifier) { child ->
-                            renderNode(child, currentNode, depth + 1)
+                            renderNode(child, currentNode, currentAncestors, depth + 1)
                         }
                     } else {
                         Text(text = "Unsupported: ${currentNode.kind.displayName}")
@@ -116,6 +125,41 @@ object DesignRenderer {
             }
         }
 
-        renderNode(node, null, 0)
+        renderNode(node, null, emptyList(), 0)
     }
+}
+
+/**
+ * Set of component kinds that represent interactive widgets or their specialized containers.
+ * Neither interactive components nor their authored content receive placeholder alpha.
+ */
+val INTERACTIVE_KINDS: Set<ComponentKind> = setOf(
+    ComponentKind.Button,
+    ComponentKind.IconButton,
+    ComponentKind.FloatingActionButton,
+    ComponentKind.OutlinedButton,
+    ComponentKind.TextButton,
+    ComponentKind.TextField,
+    ComponentKind.OutlinedTextField,
+    ComponentKind.TopAppBar,
+    ComponentKind.NavigationBar,
+    ComponentKind.NavigationBarItem,
+    ComponentKind.Switch,
+    ComponentKind.Checkbox,
+    ComponentKind.RadioButton,
+    ComponentKind.Slider
+)
+
+/**
+ * Pure predicate determining whether [node] should be rendered with placeholder alpha (0.55f).
+ *
+ * Rules:
+ * 1. [node.isPrefilled] must be true.
+ * 2. [node.kind] must be [ComponentKind.Text] or [ComponentKind.Icon] (non-interactive leaf).
+ * 3. [ancestors] must contain NO interactive component kinds.
+ */
+fun shouldRenderAsPlaceholder(node: DesignNode, ancestors: List<ComponentKind>): Boolean {
+    if (!node.isPrefilled) return false
+    if (node.kind != ComponentKind.Text && node.kind != ComponentKind.Icon) return false
+    return ancestors.none { it in INTERACTIVE_KINDS }
 }
