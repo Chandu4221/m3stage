@@ -159,7 +159,7 @@ fun SelectionChrome(
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = selectedNode.kind.displayName,
+                        text = selectedNode.label ?: selectedNode.kind.displayName,
                         color = Color.White,
                         fontSize = 10.sp,
                         lineHeight = 10.sp

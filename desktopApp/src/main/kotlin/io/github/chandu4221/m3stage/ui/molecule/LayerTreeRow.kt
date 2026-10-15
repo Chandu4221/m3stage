@@ -118,7 +118,7 @@ fun LayerTreeRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = node.kind.displayName,
+                    text = node.label ?: node.kind.displayName,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     color = contentColor,

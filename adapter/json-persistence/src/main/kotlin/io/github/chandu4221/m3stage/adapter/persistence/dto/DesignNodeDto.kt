@@ -14,5 +14,6 @@ data class DesignNodeDto(
     val children: List<DesignNodeDto> = emptyList(),
     val slots: Map<String, List<DesignNodeDto>> = emptyMap(),
     val isVisible: Boolean = true,
-    val isPrefilled: Boolean = false
+    val isPrefilled: Boolean = false,
+    val label: String? = null
 )

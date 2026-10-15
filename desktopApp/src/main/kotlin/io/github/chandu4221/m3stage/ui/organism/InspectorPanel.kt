@@ -205,10 +205,18 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Type: ${node.kind.displayName}",
+                text = node.label ?: node.kind.displayName,
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            if (node.label != null) {
+                Text(
+                    text = "Type: ${node.kind.displayName}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Text(
                 text = "ID: ${node.id.value}",
                 style = MaterialTheme.typography.bodySmall,

@@ -619,3 +619,25 @@ data class DuplicateNodesCommand(
         return project.updateScreenRoot(screenId, currentRoot)
     }
 }
+
+/**
+ * Renames a node's cosmetic label. Undo restores the previous label.
+ */
+data class RenameNodeCommand(
+    val screenId: ScreenId,
+    val nodeId: NodeId,
+    val oldLabel: String?,
+    val newLabel: String?
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.renameNode(nodeId, newLabel)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.renameNode(nodeId, oldLabel)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}

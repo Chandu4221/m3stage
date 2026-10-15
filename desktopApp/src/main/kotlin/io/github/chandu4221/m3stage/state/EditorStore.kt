@@ -318,6 +318,33 @@ class EditorStore(
         }
     }
 
+    // --- Bridge: Rename Node ---
+    fun renameNode(nodeId: NodeId, newLabel: String?) {
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot rename node: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot rename node: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot rename node: active screen not found.")
+            return
+        }
+        val node = screen.root.findNode(nodeId)
+        if (node == null) {
+            notifyUser("Cannot rename node: node not found.")
+            return
+        }
+
+        val sanitizedLabel = newLabel?.trim()?.ifEmpty { null }
+        execute(RenameNodeCommand(screenId, nodeId, oldLabel = node.label, newLabel = sanitizedLabel))
+    }
+
     // --- Bridge: Add New Screen ---
     fun addNewScreen(name: String, route: String, device: DevicePreset? = null) {
         val currentProject = project.value

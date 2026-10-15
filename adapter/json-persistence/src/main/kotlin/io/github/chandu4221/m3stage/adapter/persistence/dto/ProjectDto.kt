@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * Migration rule: CURRENT_SCHEMA_VERSION is incremented on breaking schema changes.
  * If schemaVersion > CURRENT_SCHEMA_VERSION on load, load fails with an incompatibility message.
  */
-const val CURRENT_SCHEMA_VERSION = 3
+const val CURRENT_SCHEMA_VERSION = 4
 
 @Serializable
 data class ProjectDto(

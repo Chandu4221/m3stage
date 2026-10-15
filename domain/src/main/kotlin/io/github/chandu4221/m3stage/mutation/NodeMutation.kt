@@ -225,6 +225,16 @@ fun DesignNode.setModifiers(nodeId: NodeId, newModifiers: List<ModifierSpec>): D
 }
 
 /**
+ * Updates the custom label on a node. Pass null to reset to default.
+ */
+fun DesignNode.renameNode(nodeId: NodeId, label: String?): DesignNode {
+    if (this.id == nodeId) {
+        return copy(label = label)
+    }
+    return mapDescendants { it.renameNode(nodeId, label) }
+}
+
+/**
  * Internal helper: Recursively maps both [children] and [slots] with identical transformation logic.
  */
 private inline fun DesignNode.mapDescendants(transform: (DesignNode) -> DesignNode): DesignNode {

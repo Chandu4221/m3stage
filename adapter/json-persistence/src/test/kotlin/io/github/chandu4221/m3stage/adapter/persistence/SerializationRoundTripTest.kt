@@ -368,5 +368,60 @@ class SerializationRoundTripTest {
         val rootNode = domainProject.screens.first().root
         kotlin.test.assertFalse(rootNode.isPrefilled, "V2 node without isPrefilled must deserialize as isPrefilled = false")
     }
+
+    @Test
+    fun testNodeLabelRoundTripPersistence() {
+        val node = DesignNode(
+            id = NodeId("labeled-node"),
+            kind = ComponentKind.Text,
+            label = "Custom Hero Heading"
+        )
+        val dto = node.toDto()
+        assertEquals("Custom Hero Heading", dto.label)
+
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<io.github.chandu4221.m3stage.adapter.persistence.dto.DesignNodeDto>(jsonString)
+        val decoded = decodedDto.toDomain()
+
+        assertEquals("Custom Hero Heading", decoded.label)
+        assertEquals(node, decoded)
+    }
+
+    @Test
+    fun testSchemaV3BackwardsCompatibilityLoadsWithDefaultLabelNull() {
+        val v3Json = """
+            {
+                "id": "proj-v3",
+                "name": "Legacy V3",
+                "basePackage": "com.example",
+                "schemaVersion": 3,
+                "defaultDevice": "pixel_8",
+                "screens": [
+                    {
+                        "id": "s-1",
+                        "name": "Main",
+                        "route": "/main",
+                        "device": "pixel_8",
+                        "root": {
+                            "id": "root",
+                            "type": "Scaffold",
+                            "props": {},
+                            "modifiers": [],
+                            "children": [],
+                            "slots": {},
+                            "isVisible": true,
+                            "isPrefilled": false
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val decodedDto = json.decodeFromString<ProjectDto>(v3Json)
+        val domainProject = decodedDto.toDomain()
+
+        val rootNode = domainProject.screens.first().root
+        kotlin.test.assertNull(rootNode.label, "V3 node without label must deserialize as label = null")
+    }
 }
 
