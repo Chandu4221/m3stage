@@ -3,15 +3,28 @@ package io.github.chandu4221.m3stage.component.definition
 import io.github.chandu4221.m3stage.component.ComponentCategory
 import io.github.chandu4221.m3stage.component.ComponentDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.component.VariantSpec
 import io.github.chandu4221.m3stage.component.slot.SlotDefinition
 import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.FabVariant
 import io.github.chandu4221.m3stage.property.*
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 
 object FloatingActionButtonDefinition {
+    val Variant = PropertyKey.EnumKey(PropertyId("fab.variant"))
     val ContainerColor = PropertyKey.ColorKey(PropertyId("fab.containerColor"))
     val ContentColor = PropertyKey.ColorKey(PropertyId("fab.contentColor"))
+
+    val variantSpec = VariantSpec(
+        key = Variant,
+        defaultVariant = FabVariant.Primary,
+        entries = FabVariant.entries,
+        visiblePropsFor = { _ -> setOf(ContainerColor.id, ContentColor.id) }
+    )
+
+    fun resolveVariant(node: DesignNode): FabVariant =
+        variantSpec.resolveVariant(node)
 
     val IconSlot = SlotDefinition(
         id = SlotId("icon"),
@@ -25,7 +38,14 @@ object FloatingActionButtonDefinition {
         kind = ComponentKind.FloatingActionButton,
         category = ComponentCategory.Actions,
         isContainer = true,
+        variantSpec = variantSpec,
         properties = listOf(
+            PropertySpec.EnumDropdown(
+                key = Variant,
+                displayName = "Variant",
+                options = FabVariant.entries.map { it.name },
+                defaultValue = PropertyValue.EnumValue(FabVariant.Primary.name)
+            ),
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",

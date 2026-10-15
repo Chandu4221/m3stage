@@ -569,5 +569,108 @@ class SerializationRoundTripTest {
             "Empty props node must survive round-trip without invented keys"
         )
     }
+
+    @Test
+    fun testVariantRoundTripSerialization() {
+        val outlinedCard = DesignNode(
+            id = NodeId("card-outlined"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(CardVariant.Outlined.name),
+                CardDefinition.BorderColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Primary),
+                CardDefinition.BorderWidth.id to PropertyValue.DpValue(2.5f)
+            )
+        )
+        val tertiaryFab = DesignNode(
+            id = NodeId("fab-tertiary"),
+            kind = ComponentKind.FloatingActionButton,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.FloatingActionButtonDefinition.Variant.id to PropertyValue.EnumValue(FabVariant.Tertiary.name)
+            )
+        )
+        val screen = Screen(
+            id = ScreenId("screen-variants"),
+            name = "VariantsScreen",
+            route = "/variants",
+            root = DesignNode(
+                id = NodeId("root-col"),
+                kind = ComponentKind.Column,
+                children = listOf(outlinedCard, tertiaryFab)
+            )
+        )
+        val project = Project(
+            id = ProjectId("proj-variants"),
+            name = "Variants Project",
+            basePackage = "com.example",
+            screens = listOf(screen)
+        )
+
+        val dto = project.toDto()
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<ProjectDto>(jsonString)
+        val roundTripped = decodedDto.toDomain()
+
+        val root = roundTripped.screens.first().root
+        val roundTrippedCard = root.children[0]
+        val roundTrippedFab = root.children[1]
+
+        assertEquals(CardVariant.Outlined, CardDefinition.resolveVariant(roundTrippedCard))
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Primary), roundTrippedCard.props[CardDefinition.BorderColor.id])
+        assertEquals(PropertyValue.DpValue(2.5f), roundTrippedCard.props[CardDefinition.BorderWidth.id])
+
+        assertEquals(FabVariant.Tertiary, io.github.chandu4221.m3stage.component.definition.FloatingActionButtonDefinition.resolveVariant(roundTrippedFab))
+    }
+
+    @Test
+    fun testLegacyProjectWithoutVariantResolvesToDefaults() {
+        val legacyJson = """
+        {
+          "id": "proj-legacy",
+          "name": "Legacy Project",
+          "basePackage": "com.example",
+          "screens": [
+            {
+              "id": "screen-1",
+              "name": "MainScreen",
+              "route": "/",
+              "canvasX": 0.0,
+              "canvasY": 0.0,
+              "adaptive": false,
+              "root": {
+                "id": "root-card",
+                "type": "Card",
+                "props": {},
+                "modifiers": [],
+                "children": [
+                  {
+                    "id": "legacy-fab",
+                    "type": "FloatingActionButton",
+                    "props": {},
+                    "modifiers": [],
+                    "children": [],
+                    "slots": {},
+                    "isPrefilled": false
+                  }
+                ],
+                "slots": {},
+                "isPrefilled": false
+              }
+            }
+          ],
+          "seedColor": -14704641,
+          "isDarkMode": false
+        }
+        """.trimIndent()
+
+        val decodedDto = json.decodeFromString<ProjectDto>(legacyJson)
+        val roundTripped = decodedDto.toDomain()
+
+        val cardNode = roundTripped.screens.first().root
+        val fabNode = cardNode.children.first()
+
+        assertEquals(CardVariant.Filled, CardDefinition.resolveVariant(cardNode))
+        assertEquals(FabVariant.Primary, io.github.chandu4221.m3stage.component.definition.FloatingActionButtonDefinition.resolveVariant(fabNode))
+    }
 }
+
 

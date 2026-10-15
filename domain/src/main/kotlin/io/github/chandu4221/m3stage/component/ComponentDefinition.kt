@@ -5,8 +5,35 @@ import io.github.chandu4221.m3stage.component.slot.SlotId
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.property.PropertyId
+import io.github.chandu4221.m3stage.property.PropertyKey
 import io.github.chandu4221.m3stage.property.PropertySpec
 import io.github.chandu4221.m3stage.property.PropertyValue
+
+/**
+ * Specification for typed component variants.
+ */
+data class VariantSpec<E : Enum<E>>(
+    val key: PropertyKey.EnumKey,
+    val defaultVariant: E,
+    val entries: List<E>,
+    val displayName: String = "Variant",
+    val visiblePropsFor: (variant: E) -> Set<PropertyId>? = { null }
+) {
+    fun resolveVariant(node: DesignNode): E {
+        val enumName = node[key]?.name
+        return if (enumName != null) {
+            entries.firstOrNull { it.name.equals(enumName, ignoreCase = true) } ?: defaultVariant
+        } else {
+            defaultVariant
+        }
+    }
+
+    fun isPropVisible(node: DesignNode, propId: PropertyId): Boolean {
+        val variant = resolveVariant(node)
+        val allowed = visiblePropsFor(variant)
+        return allowed == null || propId in allowed
+    }
+}
 
 /**
  * Metamodel definition specifying a component's properties, slots, and containment rules.
@@ -21,8 +48,15 @@ data class ComponentDefinition(
     val isContainer: Boolean = kind.isContainer,
     val slotOnly: Boolean = false,
     val showInPalette: Boolean = true,
+    val variantSpec: VariantSpec<*>? = null,
     val defaultSubtreeFactory: ((self: ComponentDefinition, idGen: IdGenerator) -> DesignNode)? = null
 ) {
+    /**
+     * Determines whether [propId] is visible on [node] under its current variant.
+     */
+    fun isPropVisible(node: DesignNode, propId: PropertyId): Boolean =
+        variantSpec?.isPropVisible(node, propId) ?: true
+
     /**
      * Generates a strongly-typed default properties map for newly dropped nodes.
      */
