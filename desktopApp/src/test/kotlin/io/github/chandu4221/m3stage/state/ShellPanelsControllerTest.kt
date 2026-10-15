@@ -4,6 +4,7 @@ import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ShellPanelsControllerTest {
 
     @Test
@@ -206,5 +207,217 @@ class ShellPanelsControllerTest {
         assertTrue(controller.isLeftOpen)
         assertTrue(controller.isRightOpen)
         assertEquals(StudioRailTab.Layers, controller.activeRailTab)
+    }
+
+    @Test
+    fun testT1aLeftCollapseAndExpandAnimateThroughIntermediateValues() = runTest {
+        val clock = VirtualTimeFrameClock(testScheduler)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler) + clock)
+        val controller = ShellPanelsController(coroutineScope = scope)
+
+        assertEquals(280f, controller.left.sizeDp)
+        assertFalse(controller.left.collapsed)
+
+        // Collapse
+        controller.toggleLeft()
+        val collapseIntermediateValues = mutableListOf<Float>()
+        while (!controller.left.collapsed) {
+            testScheduler.advanceTimeBy(16)
+            if (controller.left.sizeDp > 0f && controller.left.sizeDp < 280f) {
+                if (collapseIntermediateValues.isEmpty() || collapseIntermediateValues.last() != controller.left.sizeDp) {
+                    collapseIntermediateValues.add(controller.left.sizeDp)
+                }
+            }
+        }
+        assertEquals(0f, controller.left.sizeDp)
+        assertTrue(controller.left.collapsed)
+        assertTrue(
+            collapseIntermediateValues.size >= 3,
+            "Collapse must pass through >= 3 intermediate values, but had: $collapseIntermediateValues"
+        )
+
+        // Expand
+        controller.toggleLeft()
+        val expandIntermediateValues = mutableListOf<Float>()
+        while (controller.left.sizeDp < 280f) {
+            testScheduler.advanceTimeBy(16)
+            if (controller.left.sizeDp > 0f && controller.left.sizeDp < 280f) {
+                if (expandIntermediateValues.isEmpty() || expandIntermediateValues.last() != controller.left.sizeDp) {
+                    expandIntermediateValues.add(controller.left.sizeDp)
+                }
+            }
+        }
+        assertEquals(280f, controller.left.sizeDp)
+        assertFalse(controller.left.collapsed)
+        assertTrue(
+            expandIntermediateValues.size >= 3,
+            "Expand must pass through >= 3 intermediate values, but had: $expandIntermediateValues"
+        )
+    }
+
+    @Test
+    fun testT1bTabClearedAtCompletionNotAtStart() = runTest {
+        val clock = VirtualTimeFrameClock(testScheduler)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler) + clock)
+        val controller = ShellPanelsController(coroutineScope = scope)
+
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+        controller.toggleLeft()
+
+        // Tab MUST still be non-null immediately after toggleLeft() initiates collapse
+        assertNotNull(controller.activeRailTab)
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+
+        // Advance mid-flight
+        testScheduler.advanceTimeBy(48)
+        assertNotNull(controller.activeRailTab)
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+        assertTrue(controller.left.sizeDp > 0f)
+
+        // Complete collapse
+        testScheduler.advanceUntilIdle()
+        assertEquals(0f, controller.left.sizeDp)
+        assertTrue(controller.left.collapsed)
+        assertNull(controller.activeRailTab)
+    }
+
+    @Test
+    fun testT1cRaceRetoggleMidCollapseInterruptsAndPreservesTab() = runTest {
+        val clock = VirtualTimeFrameClock(testScheduler)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler) + clock)
+        val controller = ShellPanelsController(coroutineScope = scope)
+
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+        controller.toggleLeft()
+
+        // Advance 50ms into collapse
+        testScheduler.advanceTimeBy(50)
+        assertTrue(controller.left.sizeDp in 1f..279f, "Expected mid-flight width, got: ${controller.left.sizeDp}")
+        assertNotNull(controller.activeRailTab)
+
+        // Re-toggle mid-flight (must expand)
+        controller.toggleLeft()
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+
+        // Advance to full completion
+        testScheduler.advanceUntilIdle()
+        assertFalse(controller.left.collapsed)
+        assertEquals(280f, controller.left.sizeDp)
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+    }
+
+    @Test
+    fun testT1cSelectRailTabMidCollapseSwitchesAndPreservesTab() = runTest {
+        val clock = VirtualTimeFrameClock(testScheduler)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler) + clock)
+        val controller = ShellPanelsController(coroutineScope = scope)
+
+        assertEquals(StudioRailTab.Parts, controller.activeRailTab)
+        controller.toggleLeft()
+
+        // Advance 50ms into collapse
+        testScheduler.advanceTimeBy(50)
+        assertTrue(controller.left.sizeDp in 1f..279f)
+
+        // Select Layers tab mid-collapse
+        controller.selectRailTab(StudioRailTab.Layers)
+        assertEquals(StudioRailTab.Layers, controller.activeRailTab)
+
+        // Advance to full completion
+        testScheduler.advanceUntilIdle()
+        assertFalse(controller.left.collapsed)
+        assertEquals(280f, controller.left.sizeDp)
+        assertEquals(StudioRailTab.Layers, controller.activeRailTab)
+    }
+
+    @Test
+    fun testT2aSpringTerminatesByThresholdNoCrawl() = runTest {
+        val clock = VirtualTimeFrameClock(testScheduler)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler) + clock)
+        val controller = ShellPanelsController(coroutineScope = scope)
+
+        val right = controller.right
+        assertEquals(320f, right.sizeDp)
+
+        right.collapse()
+        var elapsedMs = 0L
+        var timeEnteredFinal10dp = -1L
+
+        while (!right.collapsed && elapsedMs < 1000L) {
+            testScheduler.advanceTimeBy(16)
+            elapsedMs += 16
+            if (right.sizeDp < 10f && timeEnteredFinal10dp < 0L) {
+                timeEnteredFinal10dp = elapsedMs
+            }
+        }
+
+        assertEquals(0f, right.sizeDp)
+        assertTrue(right.collapsed)
+        // Bounded total duration: <= 300ms virtual
+        assertTrue(elapsedMs <= 300L, "Collapse took $elapsedMs ms, expected <= 300ms")
+        // No lingering in final 10dp: duration from < 10dp to 0dp <= 60ms virtual
+        assertNotEquals(-1L, timeEnteredFinal10dp)
+        val final10dpDuration = elapsedMs - timeEnteredFinal10dp
+        assertTrue(
+            final10dpDuration <= 60L,
+            "Lingered in final 10dp for $final10dpDuration ms, expected <= 60ms"
+        )
+    }
+
+    @Test
+    fun testT2bAllThreePanelsSymmetricAnimationHygiene() = runTest {
+        val clock = VirtualTimeFrameClock(testScheduler)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler) + clock)
+        val controller = ShellPanelsController(coroutineScope = scope)
+
+        val slots = listOf("left" to controller.left, "right" to controller.right, "bottom" to controller.bottom)
+
+        for ((name, slot) in slots) {
+            // Ensure slot is expanded
+            if (slot.collapsed) {
+                slot.expand()
+                testScheduler.advanceUntilIdle()
+            }
+            val startSize = slot.sizeDp
+            assertTrue(startSize > 0f)
+
+            // Collapse
+            slot.collapse()
+            var elapsedMs = 0L
+            var timeEnteredFinal10dp = -1L
+            val intermediates = mutableListOf<Float>()
+
+            while (!slot.collapsed && elapsedMs < 1000L) {
+                testScheduler.advanceTimeBy(16)
+                elapsedMs += 16
+                if (slot.sizeDp > 0f && slot.sizeDp < startSize) {
+                    if (intermediates.isEmpty() || intermediates.last() != slot.sizeDp) {
+                        intermediates.add(slot.sizeDp)
+                    }
+                }
+                if (slot.sizeDp < 10f && timeEnteredFinal10dp < 0L) {
+                    timeEnteredFinal10dp = elapsedMs
+                }
+            }
+
+            assertEquals(0f, slot.sizeDp, "$name sizeDp should be 0f")
+            assertTrue(slot.collapsed, "$name should be collapsed")
+            assertTrue(intermediates.size >= 3, "$name must pass through >= 3 intermediates, got: $intermediates")
+            assertTrue(elapsedMs <= 300L, "$name collapse took $elapsedMs ms, expected <= 300ms")
+            assertNotEquals(-1L, timeEnteredFinal10dp, "$name should have traversed final 10dp")
+            val final10dpDuration = elapsedMs - timeEnteredFinal10dp
+            assertTrue(final10dpDuration <= 60L, "$name lingered in final 10dp for $final10dpDuration ms, expected <= 60ms")
+        }
+    }
+}
+
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+private class VirtualTimeFrameClock(
+    private val scheduler: kotlinx.coroutines.test.TestCoroutineScheduler,
+    private val frameDurationMs: Long = 16L
+) : androidx.compose.runtime.MonotonicFrameClock {
+    override suspend fun <R> withFrameNanos(onFrame: (frameTimeNanos: Long) -> R): R {
+        kotlinx.coroutines.delay(frameDurationMs)
+        return onFrame(scheduler.currentTime * 1_000_000L)
     }
 }

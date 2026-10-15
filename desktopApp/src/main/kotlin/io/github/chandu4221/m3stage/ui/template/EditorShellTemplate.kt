@@ -81,7 +81,7 @@ fun EditorShellTemplate(
         )
 
         // 2. Expandable & Resizable Left Drawer (Content-Preserving)
-        val isLeftCollapsed = panels.left.collapsed || panels.activeRailTab == null
+        val isLeftCollapsed = panels.left.collapsed
         Box(
             modifier = if (isLeftCollapsed) {
                 Modifier.size(0.dp).clipToBounds()

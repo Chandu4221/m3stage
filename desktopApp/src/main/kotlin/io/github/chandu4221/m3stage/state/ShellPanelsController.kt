@@ -40,12 +40,22 @@ class PanelSlotController(
     initialSizeDp: Float = defaultSizeDp,
     initialCollapsed: Boolean = false,
     private val coroutineScope: CoroutineScope? = null,
-    var onExpanded: (() -> Unit)? = null
+    var onExpanded: (() -> Unit)? = null,
+    var onCollapsed: (() -> Unit)? = null
 ) {
+    companion object {
+        const val COLLAPSE_STIFFNESS = 3800f
+        const val EXPAND_STIFFNESS = Spring.StiffnessMediumLow
+        const val VISIBILITY_THRESHOLD = 0.5f
+    }
+
     var sizeDp by mutableStateOf(if (initialCollapsed) 0f else initialSizeDp)
         private set
 
     var collapsed by mutableStateOf(initialCollapsed)
+        private set
+
+    var targetCollapsed: Boolean by mutableStateOf(initialCollapsed)
         private set
 
     var lastExpandedSizeDp: Float = initialSizeDp
@@ -60,17 +70,21 @@ class PanelSlotController(
     val size: Dp
         get() = sizeDp.dp
 
-    private val animatable = Animatable(if (initialCollapsed) 0f else initialSizeDp)
+    private val animatable = Animatable(if (initialCollapsed) 0f else initialSizeDp, visibilityThreshold = VISIBILITY_THRESHOLD)
+    private var animJob: kotlinx.coroutines.Job? = null
+    private var animToken: Long = 0L
 
     /**
      * Updates panel size during mouse drag. Direct, quantized, and strictly un-animated.
      */
     fun dragBy(deltaDp: Float) {
+        animJob?.cancel()
         isDragging = true
         if (collapsed) {
             // Dragging outward from collapsed expands immediately from minSizeDp
             if (deltaDp > 0f) {
                 collapsed = false
+                targetCollapsed = false
                 val target = (minSizeDp + deltaDp).coerceIn(minSizeDp, availableSpaceDp).roundToInt().toFloat()
                 sizeDp = target
                 lastExpandedSizeDp = target
@@ -94,7 +108,7 @@ class PanelSlotController(
      * Toggles collapsed/expanded state with spring animation.
      */
     suspend fun toggleAnimated() {
-        if (collapsed) {
+        if (targetCollapsed) {
             expandAnimated()
         } else {
             collapseAnimated()
@@ -102,6 +116,8 @@ class PanelSlotController(
     }
 
     suspend fun expandAnimated() {
+        targetCollapsed = false
+        val token = ++animToken
         collapsed = false
         onExpanded?.invoke()
         val target = if (lastExpandedSizeDp < minSizeDp) defaultSizeDp else lastExpandedSizeDp.coerceIn(minSizeDp, availableSpaceDp)
@@ -110,44 +126,63 @@ class PanelSlotController(
             animatable.snapTo(sizeDp)
             animatable.animateTo(
                 targetValue = target,
-                animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+                animationSpec = spring(
+                    dampingRatio = 1f,
+                    stiffness = EXPAND_STIFFNESS,
+                    visibilityThreshold = VISIBILITY_THRESHOLD
+                )
             ) {
                 sizeDp = value
             }
         } else {
             animatable.snapTo(target)
         }
-        sizeDp = target
-        lastExpandedSizeDp = target
+        if (token == animToken) {
+            sizeDp = target
+            lastExpandedSizeDp = target
+        }
     }
 
     suspend fun collapseAnimated() {
+        targetCollapsed = true
+        val token = ++animToken
         lastExpandedSizeDp = if (sizeDp >= minSizeDp) sizeDp else defaultSizeDp
         val hasClock = kotlin.coroutines.coroutineContext[androidx.compose.runtime.MonotonicFrameClock] != null
         if (hasClock) {
             animatable.snapTo(sizeDp)
             animatable.animateTo(
                 targetValue = 0f,
-                animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+                animationSpec = spring(
+                    dampingRatio = 1f,
+                    stiffness = COLLAPSE_STIFFNESS,
+                    visibilityThreshold = VISIBILITY_THRESHOLD
+                )
             ) {
                 sizeDp = value
             }
         } else {
             animatable.snapTo(0f)
         }
-        sizeDp = 0f
-        collapsed = true
+        if (token == animToken) {
+            sizeDp = 0f
+            collapsed = true
+            onCollapsed?.invoke()
+        }
     }
 
     fun toggle() {
-        if (collapsed) expand() else collapse()
+        if (targetCollapsed) expand() else collapse()
     }
 
     fun expand() {
+        targetCollapsed = false
         val scope = coroutineScope
         if (scope != null) {
-            scope.launch { expandAnimated() }
+            animJob?.cancel()
+            animJob = scope.launch { expandAnimated() }
         } else {
+            animJob?.cancel()
+            ++animToken
             collapsed = false
             onExpanded?.invoke()
             val target = if (lastExpandedSizeDp < minSizeDp) defaultSizeDp else lastExpandedSizeDp.coerceIn(minSizeDp, availableSpaceDp)
@@ -157,13 +192,18 @@ class PanelSlotController(
     }
 
     fun collapse() {
+        targetCollapsed = true
         val scope = coroutineScope
         if (scope != null) {
-            scope.launch { collapseAnimated() }
+            animJob?.cancel()
+            animJob = scope.launch { collapseAnimated() }
         } else {
+            animJob?.cancel()
+            ++animToken
             lastExpandedSizeDp = if (sizeDp >= minSizeDp) sizeDp else defaultSizeDp
             sizeDp = 0f
             collapsed = true
+            onCollapsed?.invoke()
         }
     }
 
@@ -171,6 +211,8 @@ class PanelSlotController(
      * Double-click on handle resets to default size and uncollapses.
      */
     suspend fun resetAnimated() {
+        targetCollapsed = false
+        val token = ++animToken
         collapsed = false
         onExpanded?.invoke()
         val target = defaultSizeDp.coerceIn(minSizeDp, availableSpaceDp)
@@ -179,22 +221,32 @@ class PanelSlotController(
             animatable.snapTo(sizeDp)
             animatable.animateTo(
                 targetValue = target,
-                animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+                animationSpec = spring(
+                    dampingRatio = 1f,
+                    stiffness = EXPAND_STIFFNESS,
+                    visibilityThreshold = VISIBILITY_THRESHOLD
+                )
             ) {
                 sizeDp = value
             }
         } else {
             animatable.snapTo(target)
         }
-        sizeDp = target
-        lastExpandedSizeDp = target
+        if (token == animToken) {
+            sizeDp = target
+            lastExpandedSizeDp = target
+        }
     }
 
     fun reset() {
+        targetCollapsed = false
         val scope = coroutineScope
         if (scope != null) {
-            scope.launch { resetAnimated() }
+            animJob?.cancel()
+            animJob = scope.launch { resetAnimated() }
         } else {
+            animJob?.cancel()
+            ++animToken
             collapsed = false
             onExpanded?.invoke()
             val target = defaultSizeDp.coerceIn(minSizeDp, availableSpaceDp)
@@ -207,9 +259,11 @@ class PanelSlotController(
      * Keyboard adjustment by delta (e.g. ±8dp). Instant quantization and clamping, no animation.
      */
     fun keyboardAdjust(deltaDp: Float) {
+        animJob?.cancel()
         if (collapsed) {
             if (deltaDp > 0f) {
                 collapsed = false
+                targetCollapsed = false
                 val target = minSizeDp.coerceIn(minSizeDp, availableSpaceDp).roundToInt().toFloat()
                 sizeDp = target
                 lastExpandedSizeDp = target
@@ -226,7 +280,9 @@ class PanelSlotController(
      * Ctrl+arrow or End key: snaps instantly to min size.
      */
     fun snapToMin() {
+        animJob?.cancel()
         collapsed = false
+        targetCollapsed = false
         val target = minSizeDp.coerceIn(minSizeDp, availableSpaceDp)
         sizeDp = target
         lastExpandedSizeDp = target
@@ -293,24 +349,26 @@ class ShellPanelsController(
                 activeRailTab = lastActiveRailTab
             }
         }
+        left.onCollapsed = {
+            activeRailTab = null
+        }
     }
 
     val isLeftOpen: Boolean
-        get() = !left.collapsed && activeRailTab != null
+        get() = !left.targetCollapsed && activeRailTab != null
 
     val isRightOpen: Boolean
-        get() = !right.collapsed
+        get() = !right.targetCollapsed
 
     val isBottomOpen: Boolean
-        get() = !bottom.collapsed
+        get() = !bottom.targetCollapsed
 
     val isFullWidth: Boolean
         get() = !isLeftOpen && !isRightOpen
 
     fun selectRailTab(tab: StudioRailTab) {
-        if (activeRailTab == tab) {
+        if (activeRailTab == tab && !left.targetCollapsed) {
             // Re-clicking active tab collapses the left drawer
-            activeRailTab = null
             left.collapse()
         } else {
             activeRailTab = tab
@@ -321,7 +379,6 @@ class ShellPanelsController(
 
     fun toggleLeft() {
         if (isLeftOpen) {
-            activeRailTab = null
             left.collapse()
         } else {
             activeRailTab = lastActiveRailTab
@@ -348,7 +405,6 @@ class ShellPanelsController(
             if (activeRailTab != null) {
                 lastActiveRailTab = activeRailTab!!
             }
-            activeRailTab = null
             left.collapse()
             right.collapse()
         }
@@ -369,12 +425,12 @@ class ShellPanelsController(
     }
 
     fun computeCanvasWidth(windowWidthDp: Float): Float {
-        val panelsWidth = NAV_RAIL_WIDTH_DP + (if (isLeftOpen) left.sizeDp else 0f) + (if (isRightOpen) right.sizeDp else 0f)
+        val panelsWidth = NAV_RAIL_WIDTH_DP + (if (!left.collapsed) left.sizeDp else 0f) + (if (!right.collapsed) right.sizeDp else 0f)
         return (windowWidthDp - panelsWidth).coerceAtLeast(0f)
     }
 
     fun computeCanvasHeight(windowHeightDp: Float): Float {
-        val panelsHeight = if (isBottomOpen) bottom.sizeDp else 0f
+        val panelsHeight = if (!bottom.collapsed) bottom.sizeDp else 0f
         return (windowHeightDp - panelsHeight).coerceAtLeast(0f)
     }
 }
