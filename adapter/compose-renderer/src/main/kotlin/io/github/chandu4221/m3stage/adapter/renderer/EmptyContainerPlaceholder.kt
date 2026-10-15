@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
@@ -28,7 +29,7 @@ fun EmptyContainerPlaceholder(
     containerName: String,
     modifier: Modifier = Modifier
 ) {
-    val outlineColor = MaterialTheme.colorScheme.outline
+    val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
     val cornerRadius = 6.dp
 
     Box(
@@ -37,14 +38,14 @@ fun EmptyContainerPlaceholder(
             .defaultMinSize(minHeight = 56.dp)
             .padding(4.dp)
             .background(
-                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 shape = RoundedCornerShape(cornerRadius)
             )
             .drawBehind {
-                val strokeWidth = 1.5.dp.toPx()
+                val strokeWidth = 1.dp.toPx()
                 val dashEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
                 drawRoundRect(
-                    color = outlineColor,
+                    color = outlineVariantColor,
                     style = Stroke(width = strokeWidth, pathEffect = dashEffect),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx())
                 )
@@ -55,7 +56,8 @@ fun EmptyContainerPlaceholder(
         Text(
             text = "+ Empty $containerName — Add Composables",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
