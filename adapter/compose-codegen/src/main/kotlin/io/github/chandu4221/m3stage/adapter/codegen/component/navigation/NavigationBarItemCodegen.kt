@@ -66,8 +66,9 @@ class NavigationBarItemCodegen : ComponentCodegen {
             iconNodes.forEach { builder.add(walk(it)) }
         } else {
             builder.add(
-                "%T(imageVector = androidx.compose.material.icons.Icons.Default.Star, contentDescription = null)\n",
-                ClassName("androidx.compose.material3", "Icon")
+                "%T(imageVector = androidx.compose.material.icons.Icons.Default.Add, contentDescription = %S)\n",
+                ClassName("androidx.compose.material3", "Icon"),
+                "Add"
             )
         }
         builder.unindent()

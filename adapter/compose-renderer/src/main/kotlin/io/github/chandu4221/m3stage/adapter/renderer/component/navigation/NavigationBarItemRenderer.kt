@@ -1,9 +1,11 @@
 package io.github.chandu4221.m3stage.adapter.renderer.component.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -48,7 +50,7 @@ class NavigationBarItemRenderer : NodeRenderer {
                     if (iconNodes.isNotEmpty()) {
                         iconNodes.forEach { renderChild(it) }
                     } else {
-                        Icon(imageVector = Icons.Default.Star, contentDescription = null)
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
                     }
                 },
                 label = if (labelNodes.isNotEmpty()) {
@@ -76,7 +78,7 @@ class NavigationBarItemRenderer : NodeRenderer {
                         if (iconNodes.isNotEmpty()) {
                             iconNodes.forEach { renderChild(it) }
                         } else {
-                            Icon(imageVector = Icons.Default.Star, contentDescription = null)
+                            Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
                         }
                     },
                     label = if (labelNodes.isNotEmpty()) {
@@ -93,8 +95,11 @@ class NavigationBarItemRenderer : NodeRenderer {
                     RenderItem()
                 }
             } else {
-                Row {
-                    RenderItem()
+                println("[DEV WARNING] NavigationBarItem rendered without LocalRowScope. Applying weighted fallback.")
+                Row(Modifier.fillMaxWidth()) {
+                    Box(Modifier.weight(1f)) {
+                        this@Row.RenderItem()
+                    }
                 }
             }
         }
