@@ -16,7 +16,7 @@ class CheckboxCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
-        val checked = node[CheckboxDefinition.Checked]?.value ?: true
+        val checked = node[CheckboxDefinition.Checked]?.value ?: false
         val enabled = node[CheckboxDefinition.Enabled]?.value ?: true
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 

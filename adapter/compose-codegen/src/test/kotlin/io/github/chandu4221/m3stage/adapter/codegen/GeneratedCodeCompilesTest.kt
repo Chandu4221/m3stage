@@ -632,5 +632,154 @@ class GeneratedCodeCompilesTest {
             code
         )
     }
+
+    @Test
+    fun testTextWithOverflowGeneratesValidCode() {
+        val generator = ComposeCodeGenerator()
+        val textNode = DesignNode(
+            id = NodeId("text-overflow"),
+            kind = ComponentKind.Text,
+            props = mapOf(
+                TextDefinition.TextContent.id to PropertyValue.StringValue("Truncated Text"),
+                TextDefinition.Overflow.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.property.TextOverflowOption.Ellipsis.name)
+            )
+        )
+        val project = Project(
+            id = ProjectId("test-proj-text-overflow"),
+            name = "Text Overflow App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-text-overflow"),
+                    name = "TextOverflowScreen",
+                    route = "/overflow",
+                    root = textNode
+                )
+            )
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("Text("), "Generated code must emit Text(")
+        assertTrue(code.contains("overflow = TextOverflow.Ellipsis"), "Code must contain overflow = TextOverflow.Ellipsis. Code:\n$code")
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
+
+    @Test
+    fun testTextFieldWithSlotsGeneratesValidCode() {
+        val generator = ComposeCodeGenerator()
+        val iconNode = DesignNode(
+            id = NodeId("tf-icon"),
+            kind = ComponentKind.Icon,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.IconDefinition.Glyph.id to PropertyValue.EnumValue("Search")
+            )
+        )
+        val supportNode = DesignNode(
+            id = NodeId("tf-support"),
+            kind = ComponentKind.Text,
+            props = mapOf(
+                TextDefinition.TextContent.id to PropertyValue.StringValue("Helper text")
+            )
+        )
+        val textFieldNode = DesignNode(
+            id = NodeId("tf-slots"),
+            kind = ComponentKind.TextField,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.TextFieldDefinition.Label.id to PropertyValue.StringValue("Search Field")
+            ),
+            slots = mapOf(
+                io.github.chandu4221.m3stage.component.definition.TextFieldDefinition.LeadingIconSlot.id to listOf(iconNode),
+                io.github.chandu4221.m3stage.component.definition.TextFieldDefinition.SupportingTextSlot.id to listOf(supportNode)
+            )
+        )
+        val project = Project(
+            id = ProjectId("test-proj-tf-slots"),
+            name = "TF Slots App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-tf-slots"),
+                    name = "TfSlotsScreen",
+                    route = "/tf-slots",
+                    root = textFieldNode
+                )
+            )
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("TextField("), "Generated code must emit TextField(")
+        assertTrue(code.contains("leadingIcon = {"), "Code must contain leadingIcon. Code:\n$code")
+        assertTrue(code.contains("supportingText = {"), "Code must contain supportingText. Code:\n$code")
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
+
+    @Test
+    fun testColumnRowBoxAlignmentAndArrangementGenerateValidCode() {
+        val generator = ComposeCodeGenerator()
+        val boxNode = DesignNode(
+            id = NodeId("test-box"),
+            kind = ComponentKind.Box,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.BoxDefinition.ContentAlignment.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.property.ContentAlignmentOption.Center.name)
+            )
+        )
+        val rowNode = DesignNode(
+            id = NodeId("test-row"),
+            kind = ComponentKind.Row,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.RowDefinition.HorizontalArrangement.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.property.HorizontalArrangementOption.SpaceBetween.name),
+                io.github.chandu4221.m3stage.component.definition.RowDefinition.VerticalAlignment.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.property.VerticalAlignmentOption.CenterVertically.name)
+            ),
+            children = listOf(boxNode)
+        )
+        val colNode = DesignNode(
+            id = NodeId("test-col"),
+            kind = ComponentKind.Column,
+            props = mapOf(
+                io.github.chandu4221.m3stage.component.definition.ColumnDefinition.HorizontalAlignment.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.property.HorizontalAlignmentOption.CenterHorizontally.name),
+                io.github.chandu4221.m3stage.component.definition.ColumnDefinition.VerticalArrangement.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.property.VerticalArrangementOption.SpaceAround.name)
+            ),
+            children = listOf(rowNode)
+        )
+        val project = Project(
+            id = ProjectId("test-proj-layout-align"),
+            name = "Layout Align App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-layout-align"),
+                    name = "LayoutAlignScreen",
+                    route = "/layout-align",
+                    root = colNode
+                )
+            )
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("contentAlignment = Alignment.Center"), "Box must emit contentAlignment. Code:\n$code")
+        assertTrue(code.contains("horizontalAlignment = Alignment.CenterHorizontally"), "Column must emit horizontalAlignment. Code:\n$code")
+        assertTrue(code.contains("verticalArrangement = Arrangement.SpaceAround"), "Column must emit verticalArrangement. Code:\n$code")
+        assertTrue(code.contains("horizontalArrangement = Arrangement.SpaceBetween"), "Row must emit horizontalArrangement. Code:\n$code")
+        assertTrue(code.contains("verticalAlignment = Alignment.CenterVertically"), "Row must emit verticalAlignment. Code:\n$code")
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
 }
 

@@ -20,6 +20,10 @@ class TextFieldRenderer : NodeRenderer {
         val placeholder = node[TextFieldDefinition.Placeholder]?.value ?: ""
         val singleLine = node[TextFieldDefinition.SingleLine]?.value ?: true
 
+        val leadingIcon = node.slots[TextFieldDefinition.LeadingIconSlot.id]?.firstOrNull()
+        val trailingIcon = node.slots[TextFieldDefinition.TrailingIconSlot.id]?.firstOrNull()
+        val supportingText = node.slots[TextFieldDefinition.SupportingTextSlot.id]?.firstOrNull()
+
         TextField(
             value = value,
             onValueChange = {},
@@ -29,6 +33,9 @@ class TextFieldRenderer : NodeRenderer {
             placeholder = if (placeholder.isNotBlank()) {
                 { Text(placeholder) }
             } else null,
+            leadingIcon = leadingIcon?.let { { renderChild(it) } },
+            trailingIcon = trailingIcon?.let { { renderChild(it) } },
+            supportingText = supportingText?.let { { renderChild(it) } },
             singleLine = singleLine,
             modifier = modifier
         )

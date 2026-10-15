@@ -16,7 +16,7 @@ class ImageRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val contentDescription = node[ImageDefinition.ContentDescription]?.value
+        val contentDescription = node[ImageDefinition.ContentDescription]?.value ?: "Image"
 
         Image(
             imageVector = Icons.Default.Place,

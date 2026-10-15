@@ -9,6 +9,8 @@ import io.github.chandu4221.m3stage.adapter.codegen.resolver.PackageNameResolver
 import io.github.chandu4221.m3stage.component.definition.RowDefinition
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.property.HorizontalArrangementOption
+import io.github.chandu4221.m3stage.property.VerticalAlignmentOption
 
 class RowCodegen : ComponentCodegen {
     override val className: ClassName = ClassName(
@@ -18,6 +20,8 @@ class RowCodegen : ComponentCodegen {
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val spacing = node[RowDefinition.Spacing]?.value ?: 0f
+        val horizontalArrangementOption = node[RowDefinition.HorizontalArrangement]?.name
+        val verticalAlignmentOption = node[RowDefinition.VerticalAlignment]?.name
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
@@ -30,6 +34,12 @@ class RowCodegen : ComponentCodegen {
 
         if (spacing > 0f) {
             builder.add("horizontalArrangement = %T.spacedBy(%L.dp),\n", ComposeSymbols.Arrangement, spacing)
+        } else if (horizontalArrangementOption != null && horizontalArrangementOption != HorizontalArrangementOption.Start.name) {
+            builder.add("horizontalArrangement = %T.%L,\n", ComposeSymbols.Arrangement, horizontalArrangementOption)
+        }
+
+        if (verticalAlignmentOption != null && verticalAlignmentOption != VerticalAlignmentOption.Top.name) {
+            builder.add("verticalAlignment = %T.%L,\n", ComposeSymbols.Alignment, verticalAlignmentOption)
         }
 
         builder.unindent()

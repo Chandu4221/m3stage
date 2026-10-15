@@ -24,6 +24,10 @@ class TextFieldCodegen : ComponentCodegen {
         val isSingleLine = node[TextFieldDefinition.SingleLine]?.value ?: true
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
+        val leadingIcon = node.slots[TextFieldDefinition.LeadingIconSlot.id]?.firstOrNull()
+        val trailingIcon = node.slots[TextFieldDefinition.TrailingIconSlot.id]?.firstOrNull()
+        val supportingText = node.slots[TextFieldDefinition.SupportingTextSlot.id]?.firstOrNull()
+
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
@@ -40,6 +44,30 @@ class TextFieldCodegen : ComponentCodegen {
 
         if (placeholder.isNotBlank()) {
             builder.add("placeholder = { %T(%S) },\n", ComposeSymbols.Text, placeholder)
+        }
+
+        if (leadingIcon != null) {
+            builder.add("leadingIcon = {\n")
+            builder.indent()
+            builder.add(walk(leadingIcon))
+            builder.unindent()
+            builder.add("},\n")
+        }
+
+        if (trailingIcon != null) {
+            builder.add("trailingIcon = {\n")
+            builder.indent()
+            builder.add(walk(trailingIcon))
+            builder.unindent()
+            builder.add("},\n")
+        }
+
+        if (supportingText != null) {
+            builder.add("supportingText = {\n")
+            builder.indent()
+            builder.add(walk(supportingText))
+            builder.unindent()
+            builder.add("},\n")
         }
 
         if (isSingleLine) {

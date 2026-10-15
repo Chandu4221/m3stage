@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.adapter.codegen.component.containment
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import io.github.chandu4221.m3stage.adapter.codegen.ComponentCodegen
+import io.github.chandu4221.m3stage.adapter.codegen.resolver.ComposeSymbols
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolver
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.PackageNameResolver
 import io.github.chandu4221.m3stage.adapter.codegen.resolver.ThemeCodeResolver
@@ -10,6 +11,7 @@ import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.definition.TextDefinition
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.property.PropertyValue
+import io.github.chandu4221.m3stage.property.TextOverflowOption
 
 class TextCodegen : ComponentCodegen {
     override val className: ClassName = ClassName(
@@ -22,6 +24,7 @@ class TextCodegen : ComponentCodegen {
         val colorCode = ThemeCodeResolver.resolveColor(node[TextDefinition.Color])
         val typographyCode = ThemeCodeResolver.resolveTypography(node[TextDefinition.Typography])
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
+        val overflowOption = node[TextDefinition.Overflow]?.name
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
@@ -38,6 +41,12 @@ class TextCodegen : ComponentCodegen {
 
         if (typographyCode != null) {
             builder.add("style = %L,\n", typographyCode)
+        }
+
+        if (overflowOption == TextOverflowOption.Ellipsis.name) {
+            builder.add("overflow = %T.Ellipsis,\n", ComposeSymbols.TextOverflow)
+        } else if (overflowOption == TextOverflowOption.Visible.name) {
+            builder.add("overflow = %T.Visible,\n", ComposeSymbols.TextOverflow)
         }
 
         builder.unindent()

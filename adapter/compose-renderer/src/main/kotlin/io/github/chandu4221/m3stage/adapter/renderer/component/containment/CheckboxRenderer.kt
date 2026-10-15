@@ -14,7 +14,7 @@ class CheckboxRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val checked = node[CheckboxDefinition.Checked]?.value ?: true
+        val checked = node[CheckboxDefinition.Checked]?.value ?: false
         val enabled = node[CheckboxDefinition.Enabled]?.value ?: true
 
         Checkbox(

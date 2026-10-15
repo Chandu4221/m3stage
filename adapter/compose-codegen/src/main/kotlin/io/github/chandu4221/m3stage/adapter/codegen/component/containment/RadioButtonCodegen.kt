@@ -16,7 +16,7 @@ class RadioButtonCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
-        val selected = node[RadioButtonDefinition.Selected]?.value ?: true
+        val selected = node[RadioButtonDefinition.Selected]?.value ?: false
         val enabled = node[RadioButtonDefinition.Enabled]?.value ?: true
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 

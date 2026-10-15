@@ -1,7 +1,10 @@
 package io.github.chandu4221.m3stage.adapter.renderer.component.actions
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
@@ -34,7 +37,7 @@ class FloatingActionButtonRenderer : NodeRenderer {
             if (iconNode != null) {
                 renderChild(iconNode)
             } else if (node.children.isEmpty()) {
-                Text(text = "+")
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
             } else {
                 node.children.forEach { child ->
                     renderChild(child)

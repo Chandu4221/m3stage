@@ -14,7 +14,7 @@ class RadioButtonRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val selected = node[RadioButtonDefinition.Selected]?.value ?: true
+        val selected = node[RadioButtonDefinition.Selected]?.value ?: false
         val enabled = node[RadioButtonDefinition.Enabled]?.value ?: true
 
         RadioButton(

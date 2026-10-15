@@ -14,7 +14,7 @@ class SwitchRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val checked = node[SwitchDefinition.Checked]?.value ?: true
+        val checked = node[SwitchDefinition.Checked]?.value ?: false
         val enabled = node[SwitchDefinition.Enabled]?.value ?: true
 
         Switch(

@@ -18,19 +18,14 @@ class ImageCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
-        val contentDescription = node[ImageDefinition.ContentDescription]?.value
+        val contentDescription = node[ImageDefinition.ContentDescription]?.value ?: "Image"
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
             .add("%T(\n", className)
             .indent()
             .add("imageVector = androidx.compose.material.icons.Icons.Default.Place,\n")
-
-        if (contentDescription != null) {
-            builder.add("contentDescription = %S,\n", contentDescription)
-        } else {
-            builder.add("contentDescription = null,\n")
-        }
+            .add("contentDescription = %S,\n", contentDescription)
 
         if (modifierCode != null) {
             builder.add("modifier = %L,\n", modifierCode)

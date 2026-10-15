@@ -45,6 +45,12 @@ class IconButtonCodegen : ComponentCodegen {
         val iconNode = node.slots[IconButtonDefinition.IconSlot.id]?.firstOrNull()
         if (iconNode != null) {
             builder.add(walk(iconNode))
+        } else if (node.allDirectChildren.isEmpty()) {
+            builder.add(
+                "%T(imageVector = androidx.compose.material.icons.Icons.Default.Add, contentDescription = %S)\n",
+                ClassName("androidx.compose.material3", "Icon"),
+                "Add"
+            )
         } else {
             node.allDirectChildren.forEach { child ->
                 builder.add(walk(child))

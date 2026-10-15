@@ -16,7 +16,7 @@ class SwitchCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
-        val checked = node[SwitchDefinition.Checked]?.value ?: true
+        val checked = node[SwitchDefinition.Checked]?.value ?: false
         val enabled = node[SwitchDefinition.Enabled]?.value ?: true
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
