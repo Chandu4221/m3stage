@@ -1,10 +1,10 @@
 package io.github.chandu4221.m3stage.ui.page
 
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
@@ -13,20 +13,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
+import io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer
 import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
-import io.github.chandu4221.m3stage.query.flatten
-import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.EditorEvent
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.state.rememberCanvasViewportController
 import io.github.chandu4221.m3stage.state.rememberShellPanelsController
 import io.github.chandu4221.m3stage.ui.molecule.ExportDialog
 import io.github.chandu4221.m3stage.ui.template.EditorShellTemplate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Smart Page: The ONLY stateful mediator between EditorStore and the dumb UI template.
@@ -39,7 +40,6 @@ fun EditorScreen(store: EditorStore) {
     val lockedNodeIds by store.lockedNodeIds
     val undoStack by store.undoStack.collectAsState()
     val redoStack by store.redoStack.collectAsState()
-    val isDirty by store.isDirty.collectAsState()
 
     val panels = rememberShellPanelsController()
     var searchQuery by remember { mutableStateOf("") }
@@ -75,7 +75,7 @@ fun EditorScreen(store: EditorStore) {
 
     val activeScreenFileName = remember(activeScreen) {
         if (activeScreen != null) {
-            "${io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer.toPascalCase(activeScreen.name)}.kt"
+            "${KotlinIdentifierSanitizer.toPascalCase(activeScreen.name)}.kt"
         } else {
             "Screen.kt"
         }
@@ -89,12 +89,12 @@ fun EditorScreen(store: EditorStore) {
         val targetScreen = currentProject.screens.firstOrNull { it.id == currentActiveScreenId } ?: return@LaunchedEffect
 
         isGeneratingCode = true
-        kotlinx.coroutines.delay(500) // 500ms debounce
+        delay(500) // 500ms debounce
         try {
-            val generatedProject = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val generatedProject = withContext(Dispatchers.Default) {
                 store.codeGenerator.generate(currentProject)
             }
-            val pascalName = io.github.chandu4221.m3stage.adapter.codegen.util.KotlinIdentifierSanitizer.toPascalCase(targetScreen.name)
+            val pascalName = KotlinIdentifierSanitizer.toPascalCase(targetScreen.name)
             val matchingFile = generatedProject.files.firstOrNull { it.fileName.startsWith(pascalName) }
                 ?: generatedProject.files.firstOrNull()
 
@@ -111,28 +111,16 @@ fun EditorScreen(store: EditorStore) {
     LaunchedEffect(Unit) {
         store.events.collect { event ->
             when (event) {
-                is EditorEvent.ExportSuccess -> {
-                    snackbarHostState.showSnackbar("Exported ZIP to: ${event.path}")
-                }
-
-                is EditorEvent.ExportFailed -> {
-                    snackbarHostState.showSnackbar("Export failed: ${event.message}")
-                }
-
-                is EditorEvent.LoadFailed -> {
-                    snackbarHostState.showSnackbar(
-                        message = "Failed to load project: ${event.reason}",
-                        duration = androidx.compose.material3.SnackbarDuration.Long
-                    )
-                }
-
-                is EditorEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = androidx.compose.material3.SnackbarDuration.Long
-                    )
-                }
-
+                is EditorEvent.ExportSuccess -> snackbarHostState.showSnackbar("Exported ZIP to: ${event.path}")
+                is EditorEvent.ExportFailed -> snackbarHostState.showSnackbar("Export failed: ${event.message}")
+                is EditorEvent.LoadFailed -> snackbarHostState.showSnackbar(
+                    message = "Failed to load project: ${event.reason}",
+                    duration = SnackbarDuration.Long
+                )
+                is EditorEvent.ShowError -> snackbarHostState.showSnackbar(
+                    message = event.message,
+                    duration = SnackbarDuration.Long
+                )
                 else -> {}
             }
         }
@@ -155,134 +143,24 @@ fun EditorScreen(store: EditorStore) {
         focusRequester.requestFocus()
     }
 
+    val shortcutActions = remember(draggedComponentKind) {
+        EditorShortcutActions(
+            isPaletteDragging = { draggedComponentKind != null },
+            onCancelPaletteDrag = { draggedComponentKind = null }
+        )
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester)
             .focusable()
-            .onPreviewKeyEvent { keyEvent ->
-                if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-
-                // Panel Shortcuts (Ctrl+Shift+1/2/3)
-                if (keyEvent.isCtrlPressed && keyEvent.isShiftPressed) {
-                    when (keyEvent.key) {
-                        Key.One, Key.NumPad1 -> {
-                            panels.toggleLeft()
-                            return@onPreviewKeyEvent true
-                        }
-                        Key.Two, Key.NumPad2 -> {
-                            panels.toggleRight()
-                            return@onPreviewKeyEvent true
-                        }
-                        Key.Three, Key.NumPad3 -> {
-                            panels.toggleBottom()
-                            return@onPreviewKeyEvent true
-                        }
-                    }
-                }
-
-                // 1. Undo / Redo
-                if (keyEvent.isCtrlPressed && keyEvent.isShiftPressed && keyEvent.key == Key.Z) {
-                    if (undoStack.isNotEmpty() || redoStack.isNotEmpty()) {
-                        store.redo()
-                        return@onPreviewKeyEvent true
-                    }
-                } else if (keyEvent.isCtrlPressed && keyEvent.key == Key.Z) {
-                    if (undoStack.isNotEmpty()) {
-                        store.undo()
-                        return@onPreviewKeyEvent true
-                    }
-                }
-
-                // 2. Duplicate: Ctrl+D
-                if (keyEvent.isCtrlPressed && keyEvent.key == Key.D) {
-                    val currentSelected = selectedNodeId
-                    if (currentSelected != null) {
-                        store.duplicateNode(currentSelected)
-                        return@onPreviewKeyEvent true
-                    }
-                }
-
-                // 2.5. Save: Ctrl+S
-                if (keyEvent.isCtrlPressed && keyEvent.key == Key.S) {
-                    store.saveProject()
-                    return@onPreviewKeyEvent true
-                }
-
-                // 2.6. Zoom: Ctrl+(+/-/0)
-                if (keyEvent.isCtrlPressed) {
-                    if (keyEvent.key == Key.Equals || keyEvent.key == Key.Plus || keyEvent.key == Key.NumPadAdd) {
-                        viewportController.zoomIn()
-                        return@onPreviewKeyEvent true
-                    } else if (keyEvent.key == Key.Minus || keyEvent.key == Key.NumPadSubtract) {
-                        viewportController.zoomOut()
-                        return@onPreviewKeyEvent true
-                    } else if (keyEvent.key == Key.Zero || keyEvent.key == Key.NumPad0) {
-                        viewportController.resetZoom()
-                        return@onPreviewKeyEvent true
-                    }
-                }
-
-                // 3. Escape: cancel drag if dragging, else pop anchor / deselect node / deselect screen
-                if (keyEvent.key == Key.Escape) {
-                    if (draggedComponentKind != null) {
-                        draggedComponentKind = null
-                        return@onPreviewKeyEvent true
-                    }
-                    if (selectedNodeId != null) {
-                        val root = activeScreen?.root
-                        if (root != null) {
-                            val treeInfo = root.toTreeInfo()
-                            store.popSelectionAnchor(treeInfo, root.id)
-                        } else {
-                            store.selectNode(null)
-                        }
-                    } else {
-                        store.setActiveScreen(null)
-                    }
-                    return@onPreviewKeyEvent true
-                }
-
-                // 4. Delete / Backspace: remove node
-                if (keyEvent.key == Key.Delete || keyEvent.key == Key.Backspace) {
-                    val currentSelected = selectedNodeId
-                    if (currentSelected != null) {
-                        store.removeNode(currentSelected)
-                        return@onPreviewKeyEvent true
-                    }
-                }
-
-                // 5. Arrow Up / Down in Layers tree
-                if (keyEvent.key == Key.DirectionUp || keyEvent.key == Key.DirectionDown) {
-                    val screen = activeScreen
-                    if (screen != null) {
-                        val allNodes = screen.root.flatten().filter { it.isVisible }
-                        if (allNodes.isNotEmpty()) {
-                            val currentIndex = allNodes.indexOfFirst { it.id == selectedNodeId }
-                            val newIndex = if (keyEvent.key == Key.DirectionUp) {
-                                if (currentIndex <= 0) allNodes.lastIndex else currentIndex - 1
-                            } else {
-                                if (currentIndex == -1 || currentIndex >= allNodes.lastIndex) 0 else currentIndex + 1
-                            }
-                            store.selectNode(allNodes[newIndex].id)
-                            return@onPreviewKeyEvent true
-                        }
-                    }
-                }
-
-                // 6. Tool Shortcuts (V: Select, H: Pan)
-                if (!keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isMetaPressed) {
-                    if (keyEvent.key == Key.V) {
-                        viewportController.setActiveTool(CanvasPointerTool.Select)
-                        return@onPreviewKeyEvent true
-                    } else if (keyEvent.key == Key.H) {
-                        viewportController.setActiveTool(CanvasPointerTool.Pan)
-                        return@onPreviewKeyEvent true
-                    }
-                }
-
-                false
-            }
+            .editorKeyboardShortcuts(
+                store = store,
+                panels = panels,
+                viewportController = viewportController,
+                actions = shortcutActions
+            )
     ) {
         LaunchedEffect(maxWidth, maxHeight) {
             panels.updateAvailableSpace(maxWidth.value, maxHeight.value)
