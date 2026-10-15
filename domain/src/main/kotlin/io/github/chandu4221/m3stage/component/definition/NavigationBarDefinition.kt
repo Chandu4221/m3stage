@@ -29,7 +29,7 @@ object NavigationBarDefinition {
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.SurfaceContainer)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(ItemsSlot),

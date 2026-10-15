@@ -52,12 +52,12 @@ object TopAppBarDefinition {
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Surface)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             ),
             PropertySpec.ColorPicker(
                 key = TitleContentColor,
                 displayName = "Title Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnSurface)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(NavigationIconSlot, TitleSlot, ActionsSlot),

@@ -52,7 +52,7 @@ object ScaffoldDefinition {
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Background)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(TopBarSlot, BottomBarSlot, FloatingActionButtonSlot, ContentSlot),

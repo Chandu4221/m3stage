@@ -22,6 +22,7 @@ import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
 import io.github.chandu4221.m3stage.state.EditorStore
+import io.github.chandu4221.m3stage.theme.M3ColorToken
 import io.github.chandu4221.m3stage.ui.molecule.ModifierSection
 
 @Composable
@@ -283,10 +284,9 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
     val def = ComponentCatalog.find(node.kind)
     val textProps = def?.properties?.filterIsInstance<PropertySpec.Text>().orEmpty()
     val enumProps = def?.properties?.filterIsInstance<PropertySpec.EnumDropdown>().orEmpty()
-    val isTextNodeWithInheritColor = node.kind == io.github.chandu4221.m3stage.component.ComponentKind.Text &&
-        (node.props[io.github.chandu4221.m3stage.component.definition.TextDefinition.Color.id] as? PropertyValue.ColorValue.Token)?.token == io.github.chandu4221.m3stage.theme.M3ColorToken.Inherit
+    val colorProps = def?.properties?.filterIsInstance<PropertySpec.ColorPicker>().orEmpty()
 
-    if (textProps.isNotEmpty() || enumProps.isNotEmpty() || isTextNodeWithInheritColor) {
+    if (textProps.isNotEmpty() || enumProps.isNotEmpty() || colorProps.isNotEmpty()) {
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedCard(
             modifier = Modifier.fillMaxWidth(),
@@ -371,12 +371,56 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
                     }
                 }
 
-                if (isTextNodeWithInheritColor) {
-                    Text(
-                        text = "Color: Inherit (LocalContentColor)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                for (prop in colorProps) {
+                    val currentVal = when (val cv = node.props[prop.key.id] ?: prop.defaultValue) {
+                        is PropertyValue.ColorValue.Token -> cv.token.name
+                        is PropertyValue.ColorValue.Custom -> "Custom (0x${cv.argb.toULong().toString(16).uppercase()})"
+                        else -> M3ColorToken.Inherit.name
+                    }
+                    var expanded by remember(node.id, prop.key.id) { mutableStateOf(false) }
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = if (currentVal == "Inherit") "Inherit (Default)" else currentVal,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(prop.displayName) },
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = { if (!isLocked) expanded = !expanded },
+                                    enabled = !isLocked
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Expand ${prop.displayName}"
+                                    )
+                                }
+                            },
+                            enabled = !isLocked,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            for (token in M3ColorToken.entries) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(if (token == M3ColorToken.Inherit) "Inherit (Default)" else token.name)
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        store.updateProp(
+                                            node.id,
+                                            prop.key.id,
+                                            PropertyValue.ColorValue.Token(token)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

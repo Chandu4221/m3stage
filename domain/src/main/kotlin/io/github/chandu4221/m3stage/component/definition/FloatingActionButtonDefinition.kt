@@ -29,12 +29,12 @@ object FloatingActionButtonDefinition {
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.PrimaryContainer)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             ),
             PropertySpec.ColorPicker(
                 key = ContentColor,
                 displayName = "Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnPrimaryContainer)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(IconSlot),

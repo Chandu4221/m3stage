@@ -18,10 +18,10 @@ class FloatingActionButtonRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val containerColor = ThemeResolver.resolveColor(node[FloatingActionButtonDefinition.ContainerColor])
-            ?: FloatingActionButtonDefaults.containerColor
-        val contentColor = ThemeResolver.resolveColor(node[FloatingActionButtonDefinition.ContentColor])
-            ?: contentColorFor(containerColor)
+        val resolvedContainer = ThemeResolver.resolveColor(node[FloatingActionButtonDefinition.ContainerColor])
+        val containerColor = if (resolvedContainer != androidx.compose.ui.graphics.Color.Unspecified) resolvedContainer else FloatingActionButtonDefaults.containerColor
+        val resolvedContent = ThemeResolver.resolveColor(node[FloatingActionButtonDefinition.ContentColor])
+        val contentColor = if (resolvedContent != androidx.compose.ui.graphics.Color.Unspecified) resolvedContent else contentColorFor(containerColor)
 
         val iconNode = node.slots[FloatingActionButtonDefinition.IconSlot.id]?.firstOrNull()
 

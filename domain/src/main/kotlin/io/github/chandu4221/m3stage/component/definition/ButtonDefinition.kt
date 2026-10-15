@@ -54,12 +54,12 @@ object ButtonDefinition {
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Primary)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             ),
             PropertySpec.ColorPicker(
                 key = ContentColor,
                 displayName = "Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnPrimary)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(LeadingIconSlot, LabelSlot, TrailingIconSlot),

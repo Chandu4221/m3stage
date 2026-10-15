@@ -23,7 +23,7 @@ class TextButtonRenderer : NodeRenderer {
         val enabled = node[TextButtonDefinition.Enabled]?.value ?: true
         val contentColor = ThemeResolver.resolveColor(node[TextButtonDefinition.ContentColor])
 
-        val colors = if (contentColor != null) {
+        val colors = if (contentColor != androidx.compose.ui.graphics.Color.Unspecified) {
             ButtonDefaults.textButtonColors(contentColor = contentColor)
         } else {
             ButtonDefaults.textButtonColors()

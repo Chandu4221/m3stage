@@ -34,7 +34,7 @@ object IconButtonDefinition {
             PropertySpec.ColorPicker(
                 key = ContentColor,
                 displayName = "Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnSurfaceVariant)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(IconSlot),

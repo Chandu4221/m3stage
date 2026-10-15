@@ -26,7 +26,7 @@ object HorizontalDividerDefinition {
             PropertySpec.ColorPicker(
                 key = Color,
                 displayName = "Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OutlineVariant)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         defaultSubtreeFactory = { self, idGen ->

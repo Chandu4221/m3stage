@@ -31,11 +31,12 @@ class FloatingActionButtonCodegen : ComponentCodegen {
             builder.add("modifier = %L,\n", modifierCode)
         }
 
-        if (containerColorCode != null || contentColorCode != null) {
-            builder.add("containerColor = %L,\n", containerColorCode ?: "FloatingActionButtonDefaults.containerColor")
-            if (contentColorCode != null) {
-                builder.add("contentColor = %L,\n", contentColorCode)
-            }
+        if (containerColorCode != null) {
+            builder.add("containerColor = %L,\n", containerColorCode)
+        }
+
+        if (contentColorCode != null) {
+            builder.add("contentColor = %L,\n", contentColorCode)
         }
 
         builder.unindent()

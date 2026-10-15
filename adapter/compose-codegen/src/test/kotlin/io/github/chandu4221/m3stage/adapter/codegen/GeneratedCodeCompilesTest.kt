@@ -5,6 +5,7 @@ import io.github.chandu4221.m3stage.adapter.codegen.resolver.ModifierCodeResolve
 import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.definition.ButtonDefinition
+import io.github.chandu4221.m3stage.component.definition.CardDefinition
 import io.github.chandu4221.m3stage.component.definition.TextDefinition
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.modifier.ModifierScope
@@ -548,6 +549,83 @@ class GeneratedCodeCompilesTest {
         assertTrue(code.contains("Icons.Default.Person"), "Code must contain Person icon")
         assertTrue(code.contains("contentDescription = \"Home\""), "Code must contain Home description")
         assertTrue(code.contains("contentDescription = \"Search\""), "Code must contain Search description")
+
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
+
+    @Test
+    fun testCardWithUnsetColorGeneratesCodeWithoutColorsArgument() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("p-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("s-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("n-${idCounter++}")
+        }
+
+        val cardSubtree = ComponentCatalog[ComponentKind.Card].createDefaultSubtree(idGen)
+        val screen = Screen(
+            id = ScreenId("screen-card-unset"),
+            name = "CardUnsetScreen",
+            route = "/card-unset",
+            root = cardSubtree
+        )
+        val project = Project(
+            id = ProjectId("test-proj-card-unset"),
+            name = "Card App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(screen)
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("Card("), "Generated code must emit Card(")
+        assertTrue(!code.contains("colors = "), "Unset card must NOT emit colors argument")
+        assertTrue(!code.contains("cardColors"), "Unset card must NOT call cardColors")
+
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
+
+    @Test
+    fun testCardWithExplicitColorGeneratesColorsArgument() {
+        val generator = ComposeCodeGenerator()
+        val cardNode = DesignNode(
+            id = NodeId("card-explicit"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.PrimaryContainer)
+            )
+        )
+        val screen = Screen(
+            id = ScreenId("screen-card-explicit"),
+            name = "CardExplicitScreen",
+            route = "/card-explicit",
+            root = cardNode
+        )
+        val project = Project(
+            id = ProjectId("test-proj-card-explicit"),
+            name = "Card App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(screen)
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("Card("), "Generated code must emit Card(")
+        assertTrue(
+            code.contains("colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)"),
+            "Explicit card color must emit CardDefaults.cardColors with primaryContainer. Code:\n$code"
+        )
 
         com.facebook.ktfmt.format.Formatter.format(
             com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,

@@ -19,12 +19,12 @@ object BadgeDefinition {
             PropertySpec.ColorPicker(
                 key = ContainerColor,
                 displayName = "Container Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Error)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             ),
             PropertySpec.ColorPicker(
                 key = ContentColor,
                 displayName = "Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnError)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         allowedChildren = setOf(ComponentKind.Text),

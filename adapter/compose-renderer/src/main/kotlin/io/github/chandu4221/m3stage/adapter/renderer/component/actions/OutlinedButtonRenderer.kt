@@ -23,7 +23,7 @@ class OutlinedButtonRenderer : NodeRenderer {
         val enabled = node[OutlinedButtonDefinition.Enabled]?.value ?: true
         val contentColor = ThemeResolver.resolveColor(node[OutlinedButtonDefinition.ContentColor])
 
-        val colors = if (contentColor != null) {
+        val colors = if (contentColor != androidx.compose.ui.graphics.Color.Unspecified) {
             ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
         } else {
             ButtonDefaults.outlinedButtonColors()

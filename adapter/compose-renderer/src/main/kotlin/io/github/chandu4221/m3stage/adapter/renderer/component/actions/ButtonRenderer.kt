@@ -6,6 +6,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
@@ -23,10 +24,16 @@ class ButtonRenderer : NodeRenderer {
         val containerColor = ThemeResolver.resolveColor(node[ButtonDefinition.ContainerColor])
         val contentColor = ThemeResolver.resolveColor(node[ButtonDefinition.ContentColor])
 
-        val colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        )
+        val colors = when {
+            containerColor != Color.Unspecified && contentColor != Color.Unspecified ->
+                ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor)
+            containerColor != Color.Unspecified ->
+                ButtonDefaults.buttonColors(containerColor = containerColor)
+            contentColor != Color.Unspecified ->
+                ButtonDefaults.buttonColors(contentColor = contentColor)
+            else ->
+                ButtonDefaults.buttonColors()
+        }
 
         val leadingIcon = node.slots[ButtonDefinition.LeadingIconSlot.id]?.firstOrNull()
         val label = node.slots[ButtonDefinition.LabelSlot.id]?.firstOrNull()

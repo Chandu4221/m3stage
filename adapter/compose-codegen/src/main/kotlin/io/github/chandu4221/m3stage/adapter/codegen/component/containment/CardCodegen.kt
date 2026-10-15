@@ -21,6 +21,7 @@ class CardCodegen : ComponentCodegen {
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
         val elevation = node[CardDefinition.Elevation]?.value ?: 0f
         val shapeCode = ThemeCodeResolver.resolveShape(node[CardDefinition.Shape])
+        val containerColorCode = ThemeCodeResolver.resolveColor(node[CardDefinition.ContainerColor])
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
 
         val builder = CodeBlock.builder()
@@ -29,6 +30,10 @@ class CardCodegen : ComponentCodegen {
 
         if (modifierCode != null) {
             builder.add("modifier = %L,\n", modifierCode)
+        }
+
+        if (containerColorCode != null) {
+            builder.add("colors = %T.cardColors(containerColor = %L),\n", ComposeSymbols.CardDefaults, containerColorCode)
         }
 
         if (elevation > 0f) {

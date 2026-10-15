@@ -9,6 +9,10 @@ import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
 import io.github.chandu4221.m3stage.component.definition.BadgeDefinition
 import io.github.chandu4221.m3stage.model.DesignNode
 
+import androidx.compose.material3.BadgeDefaults
+import androidx.compose.material3.contentColorFor
+import androidx.compose.ui.graphics.Color
+
 class BadgeRenderer : NodeRenderer {
     @Composable
     override fun Render(
@@ -16,14 +20,16 @@ class BadgeRenderer : NodeRenderer {
         modifier: Modifier,
         renderChild: @Composable ((DesignNode) -> Unit)
     ) {
-        val containerColor = ThemeResolver.resolveColor(node[BadgeDefinition.ContainerColor])
-        val contentColor = ThemeResolver.resolveColor(node[BadgeDefinition.ContentColor])
+        val resolvedContainer = ThemeResolver.resolveColor(node[BadgeDefinition.ContainerColor])
+        val containerColor = if (resolvedContainer != Color.Unspecified) resolvedContainer else BadgeDefaults.containerColor
+        val resolvedContent = ThemeResolver.resolveColor(node[BadgeDefinition.ContentColor])
+        val contentColor = if (resolvedContent != Color.Unspecified) resolvedContent else contentColorFor(containerColor)
         val children = node.allDirectChildren
 
         Badge(
             modifier = modifier,
-            containerColor = containerColor ?: androidx.compose.material3.MaterialTheme.colorScheme.error,
-            contentColor = contentColor ?: androidx.compose.material3.MaterialTheme.colorScheme.onError
+            containerColor = containerColor,
+            contentColor = contentColor
         ) {
             if (children.isEmpty()) {
                 Text(text = "1")

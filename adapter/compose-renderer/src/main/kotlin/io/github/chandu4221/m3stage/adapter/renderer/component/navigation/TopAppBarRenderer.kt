@@ -6,6 +6,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
 import io.github.chandu4221.m3stage.component.ComponentKind
@@ -24,10 +25,19 @@ class TopAppBarRenderer : NodeRenderer {
         val containerColor = ThemeResolver.resolveColor(node[TopAppBarDefinition.ContainerColor])
         val titleContentColor = ThemeResolver.resolveColor(node[TopAppBarDefinition.TitleContentColor])
 
-        val colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            titleContentColor = titleContentColor
-        )
+        val colors = when {
+            containerColor != Color.Unspecified && titleContentColor != Color.Unspecified ->
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = titleContentColor
+                )
+            containerColor != Color.Unspecified ->
+                TopAppBarDefaults.topAppBarColors(containerColor = containerColor)
+            titleContentColor != Color.Unspecified ->
+                TopAppBarDefaults.topAppBarColors(titleContentColor = titleContentColor)
+            else ->
+                TopAppBarDefaults.topAppBarColors()
+        }
 
         val titleNode = node.slots[TopAppBarDefinition.TitleSlot.id]?.firstOrNull()
         val navIconNode = node.slots[TopAppBarDefinition.NavigationIconSlot.id]?.firstOrNull()

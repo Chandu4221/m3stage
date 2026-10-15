@@ -34,7 +34,7 @@ object TextButtonDefinition {
             PropertySpec.ColorPicker(
                 key = ContentColor,
                 displayName = "Content Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Primary)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(ButtonDefinition.LeadingIconSlot, LabelSlot, ButtonDefinition.TrailingIconSlot),

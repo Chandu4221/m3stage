@@ -490,5 +490,84 @@ class SerializationRoundTripTest {
         val screen = domainProject.screens.first()
         assertEquals(false, screen.adaptive, "V4 screen without adaptive property must deserialize as adaptive = false")
     }
+
+    @Test
+    fun testColorPropertiesRoundTripUnsetAndSetBothDirections() {
+        val unsetNode = DesignNode(
+            id = NodeId("node-unset"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
+            )
+        )
+        val explicitNode = DesignNode(
+            id = NodeId("node-explicit"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.ContainerColor.id to PropertyValue.ColorValue.Token(M3ColorToken.PrimaryContainer)
+            )
+        )
+        val customColorNode = DesignNode(
+            id = NodeId("node-custom"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.ContainerColor.id to PropertyValue.ColorValue.Custom(0xFF336699)
+            )
+        )
+        val emptyPropsNode = DesignNode(
+            id = NodeId("node-empty"),
+            kind = ComponentKind.Card,
+            props = emptyMap()
+        )
+
+        val screen = Screen(
+            id = ScreenId("screen-colors"),
+            name = "ColorsScreen",
+            route = "/colors",
+            root = DesignNode(
+                id = NodeId("root-col"),
+                kind = ComponentKind.Column,
+                children = listOf(unsetNode, explicitNode, customColorNode, emptyPropsNode)
+            )
+        )
+        val project = Project(
+            id = ProjectId("proj-colors"),
+            name = "Colors Project",
+            basePackage = "com.example",
+            screens = listOf(screen)
+        )
+
+        val dto = project.toDto()
+        val jsonString = json.encodeToString(dto)
+        val decodedDto = json.decodeFromString<ProjectDto>(jsonString)
+        val roundTripped = decodedDto.toDomain()
+
+        val root = roundTripped.screens.first().root
+        val roundTrippedUnset = root.children[0]
+        val roundTrippedExplicit = root.children[1]
+        val roundTrippedCustom = root.children[2]
+        val roundTrippedEmpty = root.children[3]
+
+        assertEquals(
+            PropertyValue.ColorValue.Token(M3ColorToken.Inherit),
+            roundTrippedUnset.props[CardDefinition.ContainerColor.id],
+            "Unset (Inherit) token must survive round-trip losslessly"
+        )
+        assertEquals(
+            PropertyValue.ColorValue.Token(M3ColorToken.PrimaryContainer),
+            roundTrippedExplicit.props[CardDefinition.ContainerColor.id],
+            "Explicit token must survive round-trip losslessly"
+        )
+        assertEquals(
+            PropertyValue.ColorValue.Custom(0xFF336699),
+            roundTrippedCustom.props[CardDefinition.ContainerColor.id],
+            "Custom color must survive round-trip losslessly"
+        )
+        assertEquals(
+            null,
+            roundTrippedEmpty.props[CardDefinition.ContainerColor.id],
+            "Empty props node must survive round-trip without invented keys"
+        )
+    }
 }
 

@@ -31,7 +31,7 @@ object TextDefinition {
             PropertySpec.ColorPicker(
                 key = Color,
                 displayName = "Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.OnSurface)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             ),
             PropertySpec.EnumDropdown(
                 key = Overflow,

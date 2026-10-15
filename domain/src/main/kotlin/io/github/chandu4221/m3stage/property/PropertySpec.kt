@@ -1,5 +1,7 @@
 package io.github.chandu4221.m3stage.property
 
+import io.github.chandu4221.m3stage.theme.M3ColorToken
+
 sealed interface PropertySpec {
     val key: PropertyKey<*>
     val displayName: String
@@ -39,7 +41,7 @@ sealed interface PropertySpec {
     data class ColorPicker(
         override val key: PropertyKey.ColorKey,
         override val displayName: String,
-        val defaultValue: PropertyValue.ColorValue,
+        val defaultValue: PropertyValue.ColorValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit),
         override val group: PropertyGroup = PropertyGroup.Appearance
     ) : PropertySpec
 

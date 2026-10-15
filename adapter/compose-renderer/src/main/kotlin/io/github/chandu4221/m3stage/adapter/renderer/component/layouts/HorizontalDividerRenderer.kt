@@ -22,7 +22,7 @@ class HorizontalDividerRenderer : NodeRenderer {
         HorizontalDivider(
             modifier = modifier,
             thickness = thickness.dp,
-            color = color ?: androidx.compose.material3.DividerDefaults.color
+            color = if (color != androidx.compose.ui.graphics.Color.Unspecified) color else androidx.compose.material3.DividerDefaults.color
         )
     }
 }

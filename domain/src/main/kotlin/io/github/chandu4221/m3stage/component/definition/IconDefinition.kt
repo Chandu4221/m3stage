@@ -46,7 +46,7 @@ object IconDefinition {
             PropertySpec.ColorPicker(
                 key = Tint,
                 displayName = "Tint Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Primary)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         defaultSubtreeFactory = { self, idGen ->

@@ -3,9 +3,11 @@ package io.github.chandu4221.m3stage.adapter.renderer.component.containment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import io.github.chandu4221.m3stage.adapter.renderer.EmptyContainerPlaceholder
 import io.github.chandu4221.m3stage.adapter.renderer.NodeRenderer
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.ThemeResolver
@@ -32,7 +34,7 @@ class ScaffoldRenderer : NodeRenderer {
 
         Scaffold(
             modifier = modifier.fillMaxSize(),
-            containerColor = containerColor,
+            containerColor = if (containerColor != Color.Unspecified) containerColor else MaterialTheme.colorScheme.background,
             topBar = {
                 topBarNode?.let { renderChild(it) }
             },

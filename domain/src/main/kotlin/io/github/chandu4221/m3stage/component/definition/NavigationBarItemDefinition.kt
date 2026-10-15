@@ -99,13 +99,13 @@ object NavigationBarItemDefinition {
             PropertySpec.ColorPicker(
                 key = IndicatorColor,
                 displayName = "Indicator Color",
-                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.SecondaryContainer)
+                defaultValue = PropertyValue.ColorValue.Token(M3ColorToken.Inherit)
             )
         ),
         slots = listOf(IconSlot, LabelSlot),
         allowedChildren = emptySet(),
         defaultSubtreeFactory = { _, idGen ->
-            createItem(idGen, label = "Item", glyph = IconGlyph.Star, selected = false)
+            createItem(idGen, label = "Item", glyph = IconGlyph.Add, selected = false)
         }
     )
 }

@@ -20,7 +20,7 @@ class IconButtonRenderer : NodeRenderer {
         val enabled = node[IconButtonDefinition.Enabled]?.value ?: true
         val contentColor = ThemeResolver.resolveColor(node[IconButtonDefinition.ContentColor])
 
-        val colors = if (contentColor != null) {
+        val colors = if (contentColor != androidx.compose.ui.graphics.Color.Unspecified) {
             IconButtonDefaults.iconButtonColors(contentColor = contentColor)
         } else {
             IconButtonDefaults.iconButtonColors()
