@@ -24,6 +24,7 @@ import io.github.chandu4221.m3stage.query.findScreen
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.theme.M3ColorToken
 import io.github.chandu4221.m3stage.ui.molecule.ModifierSection
+import io.github.chandu4221.m3stage.ui.molecule.SegmentedButtonGroup
 
 @Composable
 fun InspectorPanel(
@@ -282,11 +283,53 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
     }
 
     val def = ComponentCatalog.find(node.kind)
-    val textProps = def?.properties?.filterIsInstance<PropertySpec.Text>().orEmpty()
-    val enumProps = def?.properties?.filterIsInstance<PropertySpec.EnumDropdown>().orEmpty()
-    val colorProps = def?.properties?.filterIsInstance<PropertySpec.ColorPicker>().orEmpty()
+    val variantSpec = def?.variantSpec
 
-    if (textProps.isNotEmpty() || enumProps.isNotEmpty() || colorProps.isNotEmpty()) {
+    if (variantSpec != null) {
+        val currentVariantName = variantSpec.resolveVariantName(node)
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = variantSpec.displayName,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                SegmentedButtonGroup(
+                    options = variantSpec.optionNames,
+                    selectedOption = currentVariantName,
+                    onOptionSelected = { selectedName ->
+                        if (!isLocked) {
+                            store.updateProp(
+                                node.id,
+                                variantSpec.key.id,
+                                PropertyValue.EnumValue(selectedName)
+                            )
+                        }
+                    },
+                    labelProvider = { it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+
+    val visibleProperties = def?.properties?.filter { prop ->
+        prop.key.id != variantSpec?.key?.id && (def.isPropVisible(node, prop.key.id))
+    }.orEmpty()
+
+    val textProps = visibleProperties.filterIsInstance<PropertySpec.Text>()
+    val enumProps = visibleProperties.filterIsInstance<PropertySpec.EnumDropdown>()
+    val colorProps = visibleProperties.filterIsInstance<PropertySpec.ColorPicker>()
+    val dpProps = visibleProperties.filterIsInstance<PropertySpec.DpSlider>()
+
+    if (textProps.isNotEmpty() || enumProps.isNotEmpty() || colorProps.isNotEmpty() || dpProps.isNotEmpty()) {
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedCard(
             modifier = Modifier.fillMaxWidth(),
@@ -420,6 +463,41 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
                                 )
                             }
                         }
+                    }
+                }
+
+                for (prop in dpProps) {
+                    val currentVal = (node.props[prop.key.id] as? PropertyValue.DpValue)?.value
+                        ?: prop.defaultValue.value
+                    var sliderValue by remember(node.id, prop.key.id, currentVal) { mutableStateOf(currentVal) }
+
+                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = prop.displayName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${(sliderValue * 10).toInt() / 10f} dp",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Slider(
+                            value = sliderValue,
+                            onValueChange = { sliderValue = it },
+                            onValueChangeFinished = {
+                                store.updateProp(node.id, prop.key.id, PropertyValue.DpValue(sliderValue))
+                            },
+                            valueRange = prop.min..prop.max,
+                            enabled = !isLocked,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }

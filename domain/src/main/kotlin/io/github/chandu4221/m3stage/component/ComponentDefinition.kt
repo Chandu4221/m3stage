@@ -10,15 +10,28 @@ import io.github.chandu4221.m3stage.property.PropertySpec
 import io.github.chandu4221.m3stage.property.PropertyValue
 
 /**
- * Specification for typed component variants.
+ * Base interface for component variant specifications exposing UI-agnostic variant metadata.
+ */
+interface ComponentVariantSpec {
+    val key: PropertyKey.EnumKey
+    val displayName: String
+    val optionNames: List<String>
+    fun resolveVariantName(node: DesignNode): String
+    fun isPropVisible(node: DesignNode, propId: PropertyId): Boolean
+}
+
+/**
+ * Strongly typed specification for component variants.
  */
 data class VariantSpec<E : Enum<E>>(
-    val key: PropertyKey.EnumKey,
+    override val key: PropertyKey.EnumKey,
     val defaultVariant: E,
     val entries: List<E>,
-    val displayName: String = "Variant",
+    override val displayName: String = "Variant",
     val visiblePropsFor: (variant: E) -> Set<PropertyId>? = { null }
-) {
+) : ComponentVariantSpec {
+    override val optionNames: List<String> = entries.map { it.name }
+
     fun resolveVariant(node: DesignNode): E {
         val enumName = node[key]?.name
         return if (enumName != null) {
@@ -28,7 +41,9 @@ data class VariantSpec<E : Enum<E>>(
         }
     }
 
-    fun isPropVisible(node: DesignNode, propId: PropertyId): Boolean {
+    override fun resolveVariantName(node: DesignNode): String = resolveVariant(node).name
+
+    override fun isPropVisible(node: DesignNode, propId: PropertyId): Boolean {
         val variant = resolveVariant(node)
         val allowed = visiblePropsFor(variant)
         return allowed == null || propId in allowed
@@ -48,7 +63,7 @@ data class ComponentDefinition(
     val isContainer: Boolean = kind.isContainer,
     val slotOnly: Boolean = false,
     val showInPalette: Boolean = true,
-    val variantSpec: VariantSpec<*>? = null,
+    val variantSpec: ComponentVariantSpec? = null,
     val defaultSubtreeFactory: ((self: ComponentDefinition, idGen: IdGenerator) -> DesignNode)? = null
 ) {
     /**
