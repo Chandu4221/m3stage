@@ -77,6 +77,32 @@ fun handleEditorKeyEvent(
         }
     }
 
+    // 2.1. Clipboard operations: Ctrl+C, Ctrl+X, Ctrl+V (suppressed when typing in text fields)
+    if (keyEvent.isCtrlPressed && !keyEvent.isShiftPressed && !actions.isTextInputFocused()) {
+        when (keyEvent.key) {
+            Key.C -> {
+                val currentSelected = store.selectedNodeId.value
+                if (currentSelected != null) {
+                    store.copyNode(currentSelected)
+                    return true
+                }
+            }
+            Key.X -> {
+                val currentSelected = store.selectedNodeId.value
+                if (currentSelected != null) {
+                    store.cutNode(currentSelected)
+                    return true
+                }
+            }
+            Key.V -> {
+                if (store.clipboardDelegate.clip.value != null) {
+                    store.pasteNode()
+                    return true
+                }
+            }
+        }
+    }
+
     // 2.5. Save: Ctrl+S
     if (keyEvent.isCtrlPressed && keyEvent.key == Key.S) {
         store.saveProject()

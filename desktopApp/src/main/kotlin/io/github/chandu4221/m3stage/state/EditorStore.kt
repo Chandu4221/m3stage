@@ -10,6 +10,7 @@ import io.github.chandu4221.m3stage.port.ProjectRepository
 import io.github.chandu4221.m3stage.property.PropertyId
 import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findAcceptingSlot
+import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
 import kotlinx.coroutines.*
@@ -25,6 +26,7 @@ class EditorStore(
     private val selectionDelegate = SelectionDelegate()
     private val historyDelegate = HistoryDelegate(context)
     private val sessionDelegate = ProjectSessionDelegate(context)
+    val clipboardDelegate = ClipboardDelegate()
 
     // Scope for observing state changes
     private val storeScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -245,14 +247,7 @@ class EditorStore(
             return
         }
 
-        fun reIdSubtree(node: DesignNode): DesignNode {
-            val freshId = context.idGenerator.nextNodeId()
-            val freshChildren = node.children.map { reIdSubtree(it) }
-            val freshSlots = node.slots.mapValues { (_, slotChildren) -> slotChildren.map { reIdSubtree(it) } }
-            return node.copy(id = freshId, children = freshChildren, slots = freshSlots)
-        }
-
-        val freshSubtree = reIdSubtree(originalNode)
+        val freshSubtree = reIdSubtree(originalNode, context.idGenerator)
         execute(DuplicateNodeCommand(screenId, nodeId, freshSubtree))
         selectNode(freshSubtree.id)
     }
@@ -347,13 +342,6 @@ class EditorStore(
             return
         }
 
-        fun reIdSubtree(node: DesignNode): DesignNode {
-            val freshId = context.idGenerator.nextNodeId()
-            val freshChildren = node.children.map { reIdSubtree(it) }
-            val freshSlots = node.slots.mapValues { (_, slotChildren) -> slotChildren.map { reIdSubtree(it) } }
-            return node.copy(id = freshId, children = freshChildren, slots = freshSlots)
-        }
-
         // Generate unique name e.g. Home_Copy, Home_Copy_2
         var candidateName = "${originalScreen.name}_Copy"
         var counter = 2
@@ -371,7 +359,7 @@ class EditorStore(
         }
 
         val freshScreenId = context.idGenerator.nextScreenId()
-        val duplicatedRoot = reIdSubtree(originalScreen.root)
+        val duplicatedRoot = reIdSubtree(originalScreen.root, context.idGenerator)
         val defaultDevice = currentProject.defaultDevice
         val nextX = currentProject.screens.maxOf { it.canvasX + it.resolveWidthDp(defaultDevice) } + 64f
         val duplicatedScreen = Screen(
@@ -558,10 +546,89 @@ class EditorStore(
         execute(UpdatePropCommand(screenId, nodeId, propId, oldValue, newValue))
     }
 
+    // --- Bridge: Clipboard Operations ---
+    fun copyNode(nodeId: NodeId) {
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot copy: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot copy: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot copy: active screen not found.")
+            return
+        }
+        val originalNode = screen.root.findNode(nodeId)
+        if (originalNode == null) {
+            notifyUser("Cannot copy: node not found.")
+            return
+        }
+        val freshSubtree = reIdSubtree(originalNode, context.idGenerator)
+        clipboardDelegate.setClip(freshSubtree, screenId)
+    }
+
+    fun cutNode(nodeId: NodeId) {
+        copyNode(nodeId)
+        removeNode(nodeId)
+    }
+
+    fun pasteNode() {
+        val clip = clipboardDelegate.clip.value
+        if (clip == null) {
+            notifyUser("Clipboard is empty.")
+            return
+        }
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot paste: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot paste: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot paste: active screen not found.")
+            return
+        }
+
+        val startNode = selectedNodeId.value?.let { screen.root.findNode(it) } ?: screen.root
+        val targetParent = startNode.findNearestAcceptingAncestor(screen.root, clip.kind)
+        if (targetParent == null) {
+            notifyUser("Cannot paste ${clip.kind.displayName} here.")
+            return
+        }
+
+        val parentDef = ComponentCatalog.find(targetParent.kind)
+        val acceptingSlotId = parentDef?.findAcceptingSlot(clip.kind)
+
+        val freshSubtree = reIdSubtree(clip, context.idGenerator)
+        execute(AddNodeCommand(screenId, targetParent.id, freshSubtree, acceptingSlotId))
+        selectNode(freshSubtree.id)
+    }
+
     override fun close() {
         sessionDelegate.flushSave()
         sessionDelegate.close()
         historyDelegate.close()
         storeScope.cancel()
     }
+}
+
+/**
+ * Pure subtree ID regeneration. Assigns a fresh NodeId to every node in the subtree
+ * while preserving all other properties (props, modifiers, visibility, isPrefilled, etc.).
+ */
+fun reIdSubtree(node: DesignNode, idGen: IdGenerator): DesignNode {
+    val freshId = idGen.nextNodeId()
+    val freshChildren = node.children.map { reIdSubtree(it, idGen) }
+    val freshSlots = node.slots.mapValues { (_, slotChildren) -> slotChildren.map { reIdSubtree(it, idGen) } }
+    return node.copy(id = freshId, children = freshChildren, slots = freshSlots)
 }
