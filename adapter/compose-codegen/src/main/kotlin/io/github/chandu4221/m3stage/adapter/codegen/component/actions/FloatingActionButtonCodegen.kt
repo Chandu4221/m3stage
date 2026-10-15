@@ -10,6 +10,7 @@ import io.github.chandu4221.m3stage.adapter.codegen.resolver.ThemeCodeResolver
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.definition.FloatingActionButtonDefinition
 import io.github.chandu4221.m3stage.model.DesignNode
+import io.github.chandu4221.m3stage.model.FabVariant
 
 class FloatingActionButtonCodegen : ComponentCodegen {
     override val className: ClassName = ClassName(
@@ -18,6 +19,7 @@ class FloatingActionButtonCodegen : ComponentCodegen {
     )
 
     override fun generate(node: DesignNode, walk: (DesignNode) -> CodeBlock): CodeBlock {
+        val variant = FloatingActionButtonDefinition.resolveVariant(node)
         val containerColorCode = ThemeCodeResolver.resolveColor(node[FloatingActionButtonDefinition.ContainerColor])
         val contentColorCode = ThemeCodeResolver.resolveColor(node[FloatingActionButtonDefinition.ContentColor])
         val modifierCode = ModifierCodeResolver.generateModifierChain(node.modifiers)
@@ -33,10 +35,30 @@ class FloatingActionButtonCodegen : ComponentCodegen {
 
         if (containerColorCode != null) {
             builder.add("containerColor = %L,\n", containerColorCode)
+        } else {
+            when (variant) {
+                FabVariant.Primary -> { /* Omit: defaults to primaryContainer */ }
+                FabVariant.Secondary -> {
+                    builder.add("containerColor = %T.colorScheme.secondaryContainer,\n", ComposeSymbols.MaterialTheme)
+                }
+                FabVariant.Tertiary -> {
+                    builder.add("containerColor = %T.colorScheme.tertiaryContainer,\n", ComposeSymbols.MaterialTheme)
+                }
+            }
         }
 
         if (contentColorCode != null) {
             builder.add("contentColor = %L,\n", contentColorCode)
+        } else {
+            when (variant) {
+                FabVariant.Primary -> { /* Omit: defaults to onPrimaryContainer */ }
+                FabVariant.Secondary -> {
+                    builder.add("contentColor = %T.colorScheme.onSecondaryContainer,\n", ComposeSymbols.MaterialTheme)
+                }
+                FabVariant.Tertiary -> {
+                    builder.add("contentColor = %T.colorScheme.onTertiaryContainer,\n", ComposeSymbols.MaterialTheme)
+                }
+            }
         }
 
         builder.unindent()

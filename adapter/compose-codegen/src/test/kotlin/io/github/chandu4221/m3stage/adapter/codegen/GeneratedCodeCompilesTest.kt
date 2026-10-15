@@ -6,6 +6,7 @@ import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.component.definition.ButtonDefinition
 import io.github.chandu4221.m3stage.component.definition.CardDefinition
+import io.github.chandu4221.m3stage.component.definition.FloatingActionButtonDefinition
 import io.github.chandu4221.m3stage.component.definition.TextDefinition
 import io.github.chandu4221.m3stage.model.*
 import io.github.chandu4221.m3stage.modifier.ModifierScope
@@ -781,5 +782,132 @@ class GeneratedCodeCompilesTest {
             code
         )
     }
+
+    @Test
+    fun testCardVariantsGenerateValidComposeCode() {
+        val generator = ComposeCodeGenerator()
+
+        val elevatedCard = DesignNode(
+            id = NodeId("c-elevated"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.CardVariant.Elevated.name),
+                CardDefinition.Elevation.id to PropertyValue.DpValue(3f)
+            )
+        )
+        val filledCard = DesignNode(
+            id = NodeId("c-filled"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.CardVariant.Filled.name)
+            )
+        )
+        val outlinedCard = DesignNode(
+            id = NodeId("c-outlined"),
+            kind = ComponentKind.Card,
+            props = mapOf(
+                CardDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.CardVariant.Outlined.name),
+                CardDefinition.BorderColor.id to PropertyValue.ColorValue.Token(io.github.chandu4221.m3stage.theme.M3ColorToken.Outline),
+                CardDefinition.BorderWidth.id to PropertyValue.DpValue(2f)
+            )
+        )
+        val column = DesignNode(
+            id = NodeId("root-col"),
+            kind = ComponentKind.Column,
+            children = listOf(elevatedCard, filledCard, outlinedCard)
+        )
+        val project = Project(
+            id = ProjectId("test-proj-card-variants"),
+            name = "Card Variants App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-card-variants"),
+                    name = "CardVariantsScreen",
+                    route = "/card-variants",
+                    root = column
+                )
+            )
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("ElevatedCard("), "Must emit ElevatedCard for Elevated variant. Code:\n$code")
+        assertTrue(code.contains("elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.0.dp)"), "Must emit elevatedCardElevation. Code:\n$code")
+        assertTrue(code.contains("Card("), "Must emit Card for Filled variant. Code:\n$code")
+        assertTrue(code.contains("OutlinedCard("), "Must emit OutlinedCard for Outlined variant. Code:\n$code")
+        assertTrue(code.contains("border = BorderStroke(2.0.dp, MaterialTheme.colorScheme.outline)"), "Must emit border for Outlined variant. Code:\n$code")
+
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
+
+    @Test
+    fun testFabVariantsGenerateValidComposeCode() {
+        val generator = ComposeCodeGenerator()
+
+        val primaryFab = DesignNode(
+            id = NodeId("fab-p"),
+            kind = ComponentKind.FloatingActionButton,
+            props = mapOf(
+                FloatingActionButtonDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.FabVariant.Primary.name)
+            )
+        )
+        val secondaryFab = DesignNode(
+            id = NodeId("fab-s"),
+            kind = ComponentKind.FloatingActionButton,
+            props = mapOf(
+                FloatingActionButtonDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.FabVariant.Secondary.name)
+            )
+        )
+        val tertiaryFab = DesignNode(
+            id = NodeId("fab-t"),
+            kind = ComponentKind.FloatingActionButton,
+            props = mapOf(
+                FloatingActionButtonDefinition.Variant.id to PropertyValue.EnumValue(io.github.chandu4221.m3stage.model.FabVariant.Tertiary.name)
+            )
+        )
+        val column = DesignNode(
+            id = NodeId("root-col-fab"),
+            kind = ComponentKind.Column,
+            children = listOf(primaryFab, secondaryFab, tertiaryFab)
+        )
+        val project = Project(
+            id = ProjectId("test-proj-fab-variants"),
+            name = "FAB Variants App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(
+                Screen(
+                    id = ScreenId("screen-fab-variants"),
+                    name = "FabVariantsScreen",
+                    route = "/fab-variants",
+                    root = column
+                )
+            )
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        // Primary: no explicit colors emitted when unset
+        assertTrue(code.contains("FloatingActionButton("), "Must emit FloatingActionButton. Code:\n$code")
+        // Secondary: emits secondaryContainer and onSecondaryContainer
+        assertTrue(code.contains("containerColor = MaterialTheme.colorScheme.secondaryContainer"), "Must emit secondaryContainer for Secondary FAB. Code:\n$code")
+        assertTrue(code.contains("contentColor = MaterialTheme.colorScheme.onSecondaryContainer"), "Must emit onSecondaryContainer for Secondary FAB. Code:\n$code")
+        // Tertiary: emits tertiaryContainer and onTertiaryContainer
+        assertTrue(code.contains("containerColor = MaterialTheme.colorScheme.tertiaryContainer"), "Must emit tertiaryContainer for Tertiary FAB. Code:\n$code")
+        assertTrue(code.contains("contentColor = MaterialTheme.colorScheme.onTertiaryContainer"), "Must emit onTertiaryContainer for Tertiary FAB. Code:\n$code")
+
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
 }
+
 
