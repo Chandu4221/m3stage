@@ -38,6 +38,7 @@ fun LayersTreeDrawer(
     onToggleVisibility: (NodeId) -> Unit,
     onToggleLock: (NodeId) -> Unit,
     onDeleteNode: (NodeId) -> Unit,
+    selectedNodeIds: Set<NodeId> = selectedNodeId?.let { setOf(it) } ?: emptySet(),
     modifier: Modifier = Modifier.width(280.dp)
 ) {
     var expandedNodeIds by remember { mutableStateOf(setOf<NodeId>()) }
@@ -122,7 +123,7 @@ fun LayersTreeDrawer(
                         LayerTreeRow(
                             node = row.node,
                             depth = row.depth,
-                            isSelected = row.id == selectedNodeId,
+                            isSelected = if (selectedNodeIds.isNotEmpty()) row.id in selectedNodeIds else row.id == selectedNodeId,
                             isLocked = row.id in lockedNodeIds,
                             isExpanded = isExpanded,
                             hasChildren = hasChildren,

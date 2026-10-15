@@ -41,14 +41,17 @@ fun SelectionChrome(
     hoveredNodeId: NodeId?,
     selectedNodeId: NodeId?,
     selectedNode: DesignNode?,
+    selectedNodeIds: Set<NodeId> = selectedNodeId?.let { setOf(it) } ?: emptySet(),
     zoomProvider: () -> Float = { 1f },
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val allBounds = registry.all()
 
-    val selectedBounds = selectedNodeId?.let { allBounds[it] }
-    val hoveredBounds = if (hoveredNodeId != null && hoveredNodeId != selectedNodeId) {
+    val targetSelectedIds = if (selectedNodeIds.isNotEmpty()) selectedNodeIds else (selectedNodeId?.let { setOf(it) } ?: emptySet())
+    val primaryId = selectedNodeId ?: targetSelectedIds.lastOrNull()
+    val selectedBounds = primaryId?.let { allBounds[it] }
+    val hoveredBounds = if (hoveredNodeId != null && hoveredNodeId !in targetSelectedIds) {
         allBounds[hoveredNodeId]
     } else {
         null
@@ -75,12 +78,13 @@ fun SelectionChrome(
             }
 
             // 2. Selection outline: solid stroke (unscaled) + 4 corner handles
-            if (selectedBounds != null) {
+            for (id in targetSelectedIds) {
+                val bounds = allBounds[id] ?: continue
                 val strokePx = (2.dp.toPx() / zoom).coerceAtLeast(1f)
                 drawRect(
                     color = FigmaBlue,
-                    topLeft = Offset(selectedBounds.left, selectedBounds.top),
-                    size = Size(selectedBounds.width, selectedBounds.height),
+                    topLeft = Offset(bounds.left, bounds.top),
+                    size = Size(bounds.width, bounds.height),
                     style = Stroke(width = strokePx)
                 )
 
@@ -90,10 +94,10 @@ fun SelectionChrome(
                 val handleStrokePx = (1.5.dp.toPx() / zoom).coerceAtLeast(0.5f)
 
                 val corners = listOf(
-                    Offset(selectedBounds.left, selectedBounds.top),
-                    Offset(selectedBounds.right, selectedBounds.top),
-                    Offset(selectedBounds.left, selectedBounds.bottom),
-                    Offset(selectedBounds.right, selectedBounds.bottom)
+                    Offset(bounds.left, bounds.top),
+                    Offset(bounds.right, bounds.top),
+                    Offset(bounds.left, bounds.bottom),
+                    Offset(bounds.right, bounds.bottom)
                 )
 
                 for (corner in corners) {

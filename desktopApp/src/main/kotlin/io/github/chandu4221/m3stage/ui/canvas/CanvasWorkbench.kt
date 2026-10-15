@@ -75,6 +75,9 @@ fun CanvasWorkbench(
     onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
+    selectedNodeIds: Set<NodeId> = selectedNodeId?.let { setOf(it) } ?: emptySet(),
+    onToggleNodeSelection: (NodeId) -> Unit = {},
+    onContextMenu: ((ScreenId, NodeId?, Offset) -> Unit)? = null,
     lockedNodeIds: Set<NodeId>,
     viewportController: CanvasViewportController,
     projectDefaultDevice: DevicePreset = DevicePreset.Default,
@@ -294,11 +297,19 @@ fun CanvasWorkbench(
                                 showFrame = showFrame,
                                 isActive = isActive,
                                 selectedNodeId = if (isActive) selectedNodeId else null,
+                                selectedNodeIds = if (isActive) selectedNodeIds else emptySet(),
                                 lockedNodeIds = lockedNodeIds,
                                 onActivate = { onSelectScreen(screen.id) },
                                 onSelectNode = { nodeId ->
                                     onSelectScreen(screen.id)
                                     onNodeClick(nodeId)
+                                },
+                                onToggleSelectNode = { nodeId ->
+                                    onSelectScreen(screen.id)
+                                    onToggleNodeSelection(nodeId)
+                                },
+                                onContextMenu = { nodeId, offset ->
+                                    onContextMenu?.invoke(screen.id, nodeId, offset)
                                 },
                                 zoomProvider = { viewportState.value.zoom },
                                 draggedComponentKind = draggedComponentKind,

@@ -57,6 +57,9 @@ fun DeviceCanvas(
     lockedNodeIds: Set<NodeId>,
     onActivate: () -> Unit,
     onSelectNode: (NodeId?) -> Unit,
+    selectedNodeIds: Set<NodeId> = selectedNodeId?.let { setOf(it) } ?: emptySet(),
+    onToggleSelectNode: ((NodeId) -> Unit)? = null,
+    onContextMenu: ((NodeId?, Offset) -> Unit)? = null,
     zoomProvider: () -> Float,
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
@@ -134,6 +137,7 @@ fun DeviceCanvas(
                     hoveredNodeId = hoveredNodeId,
                     selectedNodeId = selectedNodeId,
                     selectedNode = selectedNode,
+                    selectedNodeIds = selectedNodeIds,
                     zoomProvider = zoomProvider,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -169,7 +173,15 @@ fun DeviceCanvas(
                                     onActivate()
                                     onSelectNode(target)
                                 },
-                                onHoverChange = { hoveredNodeId = it }
+                                onHoverChange = { hoveredNodeId = it },
+                                onToggleSelectNode = { target ->
+                                    onActivate()
+                                    onToggleSelectNode?.invoke(target)
+                                },
+                                onContextMenu = { target, offset ->
+                                    onActivate()
+                                    onContextMenu?.invoke(target, offset)
+                                }
                             )
                     )
                 }

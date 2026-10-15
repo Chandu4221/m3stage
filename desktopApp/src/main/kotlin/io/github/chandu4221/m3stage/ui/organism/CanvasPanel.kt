@@ -1,6 +1,7 @@
 package io.github.chandu4221.m3stage.ui.organism
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import io.github.chandu4221.m3stage.component.ComponentKind
 import io.github.chandu4221.m3stage.model.DevicePreset
@@ -21,6 +22,9 @@ fun CanvasPanel(
     onSelectScreen: (ScreenId?) -> Unit,
     selectedNodeId: NodeId?,
     onNodeClick: (NodeId?) -> Unit,
+    selectedNodeIds: Set<NodeId> = selectedNodeId?.let { setOf(it) } ?: emptySet(),
+    onToggleNodeSelection: (NodeId) -> Unit = {},
+    onContextMenu: ((ScreenId, NodeId?, Offset) -> Unit)? = null,
     viewportController: CanvasViewportController,
     lockedNodeIds: Set<NodeId> = emptySet(),
     projectDefaultDevice: DevicePreset = DevicePreset.Default,
@@ -41,6 +45,9 @@ fun CanvasPanel(
         onSelectScreen = onSelectScreen,
         selectedNodeId = selectedNodeId,
         onNodeClick = onNodeClick,
+        selectedNodeIds = selectedNodeIds,
+        onToggleNodeSelection = onToggleNodeSelection,
+        onContextMenu = onContextMenu,
         lockedNodeIds = lockedNodeIds,
         viewportController = viewportController,
         projectDefaultDevice = projectDefaultDevice,

@@ -9,6 +9,7 @@ import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findParent
 import io.github.chandu4221.m3stage.query.findScreen
+import io.github.chandu4221.m3stage.query.isDescendantOf
 
 /**
  * Command pattern for editor actions.
@@ -516,5 +517,105 @@ data class DuplicateNodeCommand(
         val screen = project.findScreen(screenId) ?: return project
         val newRoot = screen.root.removeNode(duplicatedSubtree.id)
         return project.updateScreenRoot(screenId, newRoot)
+    }
+}
+
+data class RemovedNodeRecord(
+    val node: DesignNode,
+    val parentId: NodeId?,
+    val slotId: SlotId?,
+    val index: Int
+)
+
+/**
+ * Removes multiple nodes in one atomic command. Undo restores each node in its original position.
+ */
+data class RemoveNodesCommand(
+    val screenId: ScreenId,
+    val nodeIds: Set<NodeId>
+) : EditorCommand {
+    private var capturedRecords: List<RemovedNodeRecord>? = null
+
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        if (capturedRecords == null) {
+            val topLevelIds = nodeIds.filter { candidateId ->
+                nodeIds.none { otherId -> otherId != candidateId && screen.root.isDescendantOf(candidateId, otherId) }
+            }
+            capturedRecords = topLevelIds.mapNotNull { id ->
+                val node = screen.root.findNode(id) ?: return@mapNotNull null
+                val parent = screen.root.findParent(id)
+                val slotId = parent?.findSlotForNode(id)
+                val index = if (parent == null) {
+                    -1
+                } else if (slotId != null) {
+                    (parent.slots[slotId] ?: emptyList()).indexOfFirst { it.id == id }
+                } else {
+                    parent.children.indexOfFirst { it.id == id }
+                }
+                RemovedNodeRecord(node, parent?.id, slotId, index)
+            }
+        }
+
+        var currentRoot = screen.root
+        val records = capturedRecords ?: emptyList()
+        for (record in records) {
+            currentRoot = currentRoot.removeNode(record.node.id)
+        }
+        return project.updateScreenRoot(screenId, currentRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        var currentRoot = screen.root
+        val records = capturedRecords ?: emptyList()
+        for (record in records.sortedBy { it.index }) {
+            val parentId = record.parentId ?: continue
+            currentRoot = if (record.index >= 0) {
+                currentRoot.insertNode(parentId, record.node, record.index, record.slotId)
+            } else {
+                currentRoot.addNode(parentId, record.node, record.slotId)
+            }
+        }
+        return project.updateScreenRoot(screenId, currentRoot)
+    }
+}
+
+data class NodeDuplicationEntry(
+    val originalNodeId: NodeId,
+    val duplicatedSubtree: DesignNode
+)
+
+/**
+ * Duplicates multiple nodes in one atomic command.
+ */
+data class DuplicateNodesCommand(
+    val screenId: ScreenId,
+    val entries: List<NodeDuplicationEntry>
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        var currentRoot = screen.root
+        for (entry in entries) {
+            val parent = currentRoot.findParent(entry.originalNodeId) ?: continue
+            val slotEntry = parent.slots.entries.firstOrNull { (_, slotNodes) -> slotNodes.any { it.id == entry.originalNodeId } }
+            currentRoot = if (slotEntry != null) {
+                val originalIndex = slotEntry.value.indexOfFirst { it.id == entry.originalNodeId }
+                currentRoot.insertNode(parent.id, entry.duplicatedSubtree, originalIndex + 1, slotEntry.key)
+            } else {
+                val originalIndex = parent.children.indexOfFirst { it.id == entry.originalNodeId }
+                currentRoot.insertNode(parent.id, entry.duplicatedSubtree, originalIndex + 1, null)
+            }
+        }
+        return project.updateScreenRoot(screenId, currentRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        var currentRoot = screen.root
+        for (entry in entries) {
+            currentRoot = currentRoot.removeNode(entry.duplicatedSubtree.id)
+        }
+        return project.updateScreenRoot(screenId, currentRoot)
     }
 }

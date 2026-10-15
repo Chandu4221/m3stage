@@ -74,6 +74,98 @@ fun InspectorPanel(
             return
         }
 
+        val selectedIds = store.selectedNodeIds.value
+        if (selectedIds.size > 1) {
+            val screen = project.findScreen(io.github.chandu4221.m3stage.model.ScreenId(activeScreenId))
+            val selectedNodes = selectedIds.mapNotNull { screen?.root?.findNode(it) }
+            val hasPrefilled = selectedNodes.any { it.isPrefilled }
+
+            if (hasPrefilled) {
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            text = "Placeholder",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    border = null,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "${selectedIds.size} items selected",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Batch actions apply to all selected items.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { store.duplicateSelectedNodes() },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Duplicate")
+                        }
+                        Button(
+                            onClick = { store.removeSelectedNodes() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            ),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Delete")
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                selectedIds.forEach { store.toggleLock(it) }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Toggle Lock")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                selectedNodes.forEach { node ->
+                                    store.toggleVisibility(node.id)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Toggle Hide")
+                        }
+                    }
+                }
+            }
+            return
+        }
+
         val screen = project.findScreen(io.github.chandu4221.m3stage.model.ScreenId(activeScreenId))
         val node = screen?.root?.findNode(selectedNodeId)
 

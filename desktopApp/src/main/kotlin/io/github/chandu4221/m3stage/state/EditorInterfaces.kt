@@ -10,10 +10,13 @@ import kotlinx.coroutines.flow.StateFlow
 // 1. Ephemeral UI state (Selection, Locks, Viewport)
 interface SelectionState {
     val selectedNodeId: State<NodeId?>
+    val selectedNodeIds: State<Set<NodeId>>
     val activeScreenId: State<ScreenId?>
     val lockedNodeIds: State<Set<NodeId>>
     val drillAnchorNodeId: State<NodeId?>
     fun selectNode(id: NodeId?)
+    fun toggleNodeInSelection(id: NodeId)
+    fun selectNodes(ids: Set<NodeId>)
     fun setActiveScreen(id: ScreenId?)
     fun toggleLock(id: NodeId)
     fun isNodeLocked(id: NodeId): Boolean

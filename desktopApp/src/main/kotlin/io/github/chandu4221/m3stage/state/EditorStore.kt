@@ -13,6 +13,7 @@ import io.github.chandu4221.m3stage.query.findAcceptingSlot
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
+import io.github.chandu4221.m3stage.query.isDescendantOf
 import kotlinx.coroutines.*
 
 class EditorStore(
@@ -50,10 +51,13 @@ class EditorStore(
 
     // --- SelectionState ---
     override val selectedNodeId = selectionDelegate.selectedNodeId
+    override val selectedNodeIds = selectionDelegate.selectedNodeIds
     override val activeScreenId = selectionDelegate.activeScreenId
     override val lockedNodeIds = selectionDelegate.lockedNodeIds
     override val drillAnchorNodeId = selectionDelegate.drillAnchorNodeId
     override fun selectNode(id: NodeId?) = selectionDelegate.selectNode(id)
+    override fun toggleNodeInSelection(id: NodeId) = selectionDelegate.toggleNodeInSelection(id)
+    override fun selectNodes(ids: Set<NodeId>) = selectionDelegate.selectNodes(ids)
     override fun setActiveScreen(id: ScreenId?) = selectionDelegate.setActiveScreen(id)
     override fun toggleLock(id: NodeId) = selectionDelegate.toggleLock(id)
     override fun isNodeLocked(id: NodeId) = selectionDelegate.isNodeLocked(id)
@@ -217,6 +221,31 @@ class EditorStore(
         }
     }
 
+    // --- Bridge: Remove Selected Nodes (Batch) ---
+    fun removeSelectedNodes() {
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot remove nodes: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot remove nodes: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot remove nodes: active screen not found.")
+            return
+        }
+
+        val targetIds = selectedNodeIds.value.filter { it != screen.root.id }.toSet()
+        if (targetIds.isEmpty()) return
+
+        execute(RemoveNodesCommand(screenId, targetIds))
+        selectNodes(emptySet())
+    }
+
     // --- Bridge: Duplicate Node ---
     fun duplicateNode(nodeId: NodeId) {
         val screenId = activeScreenId.value
@@ -250,6 +279,43 @@ class EditorStore(
         val freshSubtree = reIdSubtree(originalNode, context.idGenerator)
         execute(DuplicateNodeCommand(screenId, nodeId, freshSubtree))
         selectNode(freshSubtree.id)
+    }
+
+    // --- Bridge: Duplicate Selected Nodes (Batch) ---
+    fun duplicateSelectedNodes() {
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot duplicate nodes: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot duplicate nodes: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot duplicate nodes: active screen not found.")
+            return
+        }
+
+        val candidateIds = selectedNodeIds.value.filter { it != screen.root.id }.toSet()
+        if (candidateIds.isEmpty()) return
+
+        val topLevelIds = candidateIds.filter { candidateId ->
+            candidateIds.none { otherId -> otherId != candidateId && screen.root.isDescendantOf(candidateId, otherId) }
+        }
+
+        val entries = topLevelIds.mapNotNull { id ->
+            val orig = screen.root.findNode(id) ?: return@mapNotNull null
+            val copy = reIdSubtree(orig, context.idGenerator)
+            NodeDuplicationEntry(id, copy)
+        }
+
+        if (entries.isNotEmpty()) {
+            execute(DuplicateNodesCommand(screenId, entries))
+            selectNodes(entries.map { it.duplicatedSubtree.id }.toSet())
+        }
     }
 
     // --- Bridge: Add New Screen ---

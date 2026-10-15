@@ -101,6 +101,7 @@ fun EditorShellTemplate(
                     LayersTreeDrawer(
                         activeScreen = activeScreen,
                         selectedNodeId = selectedNodeId,
+                        selectedNodeIds = store.selectedNodeIds.value,
                         lockedNodeIds = lockedNodeIds,
                         onSelectNode = onNodeClick,
                         onToggleVisibility = { store.toggleVisibility(it) },
@@ -154,7 +155,9 @@ fun EditorShellTemplate(
                 activeScreenId = activeScreenId,
                 onSelectScreen = onSelectScreen,
                 selectedNodeId = selectedNodeId,
+                selectedNodeIds = store.selectedNodeIds.value,
                 onNodeClick = onNodeClick,
+                onToggleNodeSelection = { store.toggleNodeInSelection(it) },
                 lockedNodeIds = lockedNodeIds,
                 canUndo = canUndo,
                 canRedo = canRedo,

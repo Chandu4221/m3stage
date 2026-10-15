@@ -70,10 +70,16 @@ fun handleEditorKeyEvent(
 
     // 2. Duplicate: Ctrl+D
     if (keyEvent.isCtrlPressed && keyEvent.key == Key.D) {
-        val currentSelected = store.selectedNodeId.value
-        if (currentSelected != null) {
-            store.duplicateNode(currentSelected)
+        val selectedIds = store.selectedNodeIds.value
+        if (selectedIds.size > 1) {
+            store.duplicateSelectedNodes()
             return true
+        } else {
+            val currentSelected = store.selectedNodeId.value
+            if (currentSelected != null) {
+                store.duplicateNode(currentSelected)
+                return true
+            }
         }
     }
 
@@ -152,10 +158,16 @@ fun handleEditorKeyEvent(
     // 4. Delete / Backspace: remove node (suppressed when typing in text fields)
     if (keyEvent.key == Key.Delete || keyEvent.key == Key.Backspace) {
         if (actions.isTextInputFocused()) return false
-        val currentSelected = store.selectedNodeId.value
-        if (currentSelected != null) {
-            store.removeNode(currentSelected)
+        val selectedIds = store.selectedNodeIds.value
+        if (selectedIds.size > 1) {
+            store.removeSelectedNodes()
             return true
+        } else {
+            val currentSelected = store.selectedNodeId.value
+            if (currentSelected != null) {
+                store.removeNode(currentSelected)
+                return true
+            }
         }
     }
 
