@@ -34,7 +34,8 @@ import kotlinx.coroutines.withContext
  */
 @Composable
 fun EditorScreen(store: EditorStore) {
-    val project by store.project.collectAsState()
+    val projectState = store.project.collectAsState()
+    val project by projectState
     val activeScreenId by store.activeScreenId
     val selectedNodeId by store.selectedNodeId
     val lockedNodeIds by store.lockedNodeIds
@@ -45,18 +46,13 @@ fun EditorScreen(store: EditorStore) {
     var searchQuery by remember { mutableStateOf("") }
 
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
-    val selectedNode = activeScreen?.root?.let { root ->
-        selectedNodeId?.let { root.findNode(it) }
-    }
-    val effectiveTargetNode = selectedNode ?: activeScreen?.root
-    val disallowedKinds = remember(effectiveTargetNode, activeScreen?.root) {
-        val root = activeScreen?.root
-        if (effectiveTargetNode == null || root == null) {
-            emptySet()
-        } else {
-            ComponentKind.entries.filterNot { kind ->
-                effectiveTargetNode.findNearestAcceptingAncestor(root, kind) != null
-            }.toSet()
+    val disallowedKinds by remember {
+        derivedStateOf {
+            computeDisallowedKinds(
+                project = projectState.value,
+                activeScreenId = store.activeScreenId.value,
+                selectedNodeId = store.selectedNodeId.value
+            )
         }
     }
 
@@ -243,4 +239,20 @@ fun EditorScreen(store: EditorStore) {
                 .padding(bottom = 24.dp)
         )
     }
+}
+
+/**
+ * Computes disallowed component kinds for palette tiles based on active screen and selection.
+ */
+fun computeDisallowedKinds(
+    project: io.github.chandu4221.m3stage.model.Project?,
+    activeScreenId: io.github.chandu4221.m3stage.model.ScreenId?,
+    selectedNodeId: io.github.chandu4221.m3stage.model.NodeId?
+): Set<ComponentKind> {
+    val screen = project?.screens?.firstOrNull { it.id == activeScreenId }
+    val root = screen?.root ?: return emptySet()
+    val targetNode = (selectedNodeId?.let { root.findNode(it) }) ?: root
+    return ComponentKind.entries.filterNot { kind ->
+        targetNode.findNearestAcceptingAncestor(root, kind) != null
+    }.toSet()
 }
