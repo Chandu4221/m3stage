@@ -54,6 +54,8 @@ fun LayerTreeRow(
     }
     val contentColor = if (isSelected) {
         MaterialTheme.colorScheme.onPrimaryContainer
+    } else if (node.isPrefilled) {
+        MaterialTheme.colorScheme.onSurfaceVariant
     } else {
         MaterialTheme.colorScheme.onSurface
     }

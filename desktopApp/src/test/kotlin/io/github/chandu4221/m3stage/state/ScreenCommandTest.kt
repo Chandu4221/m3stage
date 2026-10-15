@@ -441,5 +441,90 @@ class ScreenCommandTest {
         assertEquals(200f, store.project.value!!.findScreen(screenId)?.canvasX)
         kotlin.test.assertNull(store.activeScreenId.value)
     }
+
+    @Test
+    fun testUpdatePropCommandClearsAndRestoresPrefilled() {
+        val project = createSampleProject()
+        val screenId = ScreenId("screen-1")
+        val screen = project.findScreen(screenId)!!
+        val prefilledNode = screen.root.children.firstOrNull { it.isPrefilled }
+            ?: screen.root.slots.values.flatten().first { it.isPrefilled }
+        assertTrue(prefilledNode.isPrefilled, "Target node must initially have isPrefilled = true")
+
+        val propId = io.github.chandu4221.m3stage.property.PropertyId("text.content")
+        val oldValue = prefilledNode.props[propId]
+        val newValue = io.github.chandu4221.m3stage.property.PropertyValue.StringValue("Edited Title")
+
+        val cmd = UpdatePropCommand(screenId, prefilledNode.id, propId, oldValue, newValue)
+
+        // Execute: clears isPrefilled
+        val executed = cmd.execute(project)
+        val editedNode = executed.findScreen(screenId)!!.root.findNode(prefilledNode.id)!!
+        assertEquals(false, editedNode.isPrefilled, "Edited node must have isPrefilled = false")
+        assertEquals(newValue, editedNode.props[propId])
+
+        // Undo: restores isPrefilled = true
+        val undone = cmd.undo(executed)
+        val restoredNode = undone.findScreen(screenId)!!.root.findNode(prefilledNode.id)!!
+        assertEquals(true, restoredNode.isPrefilled, "Undone node must restore isPrefilled = true")
+        assertEquals(oldValue, restoredNode.props[propId])
+
+        // Redo / Re-execute: clears isPrefilled = false again
+        val redone = cmd.execute(undone)
+        val reEditedNode = redone.findScreen(screenId)!!.root.findNode(prefilledNode.id)!!
+        assertEquals(false, reEditedNode.isPrefilled, "Redone node must have isPrefilled = false")
+        assertEquals(newValue, reEditedNode.props[propId])
+    }
+
+    @Test
+    fun testDuplicateNodePreservesPrefilledSubtree() {
+        val repo = object : io.github.chandu4221.m3stage.port.ProjectRepository {
+            override suspend fun save(project: Project) {}
+            override suspend fun load(): Project? = null
+        }
+        val codeGen = object : io.github.chandu4221.m3stage.port.CodeGenerator {
+            override fun generate(project: Project): io.github.chandu4221.m3stage.port.GeneratedProject =
+                io.github.chandu4221.m3stage.port.GeneratedProject(emptyList())
+        }
+
+        val store = EditorStore(idGen, repo, codeGen)
+        store.createNewProject()
+
+        val screenId = store.project.value!!.screens.first().id
+        store.setActiveScreen(screenId)
+
+        // Add a Column which contains a prefilled Text child
+        val screen = store.project.value!!.findScreen(screenId)!!
+        store.addNodeToActiveScreen(screen.root.id, ComponentKind.Column)
+
+        val updatedScreen = store.project.value!!.findScreen(screenId)!!
+        val col = updatedScreen.root.allDirectChildren.first { it.kind == ComponentKind.Column }
+        assertTrue(col.isPrefilled, "New column should be marked isPrefilled")
+        val childText = col.children.first()
+        assertTrue(childText.isPrefilled, "Child of column should be marked isPrefilled")
+
+        // Duplicate the child text inside the column (Column accepts multiple children)
+        store.duplicateNode(childText.id)
+
+        val afterDup = store.project.value!!.findScreen(screenId)!!
+        val updatedCol = afterDup.root.findNode(col.id)!!
+        assertEquals(2, updatedCol.children.size)
+        assertTrue(updatedCol.children[0].isPrefilled, "Original child must be isPrefilled")
+        assertTrue(updatedCol.children[1].isPrefilled, "Duplicated child must preserve isPrefilled = true")
+
+        // Also test duplicating a container with children (Card inside Column)
+        store.addNodeToActiveScreen(col.id, ComponentKind.Card)
+        val withCard = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
+        val card = withCard.children.first { it.kind == ComponentKind.Card }
+        assertTrue(card.isPrefilled, "Card should be isPrefilled")
+        assertTrue(card.allDirectChildren.all { it.isPrefilled }, "All children of card should be isPrefilled")
+
+        store.duplicateNode(card.id)
+        val afterCardDup = store.project.value!!.findScreen(screenId)!!.root.findNode(col.id)!!
+        val cards = afterCardDup.children.filter { it.kind == ComponentKind.Card }
+        assertEquals(2, cards.size)
+        assertTrue(cards[1].isPrefilled, "Duplicated card must be isPrefilled")
+        assertTrue(cards[1].allDirectChildren.all { it.isPrefilled }, "Duplicated card subtree must be isPrefilled")
+    }
 }
 

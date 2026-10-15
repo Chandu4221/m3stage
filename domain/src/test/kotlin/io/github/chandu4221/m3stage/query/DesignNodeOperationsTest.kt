@@ -6,6 +6,7 @@ import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.mutation.addNode
 import io.github.chandu4221.m3stage.mutation.removeNode
+import io.github.chandu4221.m3stage.mutation.updatePrefilled
 import io.github.chandu4221.m3stage.mutation.updateProp
 import io.github.chandu4221.m3stage.property.PropertyValue
 import kotlin.test.Test
@@ -85,5 +86,30 @@ class DesignNodeOperationsTest {
 
         assertEquals("Hello", originalText)
         assertEquals("Updated Text", newText)
+    }
+
+    @Test
+    fun testUpdatePropClearsPrefilledFlag() {
+        val prefilledNode = textNode.copy(isPrefilled = true)
+        val tree = rootNode.copy(children = listOf(columnNode.copy(children = listOf(prefilledNode))))
+
+        val updatedTree = tree.updateProp(
+            nodeId = NodeId("text-1"),
+            key = ComponentCatalog.TextProps.TextContent,
+            value = PropertyValue.StringValue("Updated Text")
+        )
+
+        val updatedNode = updatedTree.findNode(NodeId("text-1"))
+        assertNotNull(updatedNode)
+        assertEquals(false, updatedNode.isPrefilled)
+    }
+
+    @Test
+    fun testUpdatePrefilledExplicitly() {
+        val tree = rootNode.updatePrefilled(NodeId("text-1"), true)
+        assertEquals(true, tree.findNode(NodeId("text-1"))?.isPrefilled)
+
+        val reverted = tree.updatePrefilled(NodeId("text-1"), false)
+        assertEquals(false, reverted.findNode(NodeId("text-1"))?.isPrefilled)
     }
 }

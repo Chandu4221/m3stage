@@ -7,6 +7,8 @@ import io.github.chandu4221.m3stage.modifier.ModifierSpec
 import io.github.chandu4221.m3stage.port.CodeGenerator
 import io.github.chandu4221.m3stage.port.IdGenerator
 import io.github.chandu4221.m3stage.port.ProjectRepository
+import io.github.chandu4221.m3stage.property.PropertyId
+import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findAcceptingSlot
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
@@ -544,6 +546,16 @@ class EditorStore(
                 newModifier = newModifier
             )
         )
+    }
+
+    // --- Bridge: Property Operations ---
+    fun updateProp(nodeId: NodeId, propId: PropertyId, newValue: PropertyValue) {
+        val screenId = activeScreenId.value ?: return
+        val currentProject = project.value ?: return
+        val screen = currentProject.findScreen(screenId) ?: return
+        val node = screen.root.findNode(nodeId) ?: return
+        val oldValue = node.props[propId]
+        execute(UpdatePropCommand(screenId, nodeId, propId, oldValue, newValue))
     }
 
     override fun close() {

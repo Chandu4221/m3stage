@@ -102,18 +102,27 @@ data class UpdatePropCommand(
     val oldValue: PropertyValue?,
     val newValue: PropertyValue
 ) : EditorCommand {
+    private var oldPrefilled: Boolean? = null
+
     override fun execute(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
-        val newRoot = screen.root.updatePropById(nodeId, propId, newValue)
+        val targetNode = screen.root.findNode(nodeId) ?: return project
+        if (oldPrefilled == null) {
+            oldPrefilled = targetNode.isPrefilled
+        }
+        val newRoot = screen.root.updatePropById(nodeId, propId, newValue, clearPrefilled = true)
         return project.updateScreenRoot(screenId, newRoot)
     }
 
     override fun undo(project: Project): Project {
         val screen = project.findScreen(screenId) ?: return project
-        val newRoot = if (oldValue == null) {
+        var newRoot = if (oldValue == null) {
             screen.root.removeProp(nodeId, propId)
         } else {
-            screen.root.updatePropById(nodeId, propId, oldValue)
+            screen.root.updatePropById(nodeId, propId, oldValue, clearPrefilled = false)
+        }
+        oldPrefilled?.let {
+            newRoot = newRoot.updatePrefilled(nodeId, it)
         }
         return project.updateScreenRoot(screenId, newRoot)
     }

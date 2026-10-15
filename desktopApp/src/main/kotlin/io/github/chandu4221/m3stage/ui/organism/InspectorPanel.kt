@@ -5,15 +5,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.chandu4221.m3stage.component.ComponentCatalog
 import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Project
+import io.github.chandu4221.m3stage.property.PropertySpec
+import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
 import io.github.chandu4221.m3stage.state.EditorStore
@@ -82,10 +85,28 @@ fun InspectorPanel(
 
 @Composable
 private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: EditorStore) {
+    if (node.isPrefilled) {
+        AssistChip(
+            onClick = {},
+            label = {
+                Text(
+                    text = "Placeholder",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            },
+            colors = AssistChipDefaults.assistChipColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            border = null,
+            modifier = Modifier.padding(top = 12.dp)
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp),
+            .padding(top = if (node.isPrefilled) 8.dp else 16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         )
@@ -103,6 +124,45 @@ private fun NodePropertiesCard(node: DesignNode, isLocked: Boolean, store: Edito
             )
         }
     }
+
+    val def = ComponentCatalog.find(node.kind)
+    val textProps = def?.properties?.filterIsInstance<PropertySpec.Text>().orEmpty()
+    if (textProps.isNotEmpty()) {
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Properties",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                for (prop in textProps) {
+                    val currentVal = (node.props[prop.key.id] as? PropertyValue.StringValue)?.value
+                        ?: prop.defaultValue.value
+                    var textState by remember(node.id, prop.key.id, currentVal) { mutableStateOf(currentVal) }
+
+                    OutlinedTextField(
+                        value = textState,
+                        onValueChange = { newText ->
+                            textState = newText
+                            store.updateProp(node.id, prop.key.id, PropertyValue.StringValue(newText))
+                        },
+                        label = { Text(prop.displayName) },
+                        enabled = !isLocked,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+
     Spacer(modifier = Modifier.height(12.dp))
     // First-Class Modifiers Pipeline
     ModifierSection(

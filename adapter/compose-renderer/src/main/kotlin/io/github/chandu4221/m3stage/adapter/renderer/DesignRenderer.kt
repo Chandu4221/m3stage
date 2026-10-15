@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import io.github.chandu4221.m3stage.adapter.renderer.registry.ComponentRendererRegistry
 import io.github.chandu4221.m3stage.adapter.renderer.resolver.resolveModifiers
@@ -79,9 +80,15 @@ object DesignRenderer {
             val renderer = ComponentRendererRegistry[currentNode.kind]
             val rowScope = io.github.chandu4221.m3stage.adapter.renderer.component.navigation.LocalRowScope.current
 
+            val resolvedModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
+            val elementModifier = if (currentNode.isPrefilled) {
+                resolvedModifier.alpha(0.55f)
+            } else {
+                resolvedModifier
+            }
+
             if (rowScope != null && currentNode.kind == io.github.chandu4221.m3stage.component.ComponentKind.NavigationBarItem) {
                 if (renderer != null) {
-                    val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
                     renderer.Render(currentNode, modifier = baseModifier.then(elementModifier)) { child ->
                         renderNode(child, currentNode, depth + 1)
                     }
@@ -91,7 +98,6 @@ object DesignRenderer {
             } else {
                 Box(modifier = baseModifier) {
                     if (renderer != null) {
-                        val elementModifier = Modifier.resolveModifiers(currentNode.modifiers, parentNode?.kind)
                         renderer.Render(currentNode, modifier = elementModifier) { child ->
                             renderNode(child, currentNode, depth + 1)
                         }

@@ -52,22 +52,28 @@ fun DesignNode.removeNode(nodeId: NodeId): DesignNode {
  * Updates a specific property on a node using a type-safe PropKey.
  * Returns a new immutable tree root.
  */
-fun <V : PropertyValue> DesignNode.updateProp(nodeId: NodeId, key: PropertyKey<V>, value: V): DesignNode {
+fun <V : PropertyValue> DesignNode.updateProp(nodeId: NodeId, key: PropertyKey<V>, value: V, clearPrefilled: Boolean = true): DesignNode {
     if (this.id == nodeId) {
-        return copy(props = props + (key.id to value))
+        return copy(
+            props = props + (key.id to value),
+            isPrefilled = if (clearPrefilled) false else this.isPrefilled
+        )
     }
-    return mapDescendants { it.updateProp(nodeId, key, value) }
+    return mapDescendants { it.updateProp(nodeId, key, value, clearPrefilled) }
 }
 
 /**
  * Updates a property by its raw PropId.
  * Used by Commands to avoid generic type erasure in the undo/redo stack.
  */
-fun DesignNode.updatePropById(nodeId: NodeId, propId: PropertyId, value: PropertyValue): DesignNode {
+fun DesignNode.updatePropById(nodeId: NodeId, propId: PropertyId, value: PropertyValue, clearPrefilled: Boolean = true): DesignNode {
     if (this.id == nodeId) {
-        return copy(props = props + (propId to value))
+        return copy(
+            props = props + (propId to value),
+            isPrefilled = if (clearPrefilled) false else this.isPrefilled
+        )
     }
-    return mapDescendants { it.updatePropById(nodeId, propId, value) }
+    return mapDescendants { it.updatePropById(nodeId, propId, value, clearPrefilled) }
 }
 
 /**
@@ -144,6 +150,16 @@ fun DesignNode.updateVisibility(nodeId: NodeId, isVisible: Boolean): DesignNode 
         return copy(isVisible = isVisible)
     }
     return mapDescendants { it.updateVisibility(nodeId, isVisible) }
+}
+
+/**
+ * Updates the isPrefilled flag of a specific node anywhere in the tree.
+ */
+fun DesignNode.updatePrefilled(nodeId: NodeId, isPrefilled: Boolean): DesignNode {
+    if (this.id == nodeId) {
+        return copy(isPrefilled = isPrefilled)
+    }
+    return mapDescendants { it.updatePrefilled(nodeId, isPrefilled) }
 }
 
 /**
