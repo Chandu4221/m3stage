@@ -12,6 +12,7 @@ import io.github.chandu4221.m3stage.property.PropertyValue
 import io.github.chandu4221.m3stage.query.findAcceptingSlot
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
+import io.github.chandu4221.m3stage.query.findParent
 import io.github.chandu4221.m3stage.query.findScreen
 import io.github.chandu4221.m3stage.query.flatten
 import io.github.chandu4221.m3stage.query.isDescendantOf
@@ -355,6 +356,45 @@ class EditorStore(
 
         val sanitizedLabel = newLabel?.trim()?.ifEmpty { null }
         execute(RenameNodeCommand(screenId, nodeId, oldLabel = node.label, newLabel = sanitizedLabel))
+    }
+
+    // --- Bridge: Reorder Node Within Parent ---
+    fun reorderNode(nodeId: NodeId, targetIndex: Int) {
+        val screenId = activeScreenId.value
+        if (screenId == null) {
+            notifyUser("Cannot reorder node: no active screen selected.")
+            return
+        }
+        val currentProject = project.value
+        if (currentProject == null) {
+            notifyUser("Cannot reorder node: no project open.")
+            return
+        }
+        val screen = currentProject.findScreen(screenId)
+        if (screen == null) {
+            notifyUser("Cannot reorder node: active screen not found.")
+            return
+        }
+        if (screen.root.id == nodeId) {
+            notifyUser("Cannot reorder the root node.")
+            return
+        }
+
+        val parent = screen.root.findParent(nodeId)
+        if (parent == null) {
+            notifyUser("Cannot reorder node: parent not found.")
+            return
+        }
+
+        val slotId = parent.findSlotForNode(nodeId)
+        val currentList = if (slotId != null) parent.slots[slotId] ?: emptyList() else parent.children
+        val fromIndex = currentList.indexOfFirst { it.id == nodeId }
+        if (fromIndex == -1) return
+
+        val safeTarget = targetIndex.coerceIn(0, currentList.lastIndex)
+        if (fromIndex == safeTarget) return
+
+        execute(MoveNodeWithinParentCommand(screenId, parent.id, slotId, nodeId, fromIndex, safeTarget))
     }
 
     // --- Bridge: Add New Screen ---

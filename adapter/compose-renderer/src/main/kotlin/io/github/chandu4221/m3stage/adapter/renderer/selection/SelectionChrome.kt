@@ -42,6 +42,8 @@ fun SelectionChrome(
     selectedNodeId: NodeId?,
     selectedNode: DesignNode?,
     selectedNodeIds: Set<NodeId> = selectedNodeId?.let { setOf(it) } ?: emptySet(),
+    draggedNodeId: NodeId? = null,
+    dropTarget: DropTargetResult? = null,
     zoomProvider: () -> Float = { 1f },
     modifier: Modifier = Modifier
 ) {
@@ -118,6 +120,29 @@ fun SelectionChrome(
                         style = Stroke(width = handleStrokePx)
                     )
                 }
+            }
+
+            // 3. Drag source visual (alpha 0.6 scrim)
+            if (draggedNodeId != null) {
+                val dragBounds = allBounds[draggedNodeId]
+                if (dragBounds != null) {
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.35f),
+                        topLeft = Offset(dragBounds.left, dragBounds.top),
+                        size = Size(dragBounds.width, dragBounds.height)
+                    )
+                }
+            }
+
+            // 4. Drop indicator line (2dp primary-colored line between siblings)
+            if (dropTarget != null && dropTarget.isValid) {
+                val strokePx = (2.dp.toPx() / zoom).coerceAtLeast(1.5f)
+                drawLine(
+                    color = FigmaBlue,
+                    start = dropTarget.indicatorLineStart,
+                    end = dropTarget.indicatorLineEnd,
+                    strokeWidth = strokePx
+                )
             }
         }
 

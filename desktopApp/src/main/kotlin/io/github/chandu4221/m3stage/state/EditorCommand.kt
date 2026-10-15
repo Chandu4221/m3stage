@@ -641,3 +641,28 @@ data class RenameNodeCommand(
         return project.updateScreenRoot(screenId, newRoot)
     }
 }
+
+/**
+ * Moves a node within its parent (in children or in a slot) from [fromIndex] to [toIndex].
+ * Undo restores the node to [fromIndex].
+ */
+data class MoveNodeWithinParentCommand(
+    val screenId: ScreenId,
+    val parentId: NodeId,
+    val slotId: SlotId?,
+    val nodeId: NodeId,
+    val fromIndex: Int,
+    val toIndex: Int
+) : EditorCommand {
+    override fun execute(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.reorderChild(parentId, nodeId, toIndex, slotId)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+
+    override fun undo(project: Project): Project {
+        val screen = project.findScreen(screenId) ?: return project
+        val newRoot = screen.root.reorderChild(parentId, nodeId, fromIndex, slotId)
+        return project.updateScreenRoot(screenId, newRoot)
+    }
+}

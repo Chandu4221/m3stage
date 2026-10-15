@@ -143,6 +143,38 @@ fun DesignNode.insertNode(
 }
 
 /**
+ * Reorders a child node within its current parent (in children or in a slot) to [targetIndex].
+ * Returns a new immutable tree root.
+ */
+fun DesignNode.reorderChild(
+    parentId: NodeId,
+    nodeId: NodeId,
+    targetIndex: Int,
+    slotId: SlotId? = null
+): DesignNode {
+    if (this.id == parentId) {
+        return if (slotId != null) {
+            val currentList = (slots[slotId] ?: emptyList()).toMutableList()
+            val currentIndex = currentList.indexOfFirst { it.id == nodeId }
+            if (currentIndex == -1) return this
+            val node = currentList.removeAt(currentIndex)
+            val safeIndex = targetIndex.coerceIn(0, currentList.size)
+            currentList.add(safeIndex, node)
+            copy(slots = slots + (slotId to currentList.toList()))
+        } else {
+            val currentList = children.toMutableList()
+            val currentIndex = currentList.indexOfFirst { it.id == nodeId }
+            if (currentIndex == -1) return this
+            val node = currentList.removeAt(currentIndex)
+            val safeIndex = targetIndex.coerceIn(0, currentList.size)
+            currentList.add(safeIndex, node)
+            copy(children = currentList.toList())
+        }
+    }
+    return mapDescendants { it.reorderChild(parentId, nodeId, targetIndex, slotId) }
+}
+
+/**
  * Updates the visibility of a specific node anywhere in the tree.
  */
 fun DesignNode.updateVisibility(nodeId: NodeId, isVisible: Boolean): DesignNode {

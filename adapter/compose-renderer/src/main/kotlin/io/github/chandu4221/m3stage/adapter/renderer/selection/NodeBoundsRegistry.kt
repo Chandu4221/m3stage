@@ -52,7 +52,7 @@ class NodeBoundsRegistry {
         bounds.clear()
     }
 
-    fun get(id: NodeId): Rect? = bounds[id]
+    operator fun get(id: NodeId): Rect? = bounds[id]
 
     fun all(): Map<NodeId, Rect> = bounds.toMap()
 

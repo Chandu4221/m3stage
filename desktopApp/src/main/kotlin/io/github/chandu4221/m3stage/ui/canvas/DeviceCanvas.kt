@@ -22,6 +22,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.DesignRenderer
+import io.github.chandu4221.m3stage.adapter.renderer.selection.DragReorderHelper
+import io.github.chandu4221.m3stage.adapter.renderer.selection.DropTargetResult
 import io.github.chandu4221.m3stage.adapter.renderer.selection.NodeBoundsRegistry
 import io.github.chandu4221.m3stage.adapter.renderer.selection.SelectionChrome
 import io.github.chandu4221.m3stage.adapter.renderer.selection.selectionPointerInput
@@ -33,6 +35,7 @@ import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.query.findNode
+import io.github.chandu4221.m3stage.query.findParent
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.device.DeviceFrame
@@ -67,6 +70,7 @@ fun DeviceCanvas(
     zoomProvider: () -> Float,
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
+    onCanvasDragActiveChange: ((Boolean, () -> Unit) -> Unit)? = null,
     store: EditorStore? = null,
     modifier: Modifier = Modifier
 ) {
@@ -76,6 +80,9 @@ fun DeviceCanvas(
     val anchorState = remember(screen.id) { mutableStateOf<NodeId?>(null) }
     var hoveredNodeId by remember(screen.id) { mutableStateOf<NodeId?>(null) }
     var artboardOrigin by remember { mutableStateOf(Offset.Zero) }
+
+    var activeDragNodeId by remember(screen.id) { mutableStateOf<NodeId?>(null) }
+    var activeDropTarget by remember(screen.id) { mutableStateOf<DropTargetResult?>(null) }
 
     var contextMenuOffset by remember(screen.id) { mutableStateOf<Offset?>(null) }
     var contextMenuTargetId by remember(screen.id) { mutableStateOf<NodeId?>(null) }
@@ -147,6 +154,8 @@ fun DeviceCanvas(
                     selectedNodeId = selectedNodeId,
                     selectedNode = selectedNode,
                     selectedNodeIds = selectedNodeIds,
+                    draggedNodeId = activeDragNodeId,
+                    dropTarget = activeDropTarget,
                     zoomProvider = zoomProvider,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -178,6 +187,7 @@ fun DeviceCanvas(
                                 treeInfo = treeInfo,
                                 screenRootId = screen.root.id,
                                 anchorState = anchorState,
+                                selectedNodeId = selectedNodeId,
                                 onSelectNode = { target ->
                                     onActivate()
                                     onSelectNode(target)
@@ -199,6 +209,57 @@ fun DeviceCanvas(
                                     }
                                     contextMenuOffset = offset
                                     onContextMenu?.invoke(target, offset)
+                                },
+                                onDragStart = { targetNodeId, pointerPos ->
+                                    onActivate()
+                                    if (targetNodeId != selectedNodeId) {
+                                        onSelectNode(targetNodeId)
+                                    }
+                                    activeDragNodeId = targetNodeId
+                                    onCanvasDragActiveChange?.invoke(true) {
+                                        activeDragNodeId = null
+                                        activeDropTarget = null
+                                    }
+                                    val parent = screen.root.findParent(targetNodeId)
+                                    if (parent != null) {
+                                        val slotId = parent.findSlotForNode(targetNodeId)
+                                        val children = if (slotId != null) parent.slots[slotId] ?: emptyList() else parent.children
+                                        val isVertical = parent.kind != ComponentKind.Row
+                                        val parentBounds = registry[parent.id]
+                                        val siblings = children.mapNotNull { child -> registry[child.id]?.let { child.id to it } }
+                                        activeDropTarget = DragReorderHelper.computeDropTarget(pointerPos, targetNodeId, parentBounds, siblings, isVertical)
+                                    }
+                                },
+                                onDragMove = { pointerPos ->
+                                    val currentDragId = activeDragNodeId
+                                    if (currentDragId != null) {
+                                        val parent = screen.root.findParent(currentDragId)
+                                        if (parent != null) {
+                                            val slotId = parent.findSlotForNode(currentDragId)
+                                            val children = if (slotId != null) parent.slots[slotId] ?: emptyList() else parent.children
+                                            val isVertical = parent.kind != ComponentKind.Row
+                                            val parentBounds = registry[parent.id]
+                                            val siblings = children.mapNotNull { child -> registry[child.id]?.let { child.id to it } }
+                                            activeDropTarget = DragReorderHelper.computeDropTarget(pointerPos, currentDragId, parentBounds, siblings, isVertical)
+                                        } else {
+                                            activeDropTarget = null
+                                        }
+                                    }
+                                },
+                                onDragEnd = {
+                                    val currentDragId = activeDragNodeId
+                                    val currentTarget = activeDropTarget
+                                    if (currentDragId != null && currentTarget != null && currentTarget.isValid) {
+                                        store?.reorderNode(currentDragId, currentTarget.targetIndex)
+                                    }
+                                    activeDragNodeId = null
+                                    activeDropTarget = null
+                                    onCanvasDragActiveChange?.invoke(false) {}
+                                },
+                                onDragCancel = {
+                                    activeDragNodeId = null
+                                    activeDropTarget = null
+                                    onCanvasDragActiveChange?.invoke(false) {}
                                 }
                             )
                     )

@@ -3,6 +3,7 @@ package io.github.chandu4221.m3stage.ui.page
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
+import io.github.chandu4221.m3stage.query.findParent
 import io.github.chandu4221.m3stage.query.flatten
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportController
@@ -15,7 +16,9 @@ import io.github.chandu4221.m3stage.state.ShellPanelsController
 data class EditorShortcutActions(
     val isTextInputFocused: () -> Boolean = { false },
     val isPaletteDragging: () -> Boolean = { false },
-    val onCancelPaletteDrag: () -> Unit = {}
+    val onCancelPaletteDrag: () -> Unit = {},
+    val isCanvasDragging: () -> Boolean = { false },
+    val onCancelCanvasDrag: () -> Unit = {}
 )
 
 /**
@@ -117,6 +120,32 @@ fun handleEditorKeyEvent(
         }
     }
 
+    // 2.2. Reorder node keyboard nudge: Ctrl+↑/↓/←/→ (suppressed when typing in text fields)
+    if (keyEvent.isCtrlPressed && !keyEvent.isShiftPressed && !actions.isTextInputFocused()) {
+        if (keyEvent.key == Key.DirectionUp || keyEvent.key == Key.DirectionDown ||
+            keyEvent.key == Key.DirectionLeft || keyEvent.key == Key.DirectionRight) {
+            val selectedId = store.selectedNodeId.value
+            if (selectedId != null) {
+                val activeScreenId = store.activeScreenId.value
+                val screen = store.project.value?.screens?.firstOrNull { it.id == activeScreenId }
+                val parent = screen?.root?.findParent(selectedId)
+                if (parent != null) {
+                    val slotId = parent.findSlotForNode(selectedId)
+                    val children = if (slotId != null) parent.slots[slotId] ?: emptyList() else parent.children
+                    val currentIndex = children.indexOfFirst { it.id == selectedId }
+                    if (currentIndex != -1) {
+                        val isEarlier = keyEvent.key == Key.DirectionUp || keyEvent.key == Key.DirectionLeft
+                        val targetIndex = if (isEarlier) currentIndex - 1 else currentIndex + 1
+                        if (targetIndex in 0..children.lastIndex) {
+                            store.reorderNode(selectedId, targetIndex)
+                        }
+                        return true
+                    }
+                }
+            }
+        }
+    }
+
     // 2.5. Save: Ctrl+S
     if (keyEvent.isCtrlPressed && keyEvent.key == Key.S) {
         store.saveProject()
@@ -137,8 +166,12 @@ fun handleEditorKeyEvent(
         }
     }
 
-    // 3. Escape: 3-level cascade (cancel palette drag -> pop selection anchor / deselect node -> deselect screen)
+    // 3. Escape: 4-level cascade (cancel canvas drag -> cancel palette drag -> pop selection anchor / deselect node -> deselect screen)
     if (keyEvent.key == Key.Escape) {
+        if (actions.isCanvasDragging()) {
+            actions.onCancelCanvasDrag()
+            return true
+        }
         if (actions.isPaletteDragging()) {
             actions.onCancelPaletteDrag()
             return true
@@ -179,8 +212,8 @@ fun handleEditorKeyEvent(
         }
     }
 
-    // 5. Arrow Up / Down in Layers tree (suppressed when typing in text fields)
-    if (keyEvent.key == Key.DirectionUp || keyEvent.key == Key.DirectionDown) {
+    // 5. Arrow Up / Down in Layers tree (suppressed when typing in text fields or Ctrl is pressed)
+    if (!keyEvent.isCtrlPressed && (keyEvent.key == Key.DirectionUp || keyEvent.key == Key.DirectionDown)) {
         if (actions.isTextInputFocused()) return false
         val activeScreenId = store.activeScreenId.value
         val screen = store.project.value?.screens?.firstOrNull { it.id == activeScreenId }
