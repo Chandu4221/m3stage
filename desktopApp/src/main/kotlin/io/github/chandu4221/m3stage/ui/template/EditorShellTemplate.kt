@@ -4,64 +4,42 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.component.ComponentKind
-import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Project
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasViewportController
 import io.github.chandu4221.m3stage.state.EditorStore
-import io.github.chandu4221.m3stage.ui.organism.InspectorPanel
+import io.github.chandu4221.m3stage.state.ShellPanelsController
+import io.github.chandu4221.m3stage.ui.atom.PanelResizeHandle
+import io.github.chandu4221.m3stage.ui.atom.PanelResizeSide
+import io.github.chandu4221.m3stage.ui.organism.CodePreviewPanel
 import io.github.chandu4221.m3stage.ui.organism.FloatingCanvasStudio
+import io.github.chandu4221.m3stage.ui.organism.InspectorPanel
 import io.github.chandu4221.m3stage.ui.organism.LayersTreeDrawer
 import io.github.chandu4221.m3stage.ui.organism.PartsDrawer
 import io.github.chandu4221.m3stage.ui.organism.StudioNavRail
 import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
-import io.github.chandu4221.m3stage.ui.atom.PanelResizeHandle
-import io.github.chandu4221.m3stage.ui.atom.PanelResizeSide
-import io.github.chandu4221.m3stage.ui.atom.PanelSplitter
 import io.github.chandu4221.m3stage.ui.organism.ThemeDrawer
-import io.github.chandu4221.m3stage.ui.preview.DualThemePreview
 
+/**
+ * Dumb UI template for the editor shell layout.
+ *
+ * Sizing of panels is scope-isolated to [panels] ([ShellPanelsController]), ensuring that resizing
+ * any panel only invalidates the panel's own Box and handle, never recomposing the central canvas
+ * or parent screen. Content is preserved when collapsed using zero-sized clipping.
+ */
 @Composable
 fun EditorShellTemplate(
     project: Project?,
-    // Rail state
-    activeRailTab: StudioRailTab?,
-    onRailTabSelected: (StudioRailTab) -> Unit,
+    panels: ShellPanelsController,
     isDarkMode: Boolean,
     onToggleDarkMode: () -> Unit,
-    // Panel collapse & resize state
-    isLeftPanelOpen: Boolean = activeRailTab != null,
-    onToggleLeftPanel: () -> Unit = {},
-    isRightPanelOpen: Boolean = true,
-    onToggleRightPanel: () -> Unit = {},
-    isFullWidth: Boolean = false,
-    onToggleFullWidth: () -> Unit = {},
-    leftPanelWidth: Dp = 280.dp,
-    onLeftDragStart: () -> Unit = {},
-    onLeftDragDelta: (Dp) -> Unit = {},
-    onLeftDragEnd: () -> Unit = {},
-    onLeftPanelWidthChange: (Dp) -> Unit = {},
-    onResetLeftPanelWidth: () -> Unit = {},
-    onAdjustLeftWidth: (Dp) -> Unit = {},
-    onSnapLeftToMin: () -> Unit = {},
-    rightPanelWidth: Dp = 320.dp,
-    onRightDragStart: () -> Unit = {},
-    onRightDragDelta: (Dp) -> Unit = {},
-    onRightDragEnd: () -> Unit = {},
-    onRightPanelWidthChange: (Dp) -> Unit = {},
-    onResetRightPanelWidth: () -> Unit = {},
-    onAdjustRightWidth: (Dp) -> Unit = {},
-    onSnapRightToMin: () -> Unit = {},
-    // Project metadata state
-    onUpdateProjectMetadata: (String, String) -> Unit = { _, _ -> },
     // Drawer state
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -80,109 +58,91 @@ fun EditorShellTemplate(
     lockedNodeIds: Set<NodeId>,
     canUndo: Boolean,
     canRedo: Boolean,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
     onAddScreen: () -> Unit,
     onExportCode: () -> Unit,
     // Code preview state
-    isCodePreviewOpen: Boolean = false,
     codePreviewFileName: String = "",
     codePreviewContent: String = "",
     isGeneratingCode: Boolean = false,
-    onToggleCodePreview: () -> Unit = {},
-    bottomPanelHeight: Dp = 280.dp,
-    onBottomDragStart: () -> Unit = {},
-    onBottomDragDelta: (Dp) -> Unit = {},
-    onBottomDragEnd: () -> Unit = {},
-    onBottomPanelHeightChange: (Dp) -> Unit = {},
-    onResetBottomPanelHeight: () -> Unit = {},
-    onAdjustBottomHeight: (Dp) -> Unit = {},
-    onSnapBottomToMin: () -> Unit = {},
-    // Inspector state
-    selectedNode: DesignNode?,
+    // Inspector & Tree Actions
     isNodeLocked: Boolean,
-    onToggleNodeLock: (NodeId) -> Unit,
-    onToggleVisibility: (NodeId) -> Unit = {},
-    onDeleteNode: (NodeId) -> Unit = {},
     viewportController: CanvasViewportController,
     store: EditorStore,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-
     Row(
         modifier = modifier.fillMaxSize()
     ) {
         // 1. Far-Left Studio Navigation Rail
         StudioNavRail(
-            activeTab = activeRailTab,
-            onTabSelected = onRailTabSelected
+            activeTab = panels.activeRailTab,
+            onTabSelected = { panels.selectRailTab(it) }
         )
 
-        // 2. Expandable & Resizable Drawer
-        if (isLeftPanelOpen && activeRailTab != null) {
-            if (leftPanelWidth > 0.dp) {
-                val drawerModifier = Modifier
-                    .width(leftPanelWidth)
+        // 2. Expandable & Resizable Left Drawer (Content-Preserving)
+        val isLeftCollapsed = panels.left.collapsed || panels.activeRailTab == null
+        Box(
+            modifier = if (isLeftCollapsed) {
+                Modifier.size(0.dp).clipToBounds()
+            } else {
+                Modifier
+                    .width(panels.left.sizeDp.dp)
                     .fillMaxHeight()
+                    .clipToBounds()
+            }
+        ) {
+            val currentTab = panels.activeRailTab ?: panels.lastActiveRailTab
+            val drawerModifier = Modifier.fillMaxSize()
 
-                when (activeRailTab) {
-                    StudioRailTab.Layers -> {
-                        val activeScreen = screens.firstOrNull { it.id == activeScreenId }
-                        LayersTreeDrawer(
-                            activeScreen = activeScreen,
-                            selectedNodeId = selectedNodeId,
-                            lockedNodeIds = lockedNodeIds,
-                            onSelectNode = onNodeClick,
-                            onToggleVisibility = onToggleVisibility,
-                            onToggleLock = onToggleNodeLock,
-                            onDeleteNode = onDeleteNode,
-                            modifier = drawerModifier
-                        )
-                    }
-                    StudioRailTab.Theme -> {
-                        ThemeDrawer(
-                            currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
-                            isDarkMode = isDarkMode,
-                            onSelectSeedColor = { store.updateSeedColor(it) },
-                            onToggleDarkMode = onToggleDarkMode,
-                            modifier = drawerModifier
-                        )
-                    }
-                    else -> {
-                        PartsDrawer(
-                            searchQuery = searchQuery,
-                            onSearchQueryChange = onSearchQueryChange,
-                            onComponentSelected = onComponentSelected,
-                            projectName = project?.name ?: "Untitled",
-                            basePackage = project?.basePackage ?: "com.example.app",
-                            onUpdateProjectMetadata = onUpdateProjectMetadata,
-                            disallowedKinds = disallowedKinds,
-                            onComponentDragStart = onComponentDragStart,
-                            onComponentDragEnd = onComponentDragEnd,
-                            modifier = drawerModifier
-                        )
-                    }
+            when (currentTab) {
+                StudioRailTab.Layers -> {
+                    val activeScreen = screens.firstOrNull { it.id == activeScreenId }
+                    LayersTreeDrawer(
+                        activeScreen = activeScreen,
+                        selectedNodeId = selectedNodeId,
+                        lockedNodeIds = lockedNodeIds,
+                        onSelectNode = onNodeClick,
+                        onToggleVisibility = { store.toggleVisibility(it) },
+                        onToggleLock = { store.toggleLock(it) },
+                        onDeleteNode = { store.removeNode(it) },
+                        modifier = drawerModifier
+                    )
+                }
+                StudioRailTab.Theme -> {
+                    ThemeDrawer(
+                        currentSeedColor = project?.seedColor ?: 0xFF6750A4L,
+                        isDarkMode = isDarkMode,
+                        onSelectSeedColor = { store.updateSeedColor(it) },
+                        onToggleDarkMode = onToggleDarkMode,
+                        modifier = drawerModifier
+                    )
+                }
+                else -> {
+                    PartsDrawer(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = onSearchQueryChange,
+                        onComponentSelected = onComponentSelected,
+                        projectName = project?.name ?: "Untitled",
+                        basePackage = project?.basePackage ?: "com.example.app",
+                        onUpdateProjectMetadata = { name, pkg -> store.updateProjectMetadata(name, pkg) },
+                        disallowedKinds = disallowedKinds,
+                        onComponentDragStart = onComponentDragStart,
+                        onComponentDragEnd = onComponentDragEnd,
+                        modifier = drawerModifier
+                    )
                 }
             }
+        }
 
-            // Left Splitter
+        // Left Splitter
+        if (!isLeftCollapsed) {
             PanelResizeHandle(
-                side = PanelResizeSide.Left,
-                onDragStart = onLeftDragStart,
-                onDragDelta = { deltaDp ->
-                    onLeftDragDelta(deltaDp)
-                    onLeftPanelWidthChange(leftPanelWidth + deltaDp)
-                },
-                onDragEnd = onLeftDragEnd,
-                onDoubleClick = onResetLeftPanelWidth,
-                onAdjustWidth = onAdjustLeftWidth,
-                onSnapToMin = onSnapLeftToMin,
-                onResetToDefault = onResetLeftPanelWidth
+                slot = panels.left,
+                side = PanelResizeSide.Left
             )
         }
 
-        // 3. Central Canvas
+        // 3. Central Canvas & Bottom Code Preview
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -197,8 +157,8 @@ fun EditorShellTemplate(
                 lockedNodeIds = lockedNodeIds,
                 canUndo = canUndo,
                 canRedo = canRedo,
-                onUndo = onUndo,
-                onRedo = onRedo,
+                onUndo = { store.undo() },
+                onRedo = { store.redo() },
                 onAddScreen = onAddScreen,
                 onExportCode = onExportCode,
                 viewportController = viewportController,
@@ -213,84 +173,83 @@ fun EditorShellTemplate(
                 onReorderScreens = { from, to -> store.reorderScreens(from, to) },
                 onDeviceChange = { id, device -> store.updateScreenDevice(id, device) },
                 onOrientationToggle = { id -> store.toggleScreenOrientation(id) },
-                isCodePreviewOpen = isCodePreviewOpen,
-                onToggleCodePreview = onToggleCodePreview,
+                isCodePreviewOpen = panels.isBottomOpen,
+                onToggleCodePreview = { panels.toggleBottom() },
                 draggedComponentKind = draggedComponentKind,
                 onDropOnScreen = onDropOnScreen,
-                isLeftPanelOpen = isLeftPanelOpen,
-                onToggleLeftPanel = onToggleLeftPanel,
-                isRightPanelOpen = isRightPanelOpen,
-                onToggleRightPanel = onToggleRightPanel,
-                isFullWidth = isFullWidth,
-                onToggleFullWidth = onToggleFullWidth
+                isLeftPanelOpen = !isLeftCollapsed,
+                onToggleLeftPanel = { panels.toggleLeft() },
+                isRightPanelOpen = !panels.right.collapsed,
+                onToggleRightPanel = { panels.toggleRight() },
+                isFullWidth = panels.isFullWidth,
+                onToggleFullWidth = { panels.toggleFullWidth() }
             )
 
-            if (isCodePreviewOpen && bottomPanelHeight > 0.dp) {
+            // Content-Preserving Bottom Code Preview
+            val isBottomCollapsed = panels.bottom.collapsed
+            Box(
+                modifier = if (isBottomCollapsed) {
+                    Modifier.size(0.dp).clipToBounds()
+                } else {
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .clipToBounds()
+                }
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .height(panels.bottom.sizeDp.dp)
                 ) {
                     PanelResizeHandle(
-                        side = PanelResizeSide.Bottom,
-                        onDragStart = onBottomDragStart,
-                        onDragDelta = { deltaDp ->
-                            onBottomDragDelta(deltaDp)
-                            onBottomPanelHeightChange(bottomPanelHeight + deltaDp)
-                        },
-                        onDragEnd = onBottomDragEnd,
-                        onDoubleClick = onResetBottomPanelHeight,
-                        onAdjustWidth = onAdjustBottomHeight,
-                        onSnapToMin = onSnapBottomToMin,
-                        onResetToDefault = onResetBottomPanelHeight
+                        slot = panels.bottom,
+                        side = PanelResizeSide.Bottom
                     )
 
-                    io.github.chandu4221.m3stage.ui.organism.CodePreviewPanel(
+                    CodePreviewPanel(
                         fileName = codePreviewFileName,
                         code = codePreviewContent,
                         isGenerating = isGeneratingCode,
-                        onClose = onToggleCodePreview,
+                        onClose = { panels.toggleBottom() },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(bottomPanelHeight)
+                            .weight(1f)
                     )
                 }
             }
         }
 
         // 4. Right Inspector Surface & Splitter
-        if (isRightPanelOpen) {
-            // Right Splitter
+        if (!panels.right.collapsed) {
             PanelResizeHandle(
-                side = PanelResizeSide.Right,
-                onDragStart = onRightDragStart,
-                onDragDelta = { deltaDp ->
-                    onRightDragDelta(deltaDp)
-                    onRightPanelWidthChange(rightPanelWidth + deltaDp)
-                },
-                onDragEnd = onRightDragEnd,
-                onDoubleClick = onResetRightPanelWidth,
-                onAdjustWidth = onAdjustRightWidth,
-                onSnapToMin = onSnapRightToMin,
-                onResetToDefault = onResetRightPanelWidth
+                slot = panels.right,
+                side = PanelResizeSide.Right
             )
+        }
 
-            if (rightPanelWidth > 0.dp) {
-                Surface(
-                    modifier = Modifier
-                        .width(rightPanelWidth)
-                        .fillMaxHeight(),
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    InspectorPanel(
-                        project = project,
-                        activeScreenId = activeScreenId?.value,
-                        selectedNodeId = selectedNodeId,
-                        isLocked = isNodeLocked,
-                        store = store
-                    )
-                }
+        Box(
+            modifier = if (panels.right.collapsed) {
+                Modifier.size(0.dp).clipToBounds()
+            } else {
+                Modifier
+                    .width(panels.right.sizeDp.dp)
+                    .fillMaxHeight()
+                    .clipToBounds()
+            }
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                InspectorPanel(
+                    project = project,
+                    activeScreenId = activeScreenId?.value,
+                    selectedNodeId = selectedNodeId,
+                    isLocked = isNodeLocked,
+                    store = store
+                )
             }
         }
     }

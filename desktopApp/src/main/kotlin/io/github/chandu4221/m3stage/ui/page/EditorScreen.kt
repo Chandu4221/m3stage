@@ -1,9 +1,6 @@
 package io.github.chandu4221.m3stage.ui.page
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,25 +10,22 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.*
-import io.github.chandu4221.m3stage.state.rememberPanelStateHolder
+import androidx.compose.ui.unit.dp
 import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.component.ComponentKind
-import io.github.chandu4221.m3stage.query.canPlace
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.flatten
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
-import io.github.chandu4221.m3stage.state.CanvasViewportState
 import io.github.chandu4221.m3stage.state.EditorEvent
 import io.github.chandu4221.m3stage.state.EditorStore
+import io.github.chandu4221.m3stage.state.rememberCanvasViewportController
+import io.github.chandu4221.m3stage.state.rememberShellPanelsController
 import io.github.chandu4221.m3stage.ui.molecule.ExportDialog
-import io.github.chandu4221.m3stage.ui.organism.StudioRailTab
 import io.github.chandu4221.m3stage.ui.template.EditorShellTemplate
 
 /**
@@ -47,7 +41,7 @@ fun EditorScreen(store: EditorStore) {
     val redoStack by store.redoStack.collectAsState()
     val isDirty by store.isDirty.collectAsState()
 
-    val panelState = rememberPanelStateHolder()
+    val panels = rememberShellPanelsController()
     var searchQuery by remember { mutableStateOf("") }
 
     val activeScreen = project?.screens?.firstOrNull { it.id == activeScreenId }
@@ -66,13 +60,13 @@ fun EditorScreen(store: EditorStore) {
         }
     }
 
-    val viewportController = io.github.chandu4221.m3stage.state.rememberCanvasViewportController()
+    val viewportController = rememberCanvasViewportController()
 
     var showExportDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Live Code Preview State
-    val isCodePreviewOpen = panelState.isBottomOpen
+    val isCodePreviewOpen = panels.isBottomOpen
     var codePreviewContent by remember { mutableStateOf("") }
     var isGeneratingCode by remember { mutableStateOf(false) }
 
@@ -168,6 +162,24 @@ fun EditorScreen(store: EditorStore) {
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+
+                // Panel Shortcuts (Ctrl+Shift+1/2/3)
+                if (keyEvent.isCtrlPressed && keyEvent.isShiftPressed) {
+                    when (keyEvent.key) {
+                        Key.One, Key.NumPad1 -> {
+                            panels.toggleLeft()
+                            return@onPreviewKeyEvent true
+                        }
+                        Key.Two, Key.NumPad2 -> {
+                            panels.toggleRight()
+                            return@onPreviewKeyEvent true
+                        }
+                        Key.Three, Key.NumPad3 -> {
+                            panels.toggleBottom()
+                            return@onPreviewKeyEvent true
+                        }
+                    }
+                }
 
                 // 1. Undo / Redo
                 if (keyEvent.isCtrlPressed && keyEvent.isShiftPressed && keyEvent.key == Key.Z) {
@@ -272,99 +284,15 @@ fun EditorScreen(store: EditorStore) {
                 false
             }
     ) {
-        val totalWidth = maxWidth
-        val totalHeight = maxHeight
-        val navRailWidth = 72.dp
-        val minCanvasWidth = 240.dp
-        val maxLeftWidth = (totalWidth - minCanvasWidth - navRailWidth - (if (panelState.isRightOpen) panelState.rightInspector.minWidth else 0.dp)).coerceAtLeast(200.dp)
-        val maxRightWidth = (totalWidth - minCanvasWidth - navRailWidth - (if (panelState.isLeftOpen) panelState.leftDrawer.minWidth else 0.dp)).coerceAtLeast(240.dp)
-        val minCanvasHeight = 160.dp
-        val maxBottomHeight = (totalHeight - minCanvasHeight).coerceAtLeast(140.dp)
-
-        val resolvedLeftWidth = panelState.leftDrawer.resolvedWidth(maxLeftWidth)
-        val animatedLeftWidth by animateDpAsState(
-            targetValue = resolvedLeftWidth,
-            animationSpec = if (panelState.leftDrawer.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
-        )
-
-        val resolvedRightWidth = panelState.rightInspector.resolvedWidth(maxRightWidth)
-        val animatedRightWidth by animateDpAsState(
-            targetValue = resolvedRightWidth,
-            animationSpec = if (panelState.rightInspector.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
-        )
-
-        val resolvedBottomHeight = panelState.bottomCodePreview.resolvedWidth(maxBottomHeight)
-        val animatedBottomHeight by animateDpAsState(
-            targetValue = resolvedBottomHeight,
-            animationSpec = if (panelState.bottomCodePreview.isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow)
-        )
+        LaunchedEffect(maxWidth, maxHeight) {
+            panels.updateAvailableSpace(maxWidth.value, maxHeight.value)
+        }
 
         EditorShellTemplate(
             project = project,
-            // Rail
-            activeRailTab = panelState.activeRailTab,
-            onRailTabSelected = { tab -> panelState.selectRailTab(tab) },
+            panels = panels,
             isDarkMode = project?.isDarkMode ?: false,
             onToggleDarkMode = { store.toggleDarkMode() },
-
-            // Panel Collapse & Resize
-            isLeftPanelOpen = panelState.isLeftOpen,
-            onToggleLeftPanel = { panelState.toggleLeftDrawer() },
-            isRightPanelOpen = panelState.isRightOpen,
-            onToggleRightPanel = { panelState.toggleRightInspector() },
-            isFullWidth = panelState.isFullWidth,
-            onToggleFullWidth = { panelState.toggleFullWidth() },
-
-            leftPanelWidth = animatedLeftWidth,
-            onLeftDragStart = {
-                panelState.leftDrawer = panelState.leftDrawer.onDragStart()
-            },
-            onLeftDragDelta = { deltaDp ->
-                panelState.leftDrawer = panelState.leftDrawer.onDragDelta(deltaDp, maxLeftWidth)
-            },
-            onLeftDragEnd = {
-                panelState.leftDrawer = panelState.leftDrawer.onDragEnd(maxLeftWidth)
-                if (panelState.leftDrawer.isCollapsed) {
-                    panelState.activeRailTab = null
-                }
-            },
-            onResetLeftPanelWidth = {
-                panelState.leftDrawer = panelState.leftDrawer.resetToDefault()
-                if (panelState.activeRailTab == null) {
-                    panelState.activeRailTab = panelState.lastActiveRailTab
-                }
-            },
-            onAdjustLeftWidth = { deltaDp ->
-                panelState.leftDrawer = panelState.leftDrawer.adjustWidthBy(deltaDp, maxLeftWidth)
-            },
-            onSnapLeftToMin = {
-                panelState.leftDrawer = panelState.leftDrawer.snapToMin()
-            },
-
-            rightPanelWidth = animatedRightWidth,
-            onRightDragStart = {
-                panelState.rightInspector = panelState.rightInspector.onDragStart()
-            },
-            onRightDragDelta = { deltaDp ->
-                panelState.rightInspector = panelState.rightInspector.onDragDelta(deltaDp, maxRightWidth)
-            },
-            onRightDragEnd = {
-                panelState.rightInspector = panelState.rightInspector.onDragEnd(maxRightWidth)
-            },
-            onResetRightPanelWidth = {
-                panelState.rightInspector = panelState.rightInspector.resetToDefault()
-            },
-            onAdjustRightWidth = { deltaDp ->
-                panelState.rightInspector = panelState.rightInspector.adjustWidthBy(deltaDp, maxRightWidth)
-            },
-            onSnapRightToMin = {
-                panelState.rightInspector = panelState.rightInspector.snapToMin()
-            },
-            onUpdateProjectMetadata = { name, pkg ->
-                store.updateProjectMetadata(name, pkg)
-            },
-
-            // Parts Drawer
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
             onComponentSelected = { kind ->
@@ -395,8 +323,6 @@ fun EditorScreen(store: EditorStore) {
                 }
                 draggedComponentKind = null
             },
-
-            // Floating Canvas
             screens = project?.screens ?: emptyList(),
             activeScreenId = activeScreenId,
             onSelectScreen = { store.setActiveScreen(it) },
@@ -415,53 +341,23 @@ fun EditorScreen(store: EditorStore) {
             lockedNodeIds = lockedNodeIds,
             canUndo = undoStack.isNotEmpty(),
             canRedo = redoStack.isNotEmpty(),
-            onUndo = { store.undo() },
-            onRedo = { store.redo() },
             onAddScreen = {
                 val count = (project?.screens?.size ?: 0) + 1
                 store.addNewScreen("Screen$count", "/screen$count")
-                // Automatically pan canvas to reveal the newly added screen on the right!
                 val newlyAddedScreen = store.project.value?.screens?.lastOrNull()
                 val targetX = newlyAddedScreen?.canvasX ?: 0f
                 val currentPan = viewportController.viewportState.value.panOffset
                 viewportController.panBy(Offset(-targetX - currentPan.x, 0f))
             },
             onExportCode = { showExportDialog = true },
-            isCodePreviewOpen = isCodePreviewOpen,
             codePreviewFileName = activeScreenFileName,
             codePreviewContent = codePreviewContent,
             isGeneratingCode = isGeneratingCode,
-            onToggleCodePreview = { panelState.toggleBottomCodePreview() },
-            bottomPanelHeight = animatedBottomHeight,
-            onBottomDragStart = {
-                panelState.bottomCodePreview = panelState.bottomCodePreview.onDragStart()
-            },
-            onBottomDragDelta = { deltaDp ->
-                panelState.bottomCodePreview = panelState.bottomCodePreview.onDragDelta(deltaDp, maxBottomHeight)
-            },
-            onBottomDragEnd = {
-                panelState.bottomCodePreview = panelState.bottomCodePreview.onDragEnd(maxBottomHeight)
-            },
-            onResetBottomPanelHeight = {
-                panelState.bottomCodePreview = panelState.bottomCodePreview.resetToDefault()
-            },
-            onAdjustBottomHeight = { deltaDp ->
-                panelState.bottomCodePreview = panelState.bottomCodePreview.adjustWidthBy(deltaDp, maxBottomHeight)
-            },
-            onSnapBottomToMin = {
-                panelState.bottomCodePreview = panelState.bottomCodePreview.snapToMin()
-            },
-            // Inspector & Tree Actions
-            selectedNode = selectedNode,
             isNodeLocked = selectedNodeId?.let { store.isNodeLocked(it) } ?: false,
-            onToggleNodeLock = { nodeId -> store.toggleLock(nodeId) },
-            onToggleVisibility = { nodeId -> store.toggleVisibility(nodeId) },
-            onDeleteNode = { nodeId -> store.removeNode(nodeId) },
             viewportController = viewportController,
             store = store,
         )
 
-        // Add this right here, inside the Box after EditorShellTemplate:
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier

@@ -256,3 +256,26 @@ fun PanelResizeHandle(
         )
     }
 }
+
+/**
+ * Convenience overload of [PanelResizeHandle] directly bound to a [PanelSlotController].
+ */
+@Composable
+fun PanelResizeHandle(
+    slot: io.github.chandu4221.m3stage.state.PanelSlotController,
+    side: PanelResizeSide,
+    modifier: Modifier = Modifier
+) {
+    PanelResizeHandle(
+        side = side,
+        onDragStart = {},
+        onDragDelta = { deltaDp -> slot.dragBy(deltaDp.value) },
+        onDragEnd = { slot.endDrag() },
+        onDoubleClick = { slot.reset() },
+        onAdjustWidth = { deltaDp -> slot.keyboardAdjust(deltaDp.value) },
+        onSnapToMin = { slot.snapToMin() },
+        onResetToDefault = { slot.reset() },
+        modifier = modifier
+    )
+}
+
