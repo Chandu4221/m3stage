@@ -28,6 +28,7 @@ import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportController
 import io.github.chandu4221.m3stage.state.CanvasViewportDelegate
+import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.atom.DimensionBadge
 import io.github.chandu4221.m3stage.ui.atom.StageIcons
 import io.github.chandu4221.m3stage.ui.atom.ToolIconButton
@@ -76,6 +77,7 @@ fun FloatingCanvasStudio(
     onToggleRightPanel: () -> Unit = {},
     isFullWidth: Boolean = false,
     onToggleFullWidth: () -> Unit = {},
+    store: EditorStore? = null,
     modifier: Modifier = Modifier
 ) {
     val viewportState = viewportController.viewportState
@@ -109,7 +111,8 @@ fun FloatingCanvasStudio(
                     onDeviceChange = onDeviceChange,
                     onOrientationToggle = onOrientationToggle,
                     draggedComponentKind = draggedComponentKind,
-                    onDropOnScreen = onDropOnScreen
+                    onDropOnScreen = onDropOnScreen,
+                    store = store
                 )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

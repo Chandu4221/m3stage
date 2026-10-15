@@ -186,7 +186,8 @@ fun EditorShellTemplate(
                 isRightPanelOpen = !panels.right.collapsed,
                 onToggleRightPanel = { panels.toggleRight() },
                 isFullWidth = panels.isFullWidth,
-                onToggleFullWidth = { panels.toggleFullWidth() }
+                onToggleFullWidth = { panels.toggleFullWidth() },
+                store = store
             )
 
             // Content-Preserving Bottom Code Preview

@@ -51,6 +51,7 @@ fun Modifier.selectionPointerInput(
             if (event.buttons.isSecondaryPressed || event.button == PointerButton.Secondary) {
                 val change = event.changes.firstOrNull()
                 if (change != null) {
+                    change.consume()
                     val target = registry.hitTest(change.position, currentTreeInfo)
                     currentOnContextMenu?.invoke(target, change.position)
                 }

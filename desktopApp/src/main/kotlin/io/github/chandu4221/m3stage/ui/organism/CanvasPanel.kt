@@ -9,6 +9,7 @@ import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasViewportController
+import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.canvas.CanvasWorkbench
 
 /**
@@ -37,6 +38,7 @@ fun CanvasPanel(
     onOrientationToggle: (ScreenId) -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
+    store: EditorStore? = null,
     modifier: Modifier = Modifier
 ) {
     CanvasWorkbench(
@@ -63,6 +65,7 @@ fun CanvasPanel(
         onOrientationToggle = onOrientationToggle,
         draggedComponentKind = draggedComponentKind,
         onDropOnScreen = onDropOnScreen,
+        store = store,
         modifier = modifier
     )
 }

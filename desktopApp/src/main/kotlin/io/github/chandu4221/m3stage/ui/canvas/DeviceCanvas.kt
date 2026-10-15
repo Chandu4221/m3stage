@@ -27,14 +27,18 @@ import io.github.chandu4221.m3stage.adapter.renderer.selection.SelectionChrome
 import io.github.chandu4221.m3stage.adapter.renderer.selection.selectionPointerInput
 import io.github.chandu4221.m3stage.adapter.renderer.selection.toTreeInfo
 import io.github.chandu4221.m3stage.component.ComponentKind
+import io.github.chandu4221.m3stage.model.DesignNode
 import io.github.chandu4221.m3stage.model.DevicePreset
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
+import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.device.DeviceFrame
 import io.github.chandu4221.m3stage.ui.device.DeviceOrientation
+import io.github.chandu4221.m3stage.ui.molecule.NodeContextMenu
+import io.github.chandu4221.m3stage.ui.molecule.RenameNodeDialog
 
 /**
  * Sealed Device Canvas ("iframe" sandbox).
@@ -63,6 +67,7 @@ fun DeviceCanvas(
     zoomProvider: () -> Float,
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
+    store: EditorStore? = null,
     modifier: Modifier = Modifier
 ) {
     // Encapsulated Artboard-Local Selection & Bounds State
@@ -71,6 +76,10 @@ fun DeviceCanvas(
     val anchorState = remember(screen.id) { mutableStateOf<NodeId?>(null) }
     var hoveredNodeId by remember(screen.id) { mutableStateOf<NodeId?>(null) }
     var artboardOrigin by remember { mutableStateOf(Offset.Zero) }
+
+    var contextMenuOffset by remember(screen.id) { mutableStateOf<Offset?>(null) }
+    var contextMenuTargetId by remember(screen.id) { mutableStateOf<NodeId?>(null) }
+    var nodeToRename by remember(screen.id) { mutableStateOf<DesignNode?>(null) }
 
     val selectedNode = remember(selectedNodeId, screen.root) {
         selectedNodeId?.let { screen.root.findNode(it) }
@@ -180,9 +189,101 @@ fun DeviceCanvas(
                                 },
                                 onContextMenu = { target, offset ->
                                     onActivate()
+                                    if (target != null && target != screen.root.id) {
+                                        if (target !in selectedNodeIds) {
+                                            onSelectNode(target)
+                                        }
+                                        contextMenuTargetId = target
+                                    } else {
+                                        contextMenuTargetId = null
+                                    }
+                                    contextMenuOffset = offset
                                     onContextMenu?.invoke(target, offset)
                                 }
                             )
+                    )
+                }
+
+                // 4. Context Menu
+                if (contextMenuOffset != null) {
+                    val density = androidx.compose.ui.platform.LocalDensity.current
+                    val dpOffset = with(density) {
+                        androidx.compose.ui.unit.DpOffset(contextMenuOffset!!.x.toDp(), contextMenuOffset!!.y.toDp())
+                    }
+                    val targetNode = contextMenuTargetId?.let { screen.root.findNode(it) }
+                    val isLocked = contextMenuTargetId?.let { lockedNodeIds.contains(it) } ?: false
+                    val canPaste = store?.clipboardDelegate?.clip?.value != null
+                    val hasMultipleSelection = selectedNodeIds.size > 1 && contextMenuTargetId in selectedNodeIds
+
+                    NodeContextMenu(
+                        expanded = true,
+                        offset = dpOffset,
+                        targetNode = targetNode,
+                        isLocked = isLocked,
+                        canPaste = canPaste,
+                        hasMultipleSelection = hasMultipleSelection,
+                        onDismissRequest = { contextMenuOffset = null },
+                        onRename = {
+                            contextMenuOffset = null
+                            nodeToRename = targetNode
+                        },
+                        onCopy = {
+                            contextMenuOffset = null
+                            targetNode?.let { store?.copyNode(it.id) }
+                        },
+                        onCut = {
+                            contextMenuOffset = null
+                            targetNode?.let { store?.cutNode(it.id) }
+                        },
+                        onPaste = {
+                            contextMenuOffset = null
+                            store?.pasteNode()
+                        },
+                        onDuplicate = {
+                            contextMenuOffset = null
+                            if (hasMultipleSelection) {
+                                store?.duplicateSelectedNodes()
+                            } else {
+                                targetNode?.let { store?.duplicateNode(it.id) }
+                            }
+                        },
+                        onDelete = {
+                            contextMenuOffset = null
+                            if (hasMultipleSelection) {
+                                store?.removeSelectedNodes()
+                            } else {
+                                targetNode?.let { store?.removeNode(it.id) }
+                            }
+                        },
+                        onToggleLock = {
+                            contextMenuOffset = null
+                            targetNode?.let { store?.toggleLock(it.id) }
+                        },
+                        onToggleVisibility = {
+                            contextMenuOffset = null
+                            targetNode?.let { store?.toggleVisibility(it.id) }
+                        },
+                        onSelectAll = {
+                            contextMenuOffset = null
+                            store?.selectAllNodes(screen)
+                        },
+                        onDeselect = {
+                            contextMenuOffset = null
+                            store?.selectNode(null)
+                        }
+                    )
+                }
+
+                val targetToRename = nodeToRename
+                if (targetToRename != null) {
+                    RenameNodeDialog(
+                        initialLabel = targetToRename.label,
+                        defaultName = targetToRename.kind.displayName,
+                        onDismiss = { nodeToRename = null },
+                        onConfirm = { newLabel ->
+                            store?.renameNode(targetToRename.id, newLabel)
+                            nodeToRename = null
+                        }
                     )
                 }
             }

@@ -54,6 +54,7 @@ import io.github.chandu4221.m3stage.model.Screen
 import io.github.chandu4221.m3stage.model.ScreenId
 import io.github.chandu4221.m3stage.state.CanvasPointerTool
 import io.github.chandu4221.m3stage.state.CanvasViewportController
+import io.github.chandu4221.m3stage.state.EditorStore
 import io.github.chandu4221.m3stage.ui.device.DeviceOrientation
 
 
@@ -93,6 +94,7 @@ fun CanvasWorkbench(
     onOrientationToggle: (ScreenId) -> Unit = {},
     draggedComponentKind: ComponentKind? = null,
     onDropOnScreen: (ScreenId, ComponentKind) -> Unit = { _, _ -> },
+    store: EditorStore? = null,
     modifier: Modifier = Modifier
 ) {
     val dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
@@ -313,7 +315,8 @@ fun CanvasWorkbench(
                                 },
                                 zoomProvider = { viewportState.value.zoom },
                                 draggedComponentKind = draggedComponentKind,
-                                onDropOnScreen = onDropOnScreen
+                                onDropOnScreen = onDropOnScreen,
+                                store = store
                             )
                         }
                     }

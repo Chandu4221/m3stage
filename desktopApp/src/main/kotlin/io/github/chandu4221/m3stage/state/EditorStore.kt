@@ -13,6 +13,7 @@ import io.github.chandu4221.m3stage.query.findAcceptingSlot
 import io.github.chandu4221.m3stage.query.findNearestAcceptingAncestor
 import io.github.chandu4221.m3stage.query.findNode
 import io.github.chandu4221.m3stage.query.findScreen
+import io.github.chandu4221.m3stage.query.flatten
 import io.github.chandu4221.m3stage.query.isDescendantOf
 import kotlinx.coroutines.*
 
@@ -66,6 +67,17 @@ class EditorStore(
         treeInfo: Map<NodeId, io.github.chandu4221.m3stage.adapter.renderer.selection.NodeTreeInfo>?,
         screenRootId: NodeId?
     ) = selectionDelegate.popSelectionAnchor(treeInfo, screenRootId)
+
+    fun selectAllNodes(screen: Screen) {
+        setActiveScreen(screen.id)
+        val allIds = screen.root.flatten().filter { it.isVisible }.map { it.id }.toSet()
+        selectNodes(allIds)
+    }
+
+    fun selectAllNodes(screenId: ScreenId) {
+        val screen = project.value?.findScreen(screenId) ?: return
+        selectAllNodes(screen)
+    }
 
     // --- HistoryState ---
     override val undoStack = historyDelegate.undoStack

@@ -106,6 +106,14 @@ fun handleEditorKeyEvent(
                     return true
                 }
             }
+            Key.A -> {
+                val activeScreenId = store.activeScreenId.value
+                val screen = store.project.value?.screens?.firstOrNull { it.id == activeScreenId }
+                if (screen != null) {
+                    store.selectAllNodes(screen)
+                    return true
+                }
+            }
         }
     }
 
