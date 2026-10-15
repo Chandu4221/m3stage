@@ -70,6 +70,7 @@ object TopAppBarDefinition {
                 kind = ComponentKind.Text,
                 props = TextDefinition.definition.createDefaultProps().toMutableMap().apply {
                     put(TextDefinition.TextContent.id, PropertyValue.StringValue("Title"))
+                    put(TextDefinition.Color.id, PropertyValue.ColorValue.Token(M3ColorToken.Inherit))
                 }
             )
             DesignNode(

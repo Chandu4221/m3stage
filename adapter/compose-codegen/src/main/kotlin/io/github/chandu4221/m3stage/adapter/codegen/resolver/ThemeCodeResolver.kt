@@ -48,6 +48,7 @@ object ThemeCodeResolver {
                     M3ColorToken.SurfaceContainerHigh -> CodeBlock.of("%T.colorScheme.surfaceContainerHigh", ComposeSymbols.MaterialTheme)
                     M3ColorToken.SurfaceContainerHighest -> CodeBlock.of("%T.colorScheme.surfaceContainerHighest", ComposeSymbols.MaterialTheme)
                     M3ColorToken.SurfaceTint -> CodeBlock.of("%T.colorScheme.surfaceTint", ComposeSymbols.MaterialTheme)
+                    M3ColorToken.Inherit -> null
                 }
             }
             is PropertyValue.ColorValue.Custom -> {

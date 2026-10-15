@@ -24,9 +24,7 @@ object ThemeResolver {
         )
     }
 
-    @Composable
-    @ReadOnlyComposable
-    fun resolveColor(colorValue: PropertyValue.ColorValue?, scheme: ColorScheme = MaterialTheme.colorScheme): Color {
+    fun resolveColor(colorValue: PropertyValue.ColorValue?, scheme: ColorScheme): Color {
         return when (colorValue) {
             is PropertyValue.ColorValue.Custom -> Color(colorValue.argb)
             is PropertyValue.ColorValue.Token -> resolveColorToken(colorValue.token, scheme)
@@ -36,7 +34,11 @@ object ThemeResolver {
 
     @Composable
     @ReadOnlyComposable
-    fun resolveColorToken(token: M3ColorToken, scheme: ColorScheme = MaterialTheme.colorScheme): Color {
+    fun resolveColor(colorValue: PropertyValue.ColorValue?): Color {
+        return resolveColor(colorValue, MaterialTheme.colorScheme)
+    }
+
+    fun resolveColorToken(token: M3ColorToken, scheme: ColorScheme): Color {
         return when (token) {
             M3ColorToken.Primary -> scheme.primary
             M3ColorToken.OnPrimary -> scheme.onPrimary
@@ -80,7 +82,14 @@ object ThemeResolver {
             M3ColorToken.Outline -> scheme.outline
             M3ColorToken.OutlineVariant -> scheme.outlineVariant
             M3ColorToken.Scrim -> scheme.scrim
+            M3ColorToken.Inherit -> Color.Unspecified
         }
+    }
+
+    @Composable
+    @ReadOnlyComposable
+    fun resolveColorToken(token: M3ColorToken): Color {
+        return resolveColorToken(token, MaterialTheme.colorScheme)
     }
 
     @Composable

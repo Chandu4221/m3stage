@@ -34,6 +34,7 @@ object BadgeDefinition {
                 kind = ComponentKind.Text,
                 props = TextDefinition.definition.createDefaultProps().toMutableMap().apply {
                     put(TextDefinition.TextContent.id, PropertyValue.StringValue("1"))
+                    put(TextDefinition.Color.id, PropertyValue.ColorValue.Token(M3ColorToken.Inherit))
                 }
             )
             DesignNode(

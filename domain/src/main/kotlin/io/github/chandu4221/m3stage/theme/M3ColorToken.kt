@@ -49,5 +49,6 @@ enum class M3ColorToken {
     OnErrorContainer,
     Outline,
     OutlineVariant,
-    Scrim
+    Scrim,
+    Inherit
 }

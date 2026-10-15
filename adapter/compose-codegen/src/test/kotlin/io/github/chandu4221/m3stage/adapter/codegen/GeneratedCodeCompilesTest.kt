@@ -426,4 +426,44 @@ class GeneratedCodeCompilesTest {
             code
         )
     }
+
+    @Test
+    fun testButtonWithInheritedLabelColorGeneratesValidCodeWithoutColorArg() {
+        val generator = ComposeCodeGenerator()
+        var idCounter = 0
+        val idGen = object : IdGenerator {
+            override fun nextProjectId(): ProjectId = ProjectId("p-${idCounter++}")
+            override fun nextScreenId(): ScreenId = ScreenId("s-${idCounter++}")
+            override fun nextNodeId(): NodeId = NodeId("n-${idCounter++}")
+        }
+
+        val buttonSubtree = ComponentCatalog[ComponentKind.Button].createDefaultSubtree(idGen)
+        val screen = Screen(
+            id = ScreenId("screen-btn"),
+            name = "ButtonScreen",
+            route = "/btn",
+            root = buttonSubtree
+        )
+        val project = Project(
+            id = ProjectId("test-proj-btn"),
+            name = "Button App",
+            basePackage = "com.m3stage.test",
+            defaultDevice = DevicePreset.Pixel8,
+            screens = listOf(screen)
+        )
+
+        val generated = generator.generate(project)
+        val code = generated.files.first().content
+
+        assertTrue(code.contains("Button("), "Generated code must emit Button(")
+        assertTrue(code.contains("Text("), "Generated code must emit Text(")
+        // The Text inside Button has Inherit color, so it must NOT emit an explicit color parameter
+        assertTrue(!code.contains("color = MaterialTheme.colorScheme.onSurface"), "Inherited label must NOT emit onSurface")
+        // Formatter test
+        com.facebook.ktfmt.format.Formatter.format(
+            com.facebook.ktfmt.format.Formatter.GOOGLE_FORMAT,
+            code
+        )
+    }
 }
+

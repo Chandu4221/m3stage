@@ -1,8 +1,13 @@
 package io.github.chandu4221.m3stage.component
 
+import io.github.chandu4221.m3stage.component.definition.IconDefinition
+import io.github.chandu4221.m3stage.component.definition.TextDefinition
 import io.github.chandu4221.m3stage.component.slot.SlotId
+import io.github.chandu4221.m3stage.model.IconGlyph
 import io.github.chandu4221.m3stage.model.NodeId
 import io.github.chandu4221.m3stage.port.IdGenerator
+import io.github.chandu4221.m3stage.property.PropertyValue
+import io.github.chandu4221.m3stage.theme.M3ColorToken
 import kotlin.test.*
 
 class ComponentAnatomyTest {
@@ -200,5 +205,38 @@ class ComponentAnatomyTest {
             kind = ComponentKind.Button
         )
         assertFalse(bareNode.isPrefilled, "Bare DesignNode constructor must default isPrefilled to false")
+    }
+
+    @Test
+    fun testInteractiveComponentLabelSlotsDefaultToInheritColorToken() {
+        // Button
+        val button = ComponentCatalog[ComponentKind.Button].createDefaultSubtree(idGen)
+        val buttonLabel = button.slots[SlotId("label")]?.first()
+        assertNotNull(buttonLabel)
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), buttonLabel[TextDefinition.Color])
+
+        // OutlinedButton
+        val outlinedButton = ComponentCatalog[ComponentKind.OutlinedButton].createDefaultSubtree(idGen)
+        val outlinedLabel = outlinedButton.slots[SlotId("label")]?.first()
+        assertNotNull(outlinedLabel)
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), outlinedLabel[TextDefinition.Color])
+
+        // TextButton
+        val textButton = ComponentCatalog[ComponentKind.TextButton].createDefaultSubtree(idGen)
+        val textButtonLabel = textButton.slots[SlotId("label")]?.first()
+        assertNotNull(textButtonLabel)
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), textButtonLabel[TextDefinition.Color])
+
+        // TopAppBar title
+        val topAppBar = ComponentCatalog[ComponentKind.TopAppBar].createDefaultSubtree(idGen)
+        val titleText = topAppBar.slots[SlotId("title")]?.first()
+        assertNotNull(titleText)
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), titleText[TextDefinition.Color])
+
+        // Badge content
+        val badge = ComponentCatalog[ComponentKind.Badge].createDefaultSubtree(idGen)
+        val badgeText = badge.children.firstOrNull()
+        assertNotNull(badgeText)
+        assertEquals(PropertyValue.ColorValue.Token(M3ColorToken.Inherit), badgeText[TextDefinition.Color])
     }
 }
